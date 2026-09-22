@@ -1,9 +1,9 @@
-package com.gabriel;
+package com.alveesdev.xmlcollector;
 
 import java.util.Map;
 
-import com.gabriel.xmlconfig.XmlExtractor;
-import com.gabriel.xmlconfig.XmlProcessor;
+import com.alveesdev.xmlcollector.xmlconfig.XmlExtractor;
+import com.alveesdev.xmlcollector.xmlconfig.XmlProcessor;
 
 public class Main {
 	

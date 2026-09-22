@@ -1,4 +1,4 @@
-package com.gabriel.xmlconfig;
+package com.alveesdev.xmlcollector.xmlconfig;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -17,27 +17,28 @@ public class XmlProcessor {
 	public static <T> Map<String, T> collectXml(
 	        String diretorio, Function<Document, T> extrator) throws Exception {
 
-	    Map<String, T> mapa = new LinkedHashMap<>();
+	    Map<String, T> xmlList = new LinkedHashMap<>();
 
-	    try (Stream<Path> arquivos = Files.list(Paths.get(diretorio))) {
-	        List<Path> xmls = arquivos
+	    try (Stream<Path> xmlDirectory = Files.list(Paths.get(diretorio))) {
+	    	
+	        List<Path> xmls = xmlDirectory
 	                .filter(p -> p.toString().toLowerCase().endsWith(".xml"))
 	                .collect(Collectors.toList());
 
 	        for (Path xml : xmls) {
-	            String nomeArquivo = xml.getFileName().toString();
+	            String fileName = xml.getFileName().toString();
 
 	            try {
-	                Document doc = XmlReader.loadXML(xml.toFile());
-	                mapa.put(nomeArquivo, extrator.apply(doc));
+	                Document xmlFile = XmlReader.loadXML(xml.toFile());
+	                xmlList.put(fileName, extrator.apply(xmlFile));
 	            } catch (Exception e) {
-	                System.err.println("Falha ao processar " + nomeArquivo + ": " + e.getMessage());
-	                mapa.put(nomeArquivo, null);
+	                System.err.println("Falha ao processar " + fileName + ": " + e.getMessage());
+	                xmlList.put(fileName, null);
 	            }
 	        }
 	    }
 
-	    return mapa;
+	    return xmlList;
 	}
 
 }

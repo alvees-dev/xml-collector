@@ -1,4 +1,4 @@
-package com.gabriel.xmlconfig;
+package com.alveesdev.xmlcollector.xmlconfig;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
