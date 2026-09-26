@@ -1,20 +1,29 @@
 package com.alveesdev.xmlcollector;
 
-import java.util.Map;
+import javafx.application.Application;
+import javafx.fxml.FXMLLoader;
+import javafx.scene.Scene;
+import javafx.stage.Stage;
 
-import com.alveesdev.xmlcollector.xmlconfig.XmlExtractor;
-import com.alveesdev.xmlcollector.xmlconfig.XmlProcessor;
+/**
+ * Ponto de entrada do programa. Só carrega a tela inicial (Scene1.fxml)
+ * e mostra a janela — toda a lógica fica no Controller e nos pacotes
+ * xmlconfig/model.
+ */
+public class Main extends Application {
 
-public class Main {
-	
-	public static void main(String[] args) throws Exception {
-        // Troque pelo caminho real do diretório com os XMLs
-        String caminhoDiretorio = "C:\\Users\\Gabriel\\Desktop\\xml\\Dia_01";
- 
-        Map<String, String> resultado =
-                XmlProcessor.collectXml(caminhoDiretorio, XmlExtractor::extrairNumeroNF);
- 
-        resultado.forEach((arquivo, numero) ->
-                System.out.println(arquivo + " -> NF: " + numero));
+    @Override
+    public void start(Stage stage) throws Exception {
+        FXMLLoader loader = new FXMLLoader(
+                getClass().getResource("/com/alveesdev/xmlcollector/view/MainScreenScene1.fxml"));
+        Scene scene = new Scene(loader.load());
+
+        stage.setTitle("Coletor XML");
+        stage.setScene(scene);
+        stage.show();
+    }
+
+    public static void main(String[] args) {
+        launch(args);
     }
 }

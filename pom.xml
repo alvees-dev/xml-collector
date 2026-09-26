@@ -5,4 +5,37 @@
 	<groupId>com.gabriel</groupId>
 	<artifactId>xml-collector</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
+
+	<properties>
+		<maven.compiler.release>17</maven.compiler.release>
+	</properties>
+
+	<dependencies>
+
+		<dependency>
+			<groupId>org.openjfx</groupId>
+			<artifactId>javafx-controls</artifactId>
+			<version>27</version>
+		</dependency>
+
+		<dependency>
+			<groupId>org.openjfx</groupId>
+			<artifactId>javafx-fxml</artifactId>
+			<version>27</version>
+		</dependency>
+
+	</dependencies>
+
+	<build>
+		<plugins>
+			<plugin>
+				<groupId>org.openjfx</groupId>
+				<artifactId>javafx-maven-plugin</artifactId>
+				<version>0.0.8</version>
+				<configuration>
+					<mainClass>com.alveesdev.xmlcollector.Main</mainClass>
+				</configuration>
+			</plugin>
+		</plugins>
+	</build>
 </project>

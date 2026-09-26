@@ -15,11 +15,11 @@ import org.w3c.dom.Document;
 public class XmlProcessor {
 	
 	public static <T> Map<String, T> collectXml(
-	        String diretorio, Function<Document, T> extrator) throws Exception {
+	        String directory, Function<Document, T> extractData) throws Exception {
 
 	    Map<String, T> xmlList = new LinkedHashMap<>();
 
-	    try (Stream<Path> xmlDirectory = Files.list(Paths.get(diretorio))) {
+	    try (Stream<Path> xmlDirectory = Files.list(Paths.get(directory))) {
 	    	
 	        List<Path> xmls = xmlDirectory
 	                .filter(p -> p.toString().toLowerCase().endsWith(".xml"))
@@ -30,7 +30,7 @@ public class XmlProcessor {
 
 	            try {
 	                Document xmlFile = XmlReader.loadXML(xml.toFile());
-	                xmlList.put(fileName, extrator.apply(xmlFile));
+	                xmlList.put(fileName, extractData.apply(xmlFile));
 	            } catch (Exception e) {
 	                System.err.println("Falha ao processar " + fileName + ": " + e.getMessage());
 	                xmlList.put(fileName, null);

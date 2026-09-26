@@ -5,9 +5,9 @@ import org.w3c.dom.NodeList;
 
 public class XmlExtractor {
 
-    public static String extrairNumeroNF(Document doc) {
+    public static String getNfNumber(Document file) {
     	
-        NodeList xmlList = doc.getElementsByTagName("nNF");
+        NodeList xmlList = file.getElementsByTagName("nNF");
         if (xmlList.getLength() > 0) {
             return xmlList.item(0).getTextContent().trim();
         }
