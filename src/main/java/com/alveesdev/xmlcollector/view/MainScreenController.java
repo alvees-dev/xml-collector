@@ -67,12 +67,16 @@ public class MainScreenController {
         try {
             Map<String, String> nfNumber =
                     XmlProcessor.collectXml(directory, XmlExtractor::getNfNumber);
+            
+            Map<String, String> nfSeries =
+                    XmlProcessor.collectXml(directory, XmlExtractor::getNfSeries);
 
             ObservableList<NfceRow> lines = FXCollections.observableArrayList();
            
             nfNumber.forEach((file, number) -> {
                 String accessKey = file.replaceFirst("(?i)\\.xml$", "");
-                lines.add(new NfceRow(number, "", accessKey));
+                String series = nfSeries.get(file);
+                lines.add(new NfceRow(number, series, accessKey));
             });
 
             tableView.setItems(lines);
