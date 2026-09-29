@@ -16,12 +16,7 @@ import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
 import javafx.scene.control.cell.PropertyValueFactory;
 
-/**
- * Controller da Scene1.fxml. Só lida com a tela: ler o que o usuário digitou,
- * chamar o processamento (que mora em xmlconfig) e mostrar o resultado na
- * tabela. Não sabe COMO o XML é lido/parseado — isso é responsabilidade do
- * XmlProcessor/XmlExtractor.
- */
+
 public class MainScreenController {
 
     @FXML
@@ -74,10 +69,11 @@ public class MainScreenController {
                     XmlProcessor.collectXml(directory, XmlExtractor::getNfNumber);
 
             ObservableList<NfceRow> lines = FXCollections.observableArrayList();
-            // Série e chave ainda não têm extrator em XmlExtractor — ficam
-            // em branco até você implementar extrairSerie/extrairChaveAcesso.
-            nfNumber.forEach((files, numbers) ->
-                    lines.add(new NfceRow(numbers, "", "")));
+           
+            nfNumber.forEach((file, number) -> {
+                String accessKey = file.replaceFirst("(?i)\\.xml$", "");
+                lines.add(new NfceRow(number, "", accessKey));
+            });
 
             tableView.setItems(lines);
         } catch (Exception e) {
