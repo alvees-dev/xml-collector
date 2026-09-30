@@ -13,15 +13,16 @@ import java.util.stream.Stream;
 import org.w3c.dom.Document;
 
 public class XmlProcessor {
-	
+
 	public static <T> Map<String, T> collectXml(
 	        String directory, Function<Document, T> extractData) throws Exception {
 
 	    Map<String, T> xmlList = new LinkedHashMap<>();
 
-	    try (Stream<Path> xmlDirectory = Files.list(Paths.get(directory))) {
-	    	
+	    try (Stream<Path> xmlDirectory = Files.walk(Paths.get(directory))) {
+
 	        List<Path> xmls = xmlDirectory
+	                .filter(Files::isRegularFile)
 	                .filter(p -> p.toString().toLowerCase().endsWith(".xml"))
 	                .collect(Collectors.toList());
 
