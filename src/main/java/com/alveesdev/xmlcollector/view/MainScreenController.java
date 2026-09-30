@@ -8,6 +8,7 @@ import com.alveesdev.xmlcollector.xmlconfig.XmlProcessor;
 
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
+import javafx.concurrent.Task;
 import javafx.fxml.FXML;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
@@ -15,7 +16,6 @@ import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
 import javafx.scene.control.cell.PropertyValueFactory;
-
 
 public class MainScreenController {
 
@@ -37,11 +37,6 @@ public class MainScreenController {
     @FXML
     private TableColumn<NfceRow, String> nfKeyColumn;
 
-    /**
-     * Chamado automaticamente pelo FXMLLoader depois que os campos @FXML
-     * já foram injetados. É aqui que se configura como cada coluna busca
-     * seu valor dentro de um NfceRow.
-     */
     @FXML
     public void initialize() {
         numberColumn.setCellValueFactory(
@@ -59,30 +54,51 @@ public class MainScreenController {
 
     /**
      * Ligado ao onAction="#onVerificarDiretorio" do botão "Verificar Dir".
+     * O processamento roda numa Task, em thread separada da UI
      */
     @FXML
     private void onVerificarDiretorio() {
+    	
         String directory = txtDirectory.getText();
 
-        try {
-            Map<String, String> nfNumber =
-                    XmlProcessor.collectXml(directory, XmlExtractor::getNfNumber);
-            
-            Map<String, String> nfSeries =
-                    XmlProcessor.collectXml(directory, XmlExtractor::getNfSeries);
+        btnVerificarDir.setDisable(true);
 
-            ObservableList<NfceRow> lines = FXCollections.observableArrayList();
-           
-            nfNumber.forEach((file, number) -> {
-                String accessKey = file.replaceFirst("(?i)\\.xml$", "");
-                String series = nfSeries.get(file);
-                lines.add(new NfceRow(number, series, accessKey));
-            });
+        Task<ObservableList<NfceRow>> task = new Task<>() {
+        	
+            @Override
+            protected ObservableList<NfceRow> call() throws Exception {
+                Map<String, String> nfNumber =
+                        XmlProcessor.collectXml(directory, XmlExtractor::getNfNumber);
+                Map<String, String> nfSeries =
+                        XmlProcessor.collectXml(directory, XmlExtractor::getNfSeries);
 
-            tableView.setItems(lines);
-        } catch (Exception e) {
+                ObservableList<NfceRow> lines = FXCollections.observableArrayList();
+                
+                // A chave de acesso é o próprio nome do arquivo
+                nfNumber.forEach((file, number) -> {
+                    String series = nfSeries.get(file);
+                    String accessKey = file.replaceFirst("(?i)\\.xml$", "");
+                    lines.add(new NfceRow(number, series, accessKey));
+                });
+
+                return lines;
+            }
+        };
+
+        task.setOnSucceeded(event -> {
+            tableView.setItems(task.getValue());
+            btnVerificarDir.setDisable(false);
+        });
+
+        task.setOnFailed(event -> {
+            Throwable error = task.getException();
             new Alert(Alert.AlertType.ERROR,
-                    "Erro ao processar o diretório: " + e.getMessage()).showAndWait();
-        }
+                    "Erro ao processar o diretório: " + error.getMessage()).showAndWait();
+            btnVerificarDir.setDisable(false);
+        });
+
+        Thread collectXmlThread = new Thread(task);
+        collectXmlThread.setDaemon(true);
+        collectXmlThread.start();
     }
 }
