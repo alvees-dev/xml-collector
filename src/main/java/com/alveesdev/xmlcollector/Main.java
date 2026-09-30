@@ -15,7 +15,7 @@ public class Main extends Application {
     @Override
     public void start(Stage stage) throws Exception {
         FXMLLoader loader = new FXMLLoader(
-                getClass().getResource("/com/alveesdev/xmlcollector/view/MainScreenScene1.fxml"));
+                getClass().getResource("/com/alveesdev/xmlcollector/view/MainScreenSceneV0.2.fxml"));
         Scene scene = new Scene(loader.load());
 
         stage.setTitle("Coletor XML");
