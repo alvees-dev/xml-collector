@@ -41,13 +41,10 @@
           <TableColumn fx:id="numberColumn" maxWidth="55.0" minWidth="55.0" prefWidth="55.0" text="NFCe" />
           <TableColumn fx:id="serieColumn" maxWidth="55.0" minWidth="55.0" prefWidth="55.0" text="SERIE" />
             <TableColumn prefWidth="75.0" text="VALOR" />
-            <TableColumn maxWidth="120.0" minWidth="120.0" prefWidth="120.0" text="DATA" />
+            <TableColumn fx:id="emissionDateColumn" maxWidth="120.0" minWidth="120.0" prefWidth="120.0" text="DATA" />
             <TableColumn fx:id="nfKeyColumn" maxWidth="420.0" minWidth="380.0" prefWidth="400.0" text="CHAVE" />
             <TableColumn maxWidth="80.0" minWidth="40.0" text="STATUS" />
         </columns>
-         <cursor>
-            <Cursor fx:constant="NW_RESIZE" />
-         </cursor>
       </TableView>
    </children>
 </VBox>
