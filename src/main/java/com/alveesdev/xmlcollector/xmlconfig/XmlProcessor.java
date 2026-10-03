@@ -27,7 +27,7 @@ public class XmlProcessor {
 	                .collect(Collectors.toList());
 
 	        for (Path xml : xmls) {
-	            String fileName = xml.getFileName().toString();
+	            String fileName = xml.getFileName().toString().replaceFirst("(?i)-nfe\\.xml$", "");
 
 	            try {
 	                Document xmlFile = XmlReader.loadXML(xml.toFile());

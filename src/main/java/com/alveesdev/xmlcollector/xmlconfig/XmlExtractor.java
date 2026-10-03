@@ -12,7 +12,7 @@ import org.w3c.dom.NodeList;
 
 public class XmlExtractor {
 
-	private static final DateTimeFormatter DISPLAY_DATE_FORMAT = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss");
+	private static final DateTimeFormatter DISPLAY_DATE_FORMAT = DateTimeFormatter.ofPattern("dd/MM/yy    HH:mm");
 	private static final NumberFormat DISPLAY_VALUE_FORMAT = NumberFormat.getCurrencyInstance(new Locale("pt", "BR"));
 
 	public static String getNfNumber(Document file) {
