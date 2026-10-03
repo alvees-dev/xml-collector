@@ -5,11 +5,6 @@ import javafx.fxml.FXMLLoader;
 import javafx.scene.Scene;
 import javafx.stage.Stage;
 
-/**
- * Ponto de entrada do programa. Só carrega a tela inicial (Scene1.fxml)
- * e mostra a janela — toda a lógica fica no Controller e nos pacotes
- * xmlconfig/model.
- */
 public class Main extends Application {
 
     @Override

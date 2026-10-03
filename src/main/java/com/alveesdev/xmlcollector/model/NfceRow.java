@@ -15,12 +15,14 @@ public class NfceRow {
 
     private final SimpleStringProperty number;
     private final SimpleStringProperty series;
+    private final SimpleStringProperty totalValue;
     private final SimpleStringProperty emissionDate;
     private final SimpleStringProperty accessKey;
 
-    public NfceRow(String number, String series, String emissionDate,String accessKey) {
+    public NfceRow(String number, String series, String totalValue, String emissionDate,String accessKey) {
         this.number = new SimpleStringProperty(number);
         this.series = new SimpleStringProperty(series);
+        this.totalValue = new SimpleStringProperty(totalValue);
         this.emissionDate = new SimpleStringProperty(emissionDate);
         this.accessKey = new SimpleStringProperty(accessKey);
     }
@@ -39,6 +41,14 @@ public class NfceRow {
 
     public SimpleStringProperty seriesProperty() {
         return series;
+    }
+    
+    public String getTotalValue() {
+    	return totalValue.get();
+    }
+    
+    public SimpleStringProperty totalValueProperty() {
+    	return totalValue;
     }
     
     public String getEmissionDate() {

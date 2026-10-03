@@ -33,6 +33,9 @@ public class MainScreenController {
 
 	@FXML
 	private TableColumn<NfceRow, String> serieColumn;
+	
+	@FXML
+	private TableColumn<NfceRow, String> totalValueColumn;
 
 	@FXML
 	private TableColumn<NfceRow, String> emissionDateColumn;
@@ -45,6 +48,8 @@ public class MainScreenController {
 		numberColumn.setCellValueFactory(new PropertyValueFactory<>("number"));
 
 		serieColumn.setCellValueFactory(new PropertyValueFactory<>("series"));
+		
+		totalValueColumn.setCellValueFactory(new PropertyValueFactory<>("totalValue"));
 
 		emissionDateColumn.setCellValueFactory(new PropertyValueFactory<>("emissionDate"));
 
@@ -71,6 +76,8 @@ public class MainScreenController {
 
 				Map<String, String> nfSeries = XmlProcessor.collectXml(directory, XmlExtractor::getNfSeries);
 				
+				Map<String, String> nfTotalValue = XmlProcessor.collectXml(directory, XmlExtractor::getNfTotalValue);
+				
 				Map<String, String> nfEmissionDate = XmlProcessor.collectXml(directory, XmlExtractor::getNfEmissionDate);
 
 				ObservableList<NfceRow> lines = FXCollections.observableArrayList();
@@ -78,9 +85,10 @@ public class MainScreenController {
 				// A chave de acesso é o próprio nome do arquivo
 				nfNumber.forEach((file, number) -> {
 					String series = nfSeries.get(file);
+					String totalValue = nfTotalValue.get(file);
 					String emissionDate = nfEmissionDate.get(file);
 					String accessKey = file.replaceFirst("(?i)\\.xml$", "");
-					lines.add(new NfceRow(number, series, emissionDate,accessKey));
+					lines.add(new NfceRow(number, series, totalValue, emissionDate,accessKey));
 				});
 
 				return lines;
