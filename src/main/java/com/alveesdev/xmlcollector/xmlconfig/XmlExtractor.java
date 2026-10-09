@@ -14,6 +14,7 @@ public class XmlExtractor {
 
 	private static final DateTimeFormatter DISPLAY_DATE_FORMAT = DateTimeFormatter.ofPattern("dd/MM/yy    HH:mm");
 	private static final NumberFormat DISPLAY_VALUE_FORMAT = NumberFormat.getCurrencyInstance(new Locale("pt", "BR"));
+	private static final String CANCEL_EVENT_TYPE = "110111";
 
 	public static String getNfNumber(Document file) {
 
@@ -70,4 +71,24 @@ public class XmlExtractor {
 			return value;
 		}
 	}
+	
+	public static String getCancelledNfKey(Document file) {
+		 
+    	NodeList xmlEventTypeList = file.getElementsByTagName("tpEvento");
+    	if (xmlEventTypeList.getLength() == 0) {
+    		return null;
+    	}
+ 
+    	String eventType = xmlEventTypeList.item(0).getTextContent().trim();
+    	if (!CANCEL_EVENT_TYPE.equals(eventType)) {
+    		return null;
+    	}
+ 
+    	NodeList xmlKeyList = file.getElementsByTagName("chNFe");
+    	if (xmlKeyList.getLength() == 0) {
+    		return null;
+    	}
+ 
+    	return xmlKeyList.item(0).getTextContent().trim();
+    }
 }
