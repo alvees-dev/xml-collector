@@ -2,15 +2,6 @@ package com.alveesdev.xmlcollector.model;
 
 import javafx.beans.property.SimpleStringProperty;
 
-/**
- * Represents a TableView row: the three fields shown per invoice
- * (number, series, access key). It's the "bridge" between the data
- * extracted from the XML (xmlconfig package) and what the screen shows.
- *
- * Uses JavaFX properties (SimpleStringProperty) instead of plain String
- * fields because that's the format TableColumn.setCellValueFactory
- * expects to display (and, in the future, edit) values in the table.
- */
 public class NfceRow {
 
     private final SimpleStringProperty number;
@@ -18,13 +9,15 @@ public class NfceRow {
     private final SimpleStringProperty totalValue;
     private final SimpleStringProperty emissionDate;
     private final SimpleStringProperty accessKey;
+    private final SimpleStringProperty status;
 
-    public NfceRow(String number, String series, String totalValue, String emissionDate,String accessKey) {
+    public NfceRow(String number, String series, String totalValue, String emissionDate,String accessKey, String status) {
         this.number = new SimpleStringProperty(number);
         this.series = new SimpleStringProperty(series);
         this.totalValue = new SimpleStringProperty(totalValue);
         this.emissionDate = new SimpleStringProperty(emissionDate);
         this.accessKey = new SimpleStringProperty(accessKey);
+        this.status = new SimpleStringProperty(status);
     }
 
     public String getNumber() {
@@ -65,5 +58,13 @@ public class NfceRow {
 
     public SimpleStringProperty accessKeyProperty() {
         return accessKey;
+    }
+    
+    public String getStatus() {
+    	return status.get();
+    }
+    
+    public SimpleStringProperty statusProperty() {
+    	return status;
     }
 }
