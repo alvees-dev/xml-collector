@@ -1,8 +1,11 @@
 package com.alveesdev.xmlcollector.view;
 
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 import com.alveesdev.xmlcollector.model.NfceRow;
+import com.alveesdev.xmlcollector.xmlconfig.XmlCancelReader;
 import com.alveesdev.xmlcollector.xmlconfig.XmlExtractor;
 import com.alveesdev.xmlcollector.xmlconfig.XmlProcessor;
 
@@ -42,6 +45,9 @@ public class MainScreenController {
 
 	@FXML
 	private TableColumn<NfceRow, String> nfKeyColumn;
+	
+	@FXML
+	private TableColumn<NfceRow, String> statusColumn;
 
 	@FXML
 	public void initialize() {
@@ -54,12 +60,10 @@ public class MainScreenController {
 		emissionDateColumn.setCellValueFactory(new PropertyValueFactory<>("emissionDate"));
 
 		nfKeyColumn.setCellValueFactory(new PropertyValueFactory<>("accessKey"));
+		
+		statusColumn.setCellValueFactory(new PropertyValueFactory<>("status"));
 	}
 
-	/**
-	 * Ligado ao onAction="#onVerificarDiretorio" do botão "Verificar Dir". O
-	 * processamento roda numa Task, em thread separada da UI
-	 */
 	@FXML
 	private void onVerificarDiretorio() {
 
@@ -79,16 +83,40 @@ public class MainScreenController {
 				Map<String, String> nfTotalValue = XmlProcessor.collectXml(directory, XmlExtractor::getNfTotalValue);
 				
 				Map<String, String> nfEmissionDate = XmlProcessor.collectXml(directory, XmlExtractor::getNfEmissionDate);
-
+				
+				Map<String, String> nfStatus = XmlProcessor.collectXml(directory, XmlCancelReader::getCancelledNfKey);
+				
+				Set<String> cancelEventFiles = new HashSet<>();
+				Set<String> cancelledKeys = new HashSet<>();
+				nfStatus.forEach((file, cancelledKey) -> {
+					if(cancelledKey != null) {
+						cancelEventFiles.add(file);
+						cancelledKeys.add(cancelledKey);
+					}
+				});
+						
 				ObservableList<NfceRow> lines = FXCollections.observableArrayList();
 
 				// A chave de acesso é o próprio nome do arquivo
 				nfNumber.forEach((file, number) -> {
+					
+					if (cancelEventFiles.contains(file)) {
+						return;
+					}
+					
 					String series = nfSeries.get(file);
 					String totalValue = nfTotalValue.get(file);
 					String emissionDate = nfEmissionDate.get(file);
 					String accessKey = file.replaceFirst("(?i)\\.xml$", "");
-					lines.add(new NfceRow(number, series, totalValue, emissionDate,accessKey));
+					
+					String status;
+					
+					if(number == null) {
+						status = "Erro na Leitura";
+					}else {
+						status = cancelledKeys.contains(accessKey) ? "Cancelada" : "Enviada";
+					}
+ 					lines.add(new NfceRow(number, series, totalValue, emissionDate,accessKey, status));
 				});
 
 				return lines;

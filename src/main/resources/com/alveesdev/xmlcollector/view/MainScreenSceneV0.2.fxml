@@ -42,7 +42,7 @@
             <TableColumn fx:id="totalValueColumn" prefWidth="75.0" text="VALOR" />
             <TableColumn fx:id="emissionDateColumn" maxWidth="120.0" minWidth="120.0" prefWidth="120.0" text="DATA" />
             <TableColumn fx:id="nfKeyColumn" maxWidth="360.0" minWidth="360.0" prefWidth="360.0" text="CHAVE" />
-            <TableColumn maxWidth="112.666748046875" minWidth="40.0" prefWidth="102.666748046875" text="STATUS" />
+            <TableColumn fx:id="statusColumn" maxWidth="112.666748046875" minWidth="40.0" prefWidth="102.666748046875" text="STATUS" />
         </columns>
       </TableView>
    </children>
