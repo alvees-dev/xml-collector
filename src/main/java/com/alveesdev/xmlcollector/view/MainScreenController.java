@@ -5,9 +5,9 @@ import java.util.Map;
 import java.util.Set;
 
 import com.alveesdev.xmlcollector.model.NfceRow;
-import com.alveesdev.xmlcollector.xmlconfig.XmlCancelReader;
-import com.alveesdev.xmlcollector.xmlconfig.XmlExtractor;
+import com.alveesdev.xmlcollector.xmlconfig.NfceFileData;
 import com.alveesdev.xmlcollector.xmlconfig.XmlProcessor;
+import com.alveesdev.xmlcollector.xmlconfig.XmlRowReader;
 
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -36,7 +36,7 @@ public class MainScreenController {
 
 	@FXML
 	private TableColumn<NfceRow, String> serieColumn;
-	
+
 	@FXML
 	private TableColumn<NfceRow, String> totalValueColumn;
 
@@ -45,7 +45,7 @@ public class MainScreenController {
 
 	@FXML
 	private TableColumn<NfceRow, String> nfKeyColumn;
-	
+
 	@FXML
 	private TableColumn<NfceRow, String> statusColumn;
 
@@ -54,13 +54,13 @@ public class MainScreenController {
 		numberColumn.setCellValueFactory(new PropertyValueFactory<>("number"));
 
 		serieColumn.setCellValueFactory(new PropertyValueFactory<>("series"));
-		
+
 		totalValueColumn.setCellValueFactory(new PropertyValueFactory<>("totalValue"));
 
 		emissionDateColumn.setCellValueFactory(new PropertyValueFactory<>("emissionDate"));
 
 		nfKeyColumn.setCellValueFactory(new PropertyValueFactory<>("accessKey"));
-		
+
 		statusColumn.setCellValueFactory(new PropertyValueFactory<>("status"));
 	}
 
@@ -76,47 +76,48 @@ public class MainScreenController {
 			@Override
 			protected ObservableList<NfceRow> call() throws Exception {
 
-				Map<String, String> nfNumber = XmlProcessor.collectXml(directory, XmlExtractor::getNfNumber);
+				Map<String, NfceFileData> allData = XmlProcessor.collectXml(directory, XmlRowReader::read);
 
-				Map<String, String> nfSeries = XmlProcessor.collectXml(directory, XmlExtractor::getNfSeries);
-				
-				Map<String, String> nfTotalValue = XmlProcessor.collectXml(directory, XmlExtractor::getNfTotalValue);
-				
-				Map<String, String> nfEmissionDate = XmlProcessor.collectXml(directory, XmlExtractor::getNfEmissionDate);
-				
-				Map<String, String> nfStatus = XmlProcessor.collectXml(directory, XmlCancelReader::getCancelledNfKey);
-				
 				Set<String> cancelEventFiles = new HashSet<>();
 				Set<String> cancelledKeys = new HashSet<>();
-				nfStatus.forEach((file, cancelledKey) -> {
-					if(cancelledKey != null) {
+				allData.forEach((file, data) -> {
+					if (data != null && data.cancelledKey() != null) {
 						cancelEventFiles.add(file);
-						cancelledKeys.add(cancelledKey);
+						cancelledKeys.add(data.cancelledKey());
 					}
 				});
-						
+
 				ObservableList<NfceRow> lines = FXCollections.observableArrayList();
 
-				// A chave de acesso é o próprio nome do arquivo
-				nfNumber.forEach((file, number) -> {
-					
+				allData.forEach((file, data) -> {
+
 					if (cancelEventFiles.contains(file)) {
 						return;
 					}
-					
-					String series = nfSeries.get(file);
-					String totalValue = nfTotalValue.get(file);
-					String emissionDate = nfEmissionDate.get(file);
+
 					String accessKey = file.replaceFirst("(?i)\\.xml$", "");
-					
+
+					String number;
+					String series;
+					String totalValue;
+					String emissionDate;
 					String status;
-					
-					if(number == null) {
+
+					if (data == null) {
+						number = null;
+						series = null;
+						totalValue = null;
+						emissionDate = null;
 						status = "Erro na Leitura";
-					}else {
+					} else {
+						number = data.number();
+						series = data.series();
+						totalValue = data.totalValue();
+						emissionDate = data.emissionDate();
 						status = cancelledKeys.contains(accessKey) ? "Cancelada" : "Enviada";
 					}
- 					lines.add(new NfceRow(number, series, totalValue, emissionDate,accessKey, status));
+
+					lines.add(new NfceRow(number, series, totalValue, emissionDate, accessKey, status));
 				});
 
 				return lines;
