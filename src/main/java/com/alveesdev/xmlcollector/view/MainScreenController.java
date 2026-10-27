@@ -1,5 +1,6 @@
 package com.alveesdev.xmlcollector.view;
 
+import java.io.IOException;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
@@ -13,12 +14,16 @@ import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.concurrent.Task;
 import javafx.fxml.FXML;
+import javafx.fxml.FXMLLoader;
+import javafx.scene.Scene;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
 import javafx.scene.control.cell.PropertyValueFactory;
+import javafx.stage.Modality;
+import javafx.stage.Stage;
 
 public class MainScreenController {
 
@@ -138,5 +143,27 @@ public class MainScreenController {
 		Thread collectXmlThread = new Thread(task);
 		collectXmlThread.setDaemon(true);
 		collectXmlThread.start();
+	}
+	
+	@FXML
+	private void onOpenSettings() {
+		try {
+			FXMLLoader loader = new FXMLLoader(
+					getClass().getResource("/com/alveesdev/xmlcollector/view/SettingsV0.1.fxml"));
+			Scene scene = new Scene(loader.load());
+
+			Stage settingsStage = new Stage();
+			settingsStage.setTitle("Configurações");
+			settingsStage.setScene(scene);
+			settingsStage.setResizable(false);
+
+			// Modal: blocks the main window until settings are closed
+			settingsStage.initModality(Modality.APPLICATION_MODAL);
+			settingsStage.initOwner(tableView.getScene().getWindow());
+
+			settingsStage.showAndWait();
+		} catch (IOException e) {
+			new Alert(Alert.AlertType.ERROR, "Erro ao abrir as configurações: " + e.getMessage()).showAndWait();
+		}
 	}
 }
