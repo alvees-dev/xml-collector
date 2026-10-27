@@ -16,12 +16,11 @@ public class MissingNumberFinder {
 	private record SeriesNumber(int series, int number) {
 	}
 
-	public static List<String> findMissing(Map<String, NfceFileData> allData) {
+	public static Map<Integer, List<String>> findMissingBySeries(Map<String, NfceFileData> allData) {
 
 		Map<Integer, TreeSet<Integer>> numbersBySeries = new TreeMap<>();
 
 		allData.forEach((fileName, data) -> {
-			// A cancellation event file is not an invoice: it has no number of its own
 			if (data != null && data.cancelledKey() != null) {
 				return;
 			}
@@ -34,17 +33,36 @@ public class MissingNumberFinder {
 			}
 		});
 
-		boolean multipleSeries = numbersBySeries.size() > 1;
-		List<String> missing = new ArrayList<>();
+		Map<Integer, List<String>> missingBySeries = new TreeMap<>();
 
 		numbersBySeries.forEach((series, numbers) -> {
+			List<String> ranges = new ArrayList<>();
 			Integer previous = null;
 
 			for (int number : numbers) {
 				if (previous != null && number - previous > 1) {
-					missing.add(formatRange(series, previous + 1, number - 1, multipleSeries));
+					ranges.add(formatRange(previous + 1, number - 1));
 				}
 				previous = number;
+			}
+
+			missingBySeries.put(series, ranges);
+		});
+
+		return missingBySeries;
+	}
+
+
+	public static List<String> findMissing(Map<String, NfceFileData> allData) {
+
+		Map<Integer, List<String>> missingBySeries = findMissingBySeries(allData);
+		boolean multipleSeries = missingBySeries.size() > 1;
+
+		List<String> missing = new ArrayList<>();
+
+		missingBySeries.forEach((series, ranges) -> {
+			for (String range : ranges) {
+				missing.add(multipleSeries ? "S" + series + ": " + range : range);
 			}
 		});
 
@@ -85,8 +103,7 @@ public class MissingNumberFinder {
 		}
 	}
 
-	private static String formatRange(int series, int start, int end, boolean showSeries) {
-		String range = start == end ? String.valueOf(start) : start + " a " + end;
-		return showSeries ? "S" + series + ": " + range : range;
+	private static String formatRange(int start, int end) {
+		return start == end ? String.valueOf(start) : start + " a " + end;
 	}
 }

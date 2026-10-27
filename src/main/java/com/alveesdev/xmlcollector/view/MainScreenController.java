@@ -35,16 +35,12 @@ import javafx.stage.StageStyle;
 
 public class MainScreenController {
 
-	// Must match the exact file name inside src/main/resources
 	private static final String SETTINGS_FXML = "/com/alveesdev/xmlcollector/view/SettingsV0.1.fxml";
 
 	private static final double MISSING_COLUMN_WIDTH = 110;
 
-	/** What one collection run produces, ready to be shown on screen. */
-	private record CollectionResult(
-			ObservableList<NfceRow> lines,
-			ObservableList<ObservableList<String>> missingRows,
-			List<String> failures) {
+	private record CollectionResult(ObservableList<NfceRow> lines, List<String> missingHeaders,
+			ObservableList<ObservableList<String>> missingRows, List<String> failures) {
 	}
 
 	@FXML
@@ -77,9 +73,10 @@ public class MainScreenController {
 	@FXML
 	private TableColumn<NfceRow, String> statusColumn;
 
-	// Each row holds one cell per PDV column (same order as the PDVs in the settings)
 	@FXML
 	private TableView<ObservableList<String>> missingTableView;
+
+	private boolean missingShowsSeries = false;
 
 	@FXML
 	public void initialize() {
@@ -98,23 +95,22 @@ public class MainScreenController {
 		refreshMissingColumns();
 	}
 
-	/** Rebuilds the "Faltantes" columns: one per PDV configured in the settings. */
-	private void refreshMissingColumns() {
-		int pdvCount = AppSettings.getInstance().getPdvCount();
-
-		// Same number of PDVs: keep the columns and the results already shown
-		if (missingTableView.getColumns().size() == pdvCount) {
-			return;
+	private static List<String> pdvHeaders(int pdvCount) {
+		List<String> headers = new ArrayList<>();
+		for (int number = 1; number <= pdvCount; number++) {
+			headers.add(String.format("PDV%02d", number));
 		}
+		return headers;
+	}
 
+	private void showMissingColumns(List<String> headers) {
 		missingTableView.getColumns().clear();
 		missingTableView.getItems().clear();
 
-		for (int number = 1; number <= pdvCount; number++) {
-			final int columnIndex = number - 1;
+		for (int index = 0; index < headers.size(); index++) {
+			final int columnIndex = index;
 
-			TableColumn<ObservableList<String>, String> column =
-					new TableColumn<>(String.format("PDV%02d", number));
+			TableColumn<ObservableList<String>, String> column = new TableColumn<>(headers.get(index));
 			column.setPrefWidth(MISSING_COLUMN_WIDTH);
 			column.setCellValueFactory(cell -> {
 				ObservableList<String> row = cell.getValue();
@@ -123,6 +119,20 @@ public class MainScreenController {
 
 			missingTableView.getColumns().add(column);
 		}
+	}
+
+	private void refreshMissingColumns() {
+		if (missingShowsSeries) {
+			return;
+		}
+
+		int pdvCount = AppSettings.getInstance().getPdvCount();
+
+		if (missingTableView.getColumns().size() == pdvCount) {
+			return;
+		}
+
+		showMissingColumns(pdvHeaders(pdvCount));
 	}
 
 	@FXML
@@ -138,18 +148,16 @@ public class MainScreenController {
 			Scene scene = new Scene(new FXMLLoader(fxmlLocation).load());
 
 			Stage settingsStage = new Stage();
-			settingsStage.initStyle(StageStyle.UNDECORATED); // no OS title bar
+			settingsStage.initStyle(StageStyle.UNDECORATED);
 			settingsStage.setTitle("Configurações");
 			settingsStage.setScene(scene);
 			settingsStage.setResizable(false);
 
-			// Modal: blocks the main window until settings are closed
 			settingsStage.initModality(Modality.APPLICATION_MODAL);
 			settingsStage.initOwner(tableView.getScene().getWindow());
 
 			settingsStage.showAndWait();
 
-			// The PDV list may have changed while the settings were open
 			refreshMissingColumns();
 
 		} catch (IOException e) {
@@ -160,8 +168,6 @@ public class MainScreenController {
 	@FXML
 	private void onVerificarDiretorio() {
 
-		// "Caminho PDV": reads every PDV directory from the settings.
-		// Otherwise: reads only the directory typed in the text field.
 		boolean pdvMode = RadioButtonColetaXMLCaminhoPDV.isSelected();
 
 		if (!pdvMode && txtDirectory.getText().isBlank()) {
@@ -169,8 +175,7 @@ public class MainScreenController {
 			return;
 		}
 
-		List<String> directories = pdvMode
-				? AppSettings.getInstance().getPdvDirectories()
+		List<String> directories = pdvMode ? AppSettings.getInstance().getPdvDirectories()
 				: List.of(txtDirectory.getText());
 
 		btnVerificarDir.setDisable(true);
@@ -183,16 +188,22 @@ public class MainScreenController {
 				ObservableList<NfceRow> lines = FXCollections.observableArrayList();
 				List<String> failures = new ArrayList<>();
 
-				// Single directory: same behavior as before, no missing-numbers columns
 				if (!pdvMode) {
-					Map<String, NfceFileData> allData =
-							XmlProcessor.collectXml(directories.get(0), XmlRowReader::read);
+					Map<String, NfceFileData> allData = XmlProcessor.collectXml(directories.get(0), XmlRowReader::read);
 
 					lines.addAll(buildRows(allData));
-					return new CollectionResult(lines, FXCollections.observableArrayList(), failures);
+
+					List<String> seriesHeaders = new ArrayList<>();
+					List<List<String>> missingBySeries = new ArrayList<>();
+
+					MissingNumberFinder.findMissingBySeries(allData).forEach((series, ranges) -> {
+						seriesHeaders.add("SERIE " + series);
+						missingBySeries.add(ranges);
+					});
+
+					return new CollectionResult(lines, seriesHeaders, buildMissingRows(missingBySeries), failures);
 				}
 
-				// One entry per PDV, in the same order as the columns
 				List<List<String>> missingByPdv = new ArrayList<>();
 
 				for (int i = 0; i < directories.size(); i++) {
@@ -206,12 +217,8 @@ public class MainScreenController {
 					}
 
 					try {
-						// Single pass over the directory: each file is read and
-						// parsed once (XmlReader), and XmlRowReader extracts from it
-						// everything needed (number, series, value, date and
-						// cancellation status) in the same read.
-						Map<String, NfceFileData> allData =
-								XmlProcessor.collectXml(pdvDirectory, XmlRowReader::read);
+
+						Map<String, NfceFileData> allData = XmlProcessor.collectXml(pdvDirectory, XmlRowReader::read);
 
 						lines.addAll(buildRows(allData));
 						missingByPdv.add(MissingNumberFinder.findMissing(allData));
@@ -222,7 +229,8 @@ public class MainScreenController {
 					}
 				}
 
-				return new CollectionResult(lines, buildMissingRows(missingByPdv), failures);
+				return new CollectionResult(lines, pdvHeaders(directories.size()), buildMissingRows(missingByPdv),
+						failures);
 			}
 		};
 
@@ -230,7 +238,11 @@ public class MainScreenController {
 			CollectionResult result = task.getValue();
 
 			tableView.setItems(result.lines());
+
+			missingShowsSeries = !pdvMode;
+			showMissingColumns(result.missingHeaders());
 			missingTableView.setItems(result.missingRows());
+
 			btnVerificarDir.setDisable(false);
 
 			if (!result.failures().isEmpty()) {
@@ -251,7 +263,6 @@ public class MainScreenController {
 		collectXmlThread.start();
 	}
 
-	/** Turns the data read from one directory into table rows for the NFCe tab. */
 	private static List<NfceRow> buildRows(Map<String, NfceFileData> allData) {
 
 		Set<String> cancelEventFiles = new HashSet<>();
@@ -265,11 +276,8 @@ public class MainScreenController {
 
 		List<NfceRow> lines = new ArrayList<>();
 
-		// The access key is the file name itself
 		allData.forEach((file, data) -> {
-			// A cancellation event file is not an invoice: it must not
-			// become its own table row, it only marks the status of the
-			// original invoice it references (via cancelledKeys).
+
 			if (cancelEventFiles.contains(file)) {
 				return;
 			}
@@ -302,18 +310,17 @@ public class MainScreenController {
 		return lines;
 	}
 
-	/** Lays the missing ranges of each PDV side by side: one column per PDV. */
-	private static ObservableList<ObservableList<String>> buildMissingRows(List<List<String>> missingByPdv) {
+	private static ObservableList<ObservableList<String>> buildMissingRows(List<List<String>> missingByColumn) {
 
-		int maxRows = missingByPdv.stream().mapToInt(List::size).max().orElse(0);
+		int maxRows = missingByColumn.stream().mapToInt(List::size).max().orElse(0);
 
 		ObservableList<ObservableList<String>> rows = FXCollections.observableArrayList();
 
 		for (int rowIndex = 0; rowIndex < maxRows; rowIndex++) {
 			ObservableList<String> row = FXCollections.observableArrayList();
 
-			for (List<String> pdvMissing : missingByPdv) {
-				row.add(rowIndex < pdvMissing.size() ? pdvMissing.get(rowIndex) : "");
+			for (List<String> columnMissing : missingByColumn) {
+				row.add(rowIndex < columnMissing.size() ? columnMissing.get(rowIndex) : "");
 			}
 
 			rows.add(row);
