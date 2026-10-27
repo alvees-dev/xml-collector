@@ -22,8 +22,8 @@
         <menus>
           <Menu mnemonicParsing="false" text="Arquivo">
             <items>
-				<MenuItem mnemonicParsing="false" onAction="#onOpenSettings" text="Configurações" /> 
-             <MenuItem mnemonicParsing="false" text="Sair" />
+                  <MenuItem mnemonicParsing="false" onAction="#onOpenSettings" text="Configurações" />
+              <MenuItem mnemonicParsing="false" text="Sair" />
             </items>
           </Menu>
           <Menu mnemonicParsing="false" text="Ajuda">
@@ -49,7 +49,7 @@
                                     <ToggleGroup fx:id="DiretorioDeColeta" />
                                  </toggleGroup>
                               </RadioButton>
-                              <RadioButton fx:id="RadioButtonColetaXMLDiretorioUnico" mnemonicParsing="false" onAction="#initialize" text="Diretório Único" toggleGroup="$DiretorioDeColeta">
+                              <RadioButton fx:id="RadioButtonColetaXMLDiretorioUnico" mnemonicParsing="false" text="Diretório Único" toggleGroup="$DiretorioDeColeta">
                                  <HBox.margin>
                                     <Insets left="-95.0" top="41.0" />
                                  </HBox.margin>
@@ -88,11 +88,7 @@
                   <VBox maxHeight="785.0" prefHeight="450.0" prefWidth="785.0">
                      <children>
                         <HBox minHeight="0.0" minWidth="0.0" prefHeight="0.0" prefWidth="785.0" VBox.vgrow="ALWAYS" />
-                        <TableView minHeight="-Infinity" prefHeight="350.0" prefWidth="785.0" VBox.vgrow="ALWAYS">
-                          <columns>
-                            <TableColumn prefWidth="75.0" text="PDV01" />
-                            <TableColumn prefWidth="75.0" text="PDV02" />
-                          </columns>
+                        <TableView fx:id="missingTableView" minHeight="-Infinity" prefHeight="350.0" prefWidth="785.0" VBox.vgrow="ALWAYS">
                            <VBox.margin>
                               <Insets top="100.0" />
                            </VBox.margin>
