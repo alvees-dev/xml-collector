@@ -10,15 +10,16 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import com.alveesdev.xmlcollector.AppPaths;
-import com.alveesdev.xmlcollector.model.AppSettings;
+import com.alveesdev.xmlcollector.config.AppPaths;
+import com.alveesdev.xmlcollector.config.AppSettings;
+import com.alveesdev.xmlcollector.config.OrganizeMode;
+import com.alveesdev.xmlcollector.model.NfceFileData;
 import com.alveesdev.xmlcollector.model.NfceRow;
-import com.alveesdev.xmlcollector.model.OrganizeMode;
-import com.alveesdev.xmlcollector.xmlconfig.MissingNumberFinder;
-import com.alveesdev.xmlcollector.xmlconfig.NfceFileData;
-import com.alveesdev.xmlcollector.xmlconfig.XmlOrganizer;
-import com.alveesdev.xmlcollector.xmlconfig.XmlProcessor;
-import com.alveesdev.xmlcollector.xmlconfig.XmlRowReader;
+import com.alveesdev.xmlcollector.service.MissingNumberFinder;
+import com.alveesdev.xmlcollector.service.PeriodFilter;
+import com.alveesdev.xmlcollector.service.XmlOrganizer;
+import com.alveesdev.xmlcollector.xml.XmlProcessor;
+import com.alveesdev.xmlcollector.xml.XmlRowReader;
 
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
@@ -49,7 +50,8 @@ public class MainScreenController {
 			ObservableList<NfceRow> lines,
 			List<String> missingHeaders,
 			ObservableList<ObservableList<String>> missingRows,
-			List<String> failures) {
+			List<String> failures,
+			XmlOrganizer.CopyReport copyReport) {
 	}
 
 	@FXML
@@ -66,9 +68,6 @@ public class MainScreenController {
 
 	@FXML
 	private DatePicker dpTo;
-
-	@FXML
-	private Button btnCopiarXml;
 
 	@FXML
 	private TableView<NfceRow> tableView;
@@ -200,6 +199,14 @@ public class MainScreenController {
 	@FXML
 	private void onVerificarDiretorio() {
 
+		LocalDate from = dpFrom.getValue();
+		LocalDate to = dpTo.getValue();
+
+		if (from == null || to == null || from.isAfter(to)) {
+			new Alert(Alert.AlertType.WARNING, "Informe um período válido (De / Até).").showAndWait();
+			return;
+		}
+
 		boolean pdvMode = RadioButtonColetaXMLCaminhoPDV.isSelected();
 
 		if (!pdvMode && txtDirectory.getText().isBlank()) {
@@ -208,6 +215,8 @@ public class MainScreenController {
 		}
 
 		List<String> directories = resolveDirectories(pdvMode);
+		OrganizeMode mode = AppSettings.getInstance().getOrganizeMode();
+		Path archiveRoot = AppPaths.fromJarLocation().xmlArchiveDir();
 
 		btnVerificarDir.setDisable(true);
 
@@ -218,22 +227,30 @@ public class MainScreenController {
 
 				ObservableList<NfceRow> lines = FXCollections.observableArrayList();
 				List<String> failures = new ArrayList<>();
+				XmlOrganizer.CopyReport copyReport = new XmlOrganizer.CopyReport();
 
 				if (!pdvMode) {
-					Map<String, NfceFileData> allData =
-							XmlProcessor.collectXml(directories.get(0), XmlRowReader::read);
+					String directory = directories.get(0);
 
-					lines.addAll(buildRows(allData));
+					Map<String, NfceFileData> allData =
+							XmlProcessor.collectXml(directory, XmlRowReader::read);
+
+					lines.addAll(buildRows(allData, from, to));
+
+					Map<String, NfceFileData> periodData = PeriodFilter.filter(allData, from, to);
+
+					XmlOrganizer.copyDirectory(Path.of(directory), from, to, archiveRoot, mode, copyReport);
 
 					List<String> seriesHeaders = new ArrayList<>();
 					List<List<String>> missingBySeries = new ArrayList<>();
 
-					MissingNumberFinder.findMissingBySeries(allData).forEach((series, ranges) -> {
+					MissingNumberFinder.findMissingBySeries(periodData).forEach((series, ranges) -> {
 						seriesHeaders.add("SERIE " + series);
 						missingBySeries.add(ranges);
 					});
 
-					return new CollectionResult(lines, seriesHeaders, buildMissingRows(missingBySeries), failures);
+					return new CollectionResult(lines, seriesHeaders, buildMissingRows(missingBySeries),
+							failures, copyReport);
 				}
 
 				List<List<String>> missingByPdv = new ArrayList<>();
@@ -252,8 +269,14 @@ public class MainScreenController {
 						Map<String, NfceFileData> allData =
 								XmlProcessor.collectXml(pdvDirectory, XmlRowReader::read);
 
-						lines.addAll(buildRows(allData));
-						missingByPdv.add(MissingNumberFinder.findMissing(allData));
+						List<NfceRow> pdvLines = buildRows(allData, from, to);
+						List<String> pdvMissing =
+								MissingNumberFinder.findMissing(PeriodFilter.filter(allData, from, to));
+
+						XmlOrganizer.copyDirectory(Path.of(pdvDirectory), from, to, archiveRoot, mode, copyReport);
+
+						lines.addAll(pdvLines);
+						missingByPdv.add(pdvMissing);
 
 					} catch (Exception e) {
 						failures.add(pdvLabel + ": diretório inacessível (" + pdvDirectory + ")");
@@ -262,7 +285,7 @@ public class MainScreenController {
 				}
 
 				return new CollectionResult(lines, pdvHeaders(directories.size()),
-						buildMissingRows(missingByPdv), failures);
+						buildMissingRows(missingByPdv), failures, copyReport);
 			}
 		};
 
@@ -277,11 +300,27 @@ public class MainScreenController {
 
 			btnVerificarDir.setDisable(false);
 
-			if (!result.failures().isEmpty()) {
-				new Alert(Alert.AlertType.WARNING,
-						"Não foi possível ler os seguintes PDVs:\n\n" + String.join("\n", result.failures()))
-						.showAndWait();
+			XmlOrganizer.CopyReport report = result.copyReport();
+
+			List<String> allFailures = new ArrayList<>(result.failures());
+			allFailures.addAll(report.getFailures());
+
+			StringBuilder message = new StringBuilder();
+			message.append("Copiados: ").append(report.getCopied());
+			message.append("\nJá existiam no destino: ").append(report.getAlreadyExisting());
+			message.append("\nFora do período: ").append(report.getOutOfPeriod());
+			message.append("\nSem data ou ilegíveis: ").append(report.getUnreadable());
+			message.append("\n\nDestino: ").append(archiveRoot);
+
+			if (!allFailures.isEmpty()) {
+				message.append("\n\nFalhas:\n").append(String.join("\n", allFailures));
 			}
+
+			Alert alert = new Alert(
+					allFailures.isEmpty() ? Alert.AlertType.INFORMATION : Alert.AlertType.WARNING,
+					message.toString());
+			alert.setHeaderText("Coleta concluída");
+			alert.showAndWait();
 		});
 
 		task.setOnFailed(event -> {
@@ -295,91 +334,7 @@ public class MainScreenController {
 		collectXmlThread.start();
 	}
 
-	@FXML
-	private void onCopiarXml() {
-
-		LocalDate from = dpFrom.getValue();
-		LocalDate to = dpTo.getValue();
-
-		if (from == null || to == null || from.isAfter(to)) {
-			new Alert(Alert.AlertType.WARNING, "Informe um período válido (De / Até).").showAndWait();
-			return;
-		}
-
-		boolean pdvMode = RadioButtonColetaXMLCaminhoPDV.isSelected();
-
-		if (!pdvMode && txtDirectory.getText().isBlank()) {
-			new Alert(Alert.AlertType.WARNING, "Informe o diretório a ser copiado.").showAndWait();
-			return;
-		}
-
-		List<String> directories = resolveDirectories(pdvMode);
-		OrganizeMode mode = AppSettings.getInstance().getOrganizeMode();
-		Path archiveRoot = AppPaths.fromJarLocation().xmlArchiveDir();
-
-		btnCopiarXml.setDisable(true);
-
-		Task<XmlOrganizer.CopyReport> task = new Task<>() {
-
-			@Override
-			protected XmlOrganizer.CopyReport call() {
-
-				XmlOrganizer.CopyReport report = new XmlOrganizer.CopyReport();
-
-				for (int i = 0; i < directories.size(); i++) {
-					String label = pdvMode ? String.format("PDV %02d", i + 1) : "Diretório";
-					String directory = directories.get(i);
-
-					if (directory.isBlank()) {
-						report.addFailure(label + ": diretório não informado");
-						continue;
-					}
-
-					try {
-						XmlOrganizer.copyDirectory(Path.of(directory), from, to, archiveRoot, mode, report);
-					} catch (Exception e) {
-						report.addFailure(label + ": diretório inacessível (" + directory + ")");
-					}
-				}
-
-				return report;
-			}
-		};
-
-		task.setOnSucceeded(event -> {
-			XmlOrganizer.CopyReport report = task.getValue();
-			btnCopiarXml.setDisable(false);
-
-			StringBuilder message = new StringBuilder();
-			message.append("Copiados: ").append(report.getCopied());
-			message.append("\nJá existiam no destino: ").append(report.getAlreadyExisting());
-			message.append("\nFora do período: ").append(report.getOutOfPeriod());
-			message.append("\nSem data ou ilegíveis: ").append(report.getUnreadable());
-			message.append("\n\nDestino: ").append(archiveRoot);
-
-			if (!report.getFailures().isEmpty()) {
-				message.append("\n\nFalhas:\n").append(String.join("\n", report.getFailures()));
-			}
-
-			Alert.AlertType type = report.getFailures().isEmpty()
-					? Alert.AlertType.INFORMATION
-					: Alert.AlertType.WARNING;
-
-			new Alert(type, message.toString()).showAndWait();
-		});
-
-		task.setOnFailed(event -> {
-			Throwable error = task.getException();
-			new Alert(Alert.AlertType.ERROR, "Erro ao copiar os XMLs: " + error.getMessage()).showAndWait();
-			btnCopiarXml.setDisable(false);
-		});
-
-		Thread copyThread = new Thread(task);
-		copyThread.setDaemon(true);
-		copyThread.start();
-	}
-
-	private static List<NfceRow> buildRows(Map<String, NfceFileData> allData) {
+	private static List<NfceRow> buildRows(Map<String, NfceFileData> allData, LocalDate from, LocalDate to) {
 
 		Set<String> cancelEventFiles = new HashSet<>();
 		Set<String> cancelledKeys = new HashSet<>();
@@ -394,6 +349,10 @@ public class MainScreenController {
 
 		allData.forEach((file, data) -> {
 			if (cancelEventFiles.contains(file)) {
+				return;
+			}
+
+			if (!PeriodFilter.isInPeriod(file, data, from, to)) {
 				return;
 			}
 

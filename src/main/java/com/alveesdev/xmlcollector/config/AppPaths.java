@@ -1,4 +1,4 @@
-package com.alveesdev.xmlcollector;
+package com.alveesdev.xmlcollector.config;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
@@ -30,6 +30,10 @@ public final class AppPaths {
 		} catch (URISyntaxException e) {
 			throw new IllegalStateException("Could not resolve the application folder", e);
 		}
+	}
+
+	public Path root() {
+		return root;
 	}
 
 	public Path configDir() {

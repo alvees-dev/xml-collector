@@ -1,6 +1,10 @@
-package com.alveesdev.xmlcollector.xmlconfig;
+package com.alveesdev.xmlcollector.xml;
+
+import java.time.LocalDate;
 
 import org.w3c.dom.Document;
+
+import com.alveesdev.xmlcollector.model.NfceFileData;
 
 public class XmlRowReader {
 
@@ -10,7 +14,8 @@ public class XmlRowReader {
         String totalValue = XmlExtractor.getNfTotalValue(file);
         String emissionDate = XmlExtractor.getNfEmissionDate(file);
         String cancelledKey = XmlCancelReader.getCancelledNfKey(file);
+        LocalDate documentDate = XmlDateReader.getDocumentDate(file);
 
-        return new NfceFileData(number, series, totalValue, emissionDate, cancelledKey);
+        return new NfceFileData(number, series, totalValue, emissionDate, cancelledKey, documentDate);
     }
 }
