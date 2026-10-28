@@ -93,7 +93,7 @@
                               <Insets left="110.0" top="-30.0" />
                            </VBox.margin>
                         </ChoiceBox>
-                        <RadioButton mnemonicParsing="false" text="Diretório Único">
+                        <RadioButton fx:id="radioSingleFolder" mnemonicParsing="false" selected="true" text="Diretório Único">
                            <VBox.margin>
                               <Insets left="15.0" top="20.0" />
                            </VBox.margin>
@@ -101,7 +101,7 @@
                               <ToggleGroup fx:id="separacaoDiretorio" />
                            </toggleGroup>
                         </RadioButton>
-                        <RadioButton mnemonicParsing="false" text="Separado Por Dia" toggleGroup="$separacaoDiretorio">
+                        <RadioButton fx:id="radioByDay" mnemonicParsing="false" text="Separado Por Dia" toggleGroup="$separacaoDiretorio">
                            <VBox.margin>
                               <Insets left="15.0" top="10.0" />
                            </VBox.margin>
