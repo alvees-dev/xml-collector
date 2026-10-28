@@ -2,6 +2,8 @@
 
 <?import javafx.geometry.Insets?>
 <?import javafx.scene.control.Button?>
+<?import javafx.scene.control.DatePicker?>
+<?import javafx.scene.control.Label?>
 <?import javafx.scene.control.Menu?>
 <?import javafx.scene.control.MenuBar?>
 <?import javafx.scene.control.MenuItem?>
@@ -41,9 +43,24 @@
                      <children>
                         <HBox minHeight="0.0" minWidth="0.0" prefHeight="0.0" prefWidth="785.0" VBox.vgrow="ALWAYS">
                            <children>
-                              <RadioButton fx:id="RadioButtonColetaXMLCaminhoPDV" mnemonicParsing="false" text="Caminho PDV">
+                              <Label text="Filtro de Data:">
                                  <HBox.margin>
-                                    <Insets left="30.0" top="20.0" />
+                                    <Insets left="30.0" top="5.0" />
+                                 </HBox.margin>
+                              </Label>
+                              <DatePicker fx:id="dpFrom" prefWidth="110.0" promptText="De">
+                                 <HBox.margin>
+                                    <Insets left="-82.0" top="25.0" />
+                                 </HBox.margin>
+                              </DatePicker>
+                              <DatePicker fx:id="dpTo" prefWidth="110.0" promptText="Até">
+                                 <HBox.margin>
+                                    <Insets left="-110.0" top="60.0" />
+                                 </HBox.margin>
+                              </DatePicker>
+                              <RadioButton fx:id="RadioButtonColetaXMLCaminhoPDV" mnemonicParsing="false" text="Diretório PDV">
+                                 <HBox.margin>
+                                    <Insets left="50.0" top="20.0" />
                                  </HBox.margin>
                                  <toggleGroup>
                                     <ToggleGroup fx:id="DiretorioDeColeta" />
