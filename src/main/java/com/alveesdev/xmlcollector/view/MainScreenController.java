@@ -39,8 +39,11 @@ public class MainScreenController {
 
 	private static final double MISSING_COLUMN_WIDTH = 110;
 
-	private record CollectionResult(ObservableList<NfceRow> lines, List<String> missingHeaders,
-			ObservableList<ObservableList<String>> missingRows, List<String> failures) {
+	private record CollectionResult(
+			ObservableList<NfceRow> lines,
+			List<String> missingHeaders,
+			ObservableList<ObservableList<String>> missingRows,
+			List<String> failures) {
 	}
 
 	@FXML
@@ -91,6 +94,10 @@ public class MainScreenController {
 		nfKeyColumn.setCellValueFactory(new PropertyValueFactory<>("accessKey"));
 
 		statusColumn.setCellValueFactory(new PropertyValueFactory<>("status"));
+
+		RadioButtonColetaXMLCaminhoPDV.setSelected(true);
+
+		txtDirectory.disableProperty().bind(RadioButtonColetaXMLCaminhoPDV.selectedProperty());
 
 		refreshMissingColumns();
 	}
@@ -175,7 +182,8 @@ public class MainScreenController {
 			return;
 		}
 
-		List<String> directories = pdvMode ? AppSettings.getInstance().getPdvDirectories()
+		List<String> directories = pdvMode
+				? AppSettings.getInstance().getPdvDirectories()
 				: List.of(txtDirectory.getText());
 
 		btnVerificarDir.setDisable(true);
@@ -189,7 +197,8 @@ public class MainScreenController {
 				List<String> failures = new ArrayList<>();
 
 				if (!pdvMode) {
-					Map<String, NfceFileData> allData = XmlProcessor.collectXml(directories.get(0), XmlRowReader::read);
+					Map<String, NfceFileData> allData =
+							XmlProcessor.collectXml(directories.get(0), XmlRowReader::read);
 
 					lines.addAll(buildRows(allData));
 
@@ -217,8 +226,8 @@ public class MainScreenController {
 					}
 
 					try {
-
-						Map<String, NfceFileData> allData = XmlProcessor.collectXml(pdvDirectory, XmlRowReader::read);
+						Map<String, NfceFileData> allData =
+								XmlProcessor.collectXml(pdvDirectory, XmlRowReader::read);
 
 						lines.addAll(buildRows(allData));
 						missingByPdv.add(MissingNumberFinder.findMissing(allData));
@@ -229,8 +238,8 @@ public class MainScreenController {
 					}
 				}
 
-				return new CollectionResult(lines, pdvHeaders(directories.size()), buildMissingRows(missingByPdv),
-						failures);
+				return new CollectionResult(lines, pdvHeaders(directories.size()),
+						buildMissingRows(missingByPdv), failures);
 			}
 		};
 
@@ -277,7 +286,6 @@ public class MainScreenController {
 		List<NfceRow> lines = new ArrayList<>();
 
 		allData.forEach((file, data) -> {
-
 			if (cancelEventFiles.contains(file)) {
 				return;
 			}
