@@ -1,5 +1,6 @@
 package com.alveesdev.xmlcollector.xml;
 
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -13,6 +14,19 @@ import java.util.stream.Stream;
 import org.w3c.dom.Document;
 
 public class XmlProcessor {
+
+	public static List<Path> listXmlFiles(String directory, Path excludedRoot) throws IOException {
+
+	    Path excluded = excludedRoot.toAbsolutePath().normalize();
+
+	    try (Stream<Path> xmlDirectory = Files.walk(Paths.get(directory))) {
+	        return xmlDirectory
+	                .filter(Files::isRegularFile)
+	                .filter(p -> p.toString().toLowerCase().endsWith(".xml"))
+	                .filter(p -> !p.toAbsolutePath().normalize().startsWith(excluded))
+	                .collect(Collectors.toList());
+	    }
+	}
 
 	public static <T> Map<String, T> collectXml(
 	        String directory, Function<Document, T> extractData) throws Exception {

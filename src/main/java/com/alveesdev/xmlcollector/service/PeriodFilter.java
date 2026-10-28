@@ -2,8 +2,6 @@ package com.alveesdev.xmlcollector.service;
 
 import java.time.LocalDate;
 import java.time.YearMonth;
-import java.util.LinkedHashMap;
-import java.util.Map;
 
 import com.alveesdev.xmlcollector.model.NfceFileData;
 
@@ -28,19 +26,6 @@ public class PeriodFilter {
 		}
 
 		return !keyMonth.isBefore(YearMonth.from(from)) && !keyMonth.isAfter(YearMonth.from(to));
-	}
-
-	public static Map<String, NfceFileData> filter(Map<String, NfceFileData> allData, LocalDate from, LocalDate to) {
-
-		Map<String, NfceFileData> result = new LinkedHashMap<>();
-
-		allData.forEach((fileName, data) -> {
-			if (isInPeriod(fileName, data, from, to)) {
-				result.put(fileName, data);
-			}
-		});
-
-		return result;
 	}
 
 	private static YearMonth monthFromAccessKey(String fileName) {

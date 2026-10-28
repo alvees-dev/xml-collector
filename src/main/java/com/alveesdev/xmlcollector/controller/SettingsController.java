@@ -1,4 +1,4 @@
-package com.alveesdev.xmlcollector.view;
+package com.alveesdev.xmlcollector.controller;
 
 import java.util.ArrayList;
 import java.util.List;
