@@ -52,7 +52,6 @@ public class MissingNumberFinder {
 		return missingBySeries;
 	}
 
-
 	public static List<String> findMissing(Map<String, NfceFileData> allData) {
 
 		Map<Integer, List<String>> missingBySeries = findMissingBySeries(allData);

@@ -7,8 +7,9 @@ public class AppSettings {
 
 	private static final AppSettings INSTANCE = new AppSettings();
 
-	// One empty PDV by default, matching the single field shown on the settings screen
 	private List<String> pdvDirectories = new ArrayList<>(List.of(""));
+
+	private OrganizeMode organizeMode = OrganizeMode.SINGLE_FOLDER;
 
 	private AppSettings() {
 	}
@@ -27,5 +28,13 @@ public class AppSettings {
 
 	public int getPdvCount() {
 		return pdvDirectories.size();
+	}
+
+	public OrganizeMode getOrganizeMode() {
+		return organizeMode;
+	}
+
+	public void setOrganizeMode(OrganizeMode organizeMode) {
+		this.organizeMode = organizeMode;
 	}
 }

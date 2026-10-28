@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.alveesdev.xmlcollector.model.AppSettings;
+import com.alveesdev.xmlcollector.model.OrganizeMode;
 
 import javafx.application.Platform;
 import javafx.fxml.FXML;
@@ -11,6 +12,7 @@ import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
+import javafx.scene.control.RadioButton;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.control.TextField;
 import javafx.scene.input.MouseEvent;
@@ -35,7 +37,12 @@ public class SettingsController {
 	@FXML
 	private VBox pdvListBox;
 
-	// One text field per PDV row, in the same order as the rows in pdvListBox
+	@FXML
+	private RadioButton radioSingleFolder;
+
+	@FXML
+	private RadioButton radioByDay;
+
 	private final List<TextField> pdvFields = new ArrayList<>();
 
 	private double dragOffsetX;
@@ -47,10 +54,15 @@ public class SettingsController {
 
 		if (savedDirectories.isEmpty()) {
 			addPdvRow("");
-			return;
+		} else {
+			savedDirectories.forEach(this::addPdvRow);
 		}
 
-		savedDirectories.forEach(this::addPdvRow);
+		if (AppSettings.getInstance().getOrganizeMode() == OrganizeMode.BY_DAY) {
+			radioByDay.setSelected(true);
+		} else {
+			radioSingleFolder.setSelected(true);
+		}
 	}
 
 	@FXML
@@ -60,7 +72,6 @@ public class SettingsController {
 
 	@FXML
 	private void onRemovePdv() {
-		// Always keep at least one PDV
 		if (pdvFields.size() <= 1) {
 			return;
 		}
@@ -77,7 +88,10 @@ public class SettingsController {
 			directories.add(field.getText().trim());
 		}
 
-		AppSettings.getInstance().setPdvDirectories(directories);
+		AppSettings settings = AppSettings.getInstance();
+		settings.setPdvDirectories(directories);
+		settings.setOrganizeMode(radioByDay.isSelected() ? OrganizeMode.BY_DAY : OrganizeMode.SINGLE_FOLDER);
+
 		closeWindow();
 	}
 
@@ -117,7 +131,6 @@ public class SettingsController {
 		pdvFields.add(field);
 		pdvListBox.getChildren().add(row);
 
-		// Keeps the newly added row visible when the list grows past the scroll area
 		Platform.runLater(() -> pdvScrollPane.setVvalue(1.0));
 	}
 
