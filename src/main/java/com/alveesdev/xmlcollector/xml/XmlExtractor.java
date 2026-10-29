@@ -1,4 +1,4 @@
-package com.alveesdev.xmlcollector.xmlconfig;
+package com.alveesdev.xmlcollector.xml;
 
 import java.math.BigDecimal;
 import java.text.NumberFormat;
@@ -18,7 +18,7 @@ public class XmlExtractor {
 	public static String getNfNumber(Document file) {
 
 		NodeList xmlNumberList = file.getElementsByTagName("nNF");
-		
+
 		if (xmlNumberList.getLength() > 0) {
 			return xmlNumberList.item(0).getTextContent().trim();
 		}
@@ -26,9 +26,9 @@ public class XmlExtractor {
 	}
 
 	public static String getNfSeries(Document file) {
-		
+
 		NodeList xmlSerieList = file.getElementsByTagName("serie");
-		
+
 		if (xmlSerieList.getLength() > 0) {
 			return xmlSerieList.item(0).getTextContent().trim();
 		}
@@ -38,13 +38,13 @@ public class XmlExtractor {
 	public static String getNfEmissionDate(Document file) {
 
 		NodeList xmlDateList = file.getElementsByTagName("dhEmi");
-		
+
 		if (xmlDateList.getLength() == 0) {
 			return "NULL";
 		}
 
 		String date = xmlDateList.item(0).getTextContent().trim();
-		
+
 		try {
 			return OffsetDateTime.parse(date).format(DISPLAY_DATE_FORMAT);
 
@@ -52,17 +52,17 @@ public class XmlExtractor {
 			return date;
 		}
 	}
-	
+
 	public static String getNfTotalValue(Document file) {
-		
+
 		NodeList xmlTotalValueList = file.getElementsByTagName("vNF");
-		
+
 		if(xmlTotalValueList.getLength() == 0) {
 			return "NULL";
 		}
-		
+
 		String value = xmlTotalValueList.item(0).getTextContent().trim();
-		
+
 		try {
 			return DISPLAY_VALUE_FORMAT.format(new BigDecimal(value));
 

@@ -1,4 +1,4 @@
-package com.alveesdev.xmlcollector.xmlconfig;
+package com.alveesdev.xmlcollector.xml;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -11,7 +11,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import com.alveesdev.xmlcollector.model.OrganizeMode;
+import com.alveesdev.xmlcollector.config.OrganizeMode;
 
 public class XmlOrganizer {
 

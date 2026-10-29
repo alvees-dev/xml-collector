@@ -1,4 +1,4 @@
-package com.alveesdev.xmlcollector.model;
+package com.alveesdev.xmlcollector.config;
 
 public enum OrganizeMode {
 	SINGLE_FOLDER,

@@ -1,4 +1,4 @@
-package com.alveesdev.xmlcollector.model;
+package com.alveesdev.xmlcollector.config;
 
 import java.util.ArrayList;
 import java.util.List;

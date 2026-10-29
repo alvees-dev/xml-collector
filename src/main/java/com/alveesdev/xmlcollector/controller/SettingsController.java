@@ -1,10 +1,10 @@
-package com.alveesdev.xmlcollector.view;
+package com.alveesdev.xmlcollector.controller;
 
 import java.util.ArrayList;
 import java.util.List;
 
-import com.alveesdev.xmlcollector.model.AppSettings;
-import com.alveesdev.xmlcollector.model.OrganizeMode;
+import com.alveesdev.xmlcollector.config.AppSettings;
+import com.alveesdev.xmlcollector.config.OrganizeMode;
 
 import javafx.application.Platform;
 import javafx.fxml.FXML;

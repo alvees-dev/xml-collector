@@ -1,4 +1,4 @@
-package com.alveesdev.xmlcollector.xmlconfig;
+package com.alveesdev.xmlcollector.xml;
 
 import java.time.LocalDate;
 import java.time.OffsetDateTime;

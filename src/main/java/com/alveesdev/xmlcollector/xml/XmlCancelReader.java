@@ -1,4 +1,4 @@
-package com.alveesdev.xmlcollector.xmlconfig;
+package com.alveesdev.xmlcollector.xml;
 
 import org.w3c.dom.Document;
 import org.w3c.dom.NodeList;
