@@ -8,6 +8,7 @@ public record NfceFileData(
         String totalValue,
         String emissionDate,
         String cancelledKey,
-        LocalDate documentDate
+        LocalDate documentDate,
+        String accessKey
 ) {
 }

@@ -4,7 +4,6 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -19,7 +18,7 @@ import com.alveesdev.xmlcollector.xml.XmlRowReader;
 
 public class CollectionService {
 
-	private record PendingInvoice(String accessKey, NfceFileData data) {
+	private record PendingInvoice(String fileName, NfceFileData data) {
 	}
 
 	private record SourceOutcome(
@@ -84,7 +83,6 @@ public class CollectionService {
 		List<PendingInvoice> pending = new ArrayList<>();
 
 		for (Path file : files) {
-			String fileName = file.getFileName().toString();
 			NfceFileData data = read(file);
 
 			boolean isCancelEvent = data != null && data.cancelledKey() != null;
@@ -93,7 +91,7 @@ public class CollectionService {
 				cancelledKeys.add(data.cancelledKey());
 			}
 
-			if (!PeriodFilter.isInPeriod(fileName, data, request.from(), request.to())) {
+			if (PeriodFilter.isOutsidePeriod(data, request.from(), request.to())) {
 				report.incrementOutOfPeriod();
 				continue;
 			}
@@ -105,16 +103,19 @@ public class CollectionService {
 			}
 
 			if (!isCancelEvent) {
-				pending.add(new PendingInvoice(accessKeyOf(fileName), data));
+				pending.add(new PendingInvoice(file.getFileName().toString(), data));
 			}
 		}
 
 		List<NfceEntry> entries = new ArrayList<>();
-		Map<String, NfceFileData> periodData = new LinkedHashMap<>();
+		List<NfceFileData> periodData = new ArrayList<>();
 
 		for (PendingInvoice invoice : pending) {
 			entries.add(toEntry(invoice, cancelledKeys));
-			periodData.put(invoice.accessKey(), invoice.data());
+
+			if (invoice.data() != null) {
+				periodData.add(invoice.data());
+			}
 		}
 
 		return new SourceOutcome(
@@ -131,20 +132,21 @@ public class CollectionService {
 		}
 	}
 
-	private static String accessKeyOf(String fileName) {
-		return fileName.replaceFirst("(?i)(-nfe)?\\.xml$", "");
-	}
-
 	private static NfceEntry toEntry(PendingInvoice invoice, Set<String> cancelledKeys) {
 		NfceFileData data = invoice.data();
 
 		if (data == null) {
-			return new NfceEntry(null, null, null, null, invoice.accessKey(), "Erro na Leitura");
+			return new NfceEntry(null, null, null, null, invoice.fileName(), "Erro na Leitura");
 		}
 
-		String status = cancelledKeys.contains(invoice.accessKey()) ? "Cancelada" : "Enviada";
+		if (data.accessKey() == null) {
+			return new NfceEntry(data.number(), data.series(), data.totalValue(), data.emissionDate(),
+					invoice.fileName(), "Erro na Leitura");
+		}
+
+		String status = cancelledKeys.contains(data.accessKey()) ? "Cancelada" : "Enviada";
 
 		return new NfceEntry(data.number(), data.series(), data.totalValue(), data.emissionDate(),
-				invoice.accessKey(), status);
+				data.accessKey(), status);
 	}
 }

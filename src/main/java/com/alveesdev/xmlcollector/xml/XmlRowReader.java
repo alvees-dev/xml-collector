@@ -15,7 +15,8 @@ public class XmlRowReader {
         String emissionDate = XmlExtractor.getNfEmissionDate(file);
         String cancelledKey = XmlCancelReader.getCancelledNfKey(file);
         LocalDate documentDate = XmlDateReader.getDocumentDate(file);
+        String accessKey = XmlKeyReader.getAccessKey(file);
 
-        return new NfceFileData(number, series, totalValue, emissionDate, cancelledKey, documentDate);
+        return new NfceFileData(number, series, totalValue, emissionDate, cancelledKey, documentDate, accessKey);
     }
 }
