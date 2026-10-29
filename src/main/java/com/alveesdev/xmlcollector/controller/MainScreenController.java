@@ -9,6 +9,7 @@ import com.alveesdev.xmlcollector.config.AppSettings;
 import com.alveesdev.xmlcollector.model.MissingTableModel;
 import com.alveesdev.xmlcollector.model.NfceEntry;
 import com.alveesdev.xmlcollector.model.NfceRow;
+import com.alveesdev.xmlcollector.service.CollectionProgress;
 import com.alveesdev.xmlcollector.service.CollectionRequest;
 import com.alveesdev.xmlcollector.service.CollectionResult;
 import com.alveesdev.xmlcollector.service.CollectionService;
@@ -121,19 +122,49 @@ public class MainScreenController {
 
 			@Override
 			protected CollectionResult call() {
-				return collectionService.collect(collectionRequest);
+				return collectionService.collect(collectionRequest, this::publishProgress, this::isCancelled);
+			}
+
+			private void publishProgress(CollectionProgress progress) {
+				updateTitle(progress.sourceLabel());
+
+				if (progress.isCounting()) {
+					updateProgress(-1, -1);
+					updateMessage("Contando arquivos...");
+					return;
+				}
+
+				updateProgress(progress.processed(), Math.max(progress.total(), 1));
+				updateMessage(String.format("%d de %d arquivos", progress.processed(), progress.total()));
 			}
 		};
 
+		ProgressWindow progressWindow = new ProgressWindow(
+				tableView.getScene().getWindow(),
+				task.progressProperty(),
+				task.titleProperty(),
+				task.messageProperty(),
+				() -> task.cancel());
+
 		task.setOnSucceeded(event -> {
+			progressWindow.close();
 			btnVerificarDir.setDisable(false);
 			showResult(task.getValue());
 		});
 
 		task.setOnFailed(event -> {
+			progressWindow.close();
 			btnVerificarDir.setDisable(false);
 			Dialogs.error("Erro ao processar o diretório: " + task.getException().getMessage());
 		});
+
+		task.setOnCancelled(event -> {
+			progressWindow.close();
+			btnVerificarDir.setDisable(false);
+			Dialogs.warning("Coleta cancelada. Os arquivos já copiados foram mantidos.");
+		});
+
+		progressWindow.show();
 
 		Thread collectThread = new Thread(task);
 		collectThread.setDaemon(true);
