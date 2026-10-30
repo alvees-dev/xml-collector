@@ -15,14 +15,14 @@ public class Main extends Application {
 
     @Override
     public void start(Stage stage) throws Exception {
-        AppPaths paths = AppPaths.fromJarLocation();
+        AppPaths paths = AppPaths.standard();
 
         try {
             paths.ensureDirectories();
         } catch (IOException e) {
             new Alert(Alert.AlertType.ERROR,
                     "Não foi possível criar as pastas do programa em:\n" + paths.root()
-                            + "\n\nMova o programa para uma pasta com permissão de escrita (ex.: C:\\ColetorXML).")
+                            + "\n\nVerifique se o usuário do Windows tem permissão para criar pastas em C:\\.")
                     .showAndWait();
             Platform.exit();
             return;
