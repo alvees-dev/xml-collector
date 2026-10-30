@@ -18,7 +18,7 @@
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.VBox?>
 
-<VBox maxHeight="500.0" maxWidth="785.0" prefHeight="500.0" prefWidth="785.0" xmlns="http://javafx.com/javafx/26" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.alveesdev.xmlcollector.controller.MainScreenController">
+<VBox maxHeight="500.0" maxWidth="785.0" prefHeight="500.0" prefWidth="785.0" xmlns="http://javafx.com/javafx/26" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.alveesdev.xmlcollector.ui.controller.MainScreenController">
    <children>
       <MenuBar prefHeight="25.0" prefWidth="709.0">
         <menus>

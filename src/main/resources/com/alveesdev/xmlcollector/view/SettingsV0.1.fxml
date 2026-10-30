@@ -14,7 +14,7 @@
 <?import javafx.scene.layout.VBox?>
 
 
-<VBox maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="500.0" prefWidth="385.0" style="-fx-border-color: #808080; -fx-border-width: 1;" xmlns="http://javafx.com/javafx/26" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.alveesdev.xmlcollector.controller.SettingsController">
+<VBox maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="500.0" prefWidth="385.0" style="-fx-border-color: #808080; -fx-border-width: 1;" xmlns="http://javafx.com/javafx/26" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.alveesdev.xmlcollector.ui.controller.SettingsController">
    <children>
       <Label fx:id="lblTitle" onMouseDragged="#onTitleDragged" onMousePressed="#onTitlePressed" prefHeight="28.0" prefWidth="385.0" text=" Configurações" />
       <TabPane prefHeight="443.0" prefWidth="385.0" tabClosingPolicy="UNAVAILABLE" VBox.vgrow="ALWAYS">

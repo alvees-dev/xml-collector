@@ -1,0 +1,19 @@
+package com.alveesdev.xmlcollector.domain.service;
+
+import java.time.LocalDate;
+
+import com.alveesdev.xmlcollector.domain.model.NfceFileData;
+
+public class PeriodFilter {
+
+	public static boolean isOutsidePeriod(NfceFileData data, LocalDate from, LocalDate to) {
+
+		if (data == null || data.documentDate() == null) {
+			return false;
+		}
+
+		LocalDate date = data.documentDate();
+
+		return date.isBefore(from) || date.isAfter(to);
+	}
+}

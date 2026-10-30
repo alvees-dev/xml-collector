@@ -3,6 +3,8 @@ package com.alveesdev.xmlcollector.config;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.alveesdev.xmlcollector.domain.model.OrganizeMode;
+
 public class AppSettings {
 
 	private static final AppSettings INSTANCE = new AppSettings();
