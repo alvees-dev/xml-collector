@@ -7,13 +7,17 @@ import java.nio.file.NotDirectoryException;
 import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.nio.file.attribute.FileTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
 public class XmlFileScanner {
 
-	public record ScanResult(List<Path> files, List<Path> inaccessible) {
+	public record SourceFile(Path path, FileTime lastModified) {
+	}
+
+	public record ScanResult(List<SourceFile> files, List<Path> inaccessible) {
 	}
 
 	public ScanResult scan(Path directory, Path excludedRoot) throws IOException {
@@ -23,7 +27,7 @@ public class XmlFileScanner {
 		}
 
 		Path excluded = excludedRoot.toAbsolutePath().normalize();
-		List<Path> files = new ArrayList<>();
+		List<SourceFile> files = new ArrayList<>();
 		List<Path> inaccessible = new ArrayList<>();
 
 		Files.walkFileTree(directory, new SimpleFileVisitor<>() {
@@ -38,7 +42,7 @@ public class XmlFileScanner {
 			@Override
 			public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) {
 				if (attrs.isRegularFile() && isXml(file)) {
-					files.add(file);
+					files.add(new SourceFile(file, attrs.lastModifiedTime()));
 				}
 				return FileVisitResult.CONTINUE;
 			}

@@ -2,6 +2,7 @@ package com.alveesdev.xmlcollector.infra.xml;
 
 import java.io.IOException;
 import java.math.BigDecimal;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeParseException;
@@ -26,10 +27,23 @@ public class NfceXmlReader {
 
 	public XmlDocument read(Path file) {
 
+		byte[] content;
+
+		try {
+			content = Files.readAllBytes(file);
+		} catch (IOException e) {
+			return new XmlDocument.Unreadable(describe(e));
+		}
+
+		return read(content);
+	}
+
+	public XmlDocument read(byte[] content) {
+
 		Document document;
 
 		try {
-			document = loader.load(file);
+			document = loader.load(content);
 		} catch (IOException | SAXException e) {
 			return new XmlDocument.Unreadable(describe(e));
 		}

@@ -5,6 +5,10 @@ import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BooleanSupplier;
 
 import com.alveesdev.xmlcollector.application.CollectionResult.SourceResult;
@@ -13,24 +17,38 @@ import com.alveesdev.xmlcollector.infra.archive.XmlArchive;
 import com.alveesdev.xmlcollector.infra.xml.NfceXmlReader;
 import com.alveesdev.xmlcollector.infra.xml.XmlFileScanner;
 import com.alveesdev.xmlcollector.infra.xml.XmlFileScanner.ScanResult;
+import com.alveesdev.xmlcollector.infra.xml.XmlFileScanner.SourceFile;
 
 public class CollectionService {
 
-	private record ScannedSource(int index, List<Path> files) {
+	/** Number of files read and copied at the same time. Kept low to avoid overloading the PDV machines. */
+	public static final int DEFAULT_THREADS = 4;
+
+	private record ScannedSource(int index, List<SourceFile> files) {
 	}
 
 	private final XmlFileScanner scanner;
 	private final NfceXmlReader reader;
 	private final XmlArchive archive;
+	private final int threads;
 
 	public CollectionService() {
-		this(new XmlFileScanner(), new NfceXmlReader());
+		this(new XmlFileScanner(), new NfceXmlReader(), DEFAULT_THREADS);
 	}
 
 	public CollectionService(XmlFileScanner scanner, NfceXmlReader reader) {
+		this(scanner, reader, DEFAULT_THREADS);
+	}
+
+	public CollectionService(XmlFileScanner scanner, NfceXmlReader reader, int threads) {
+		if (threads < 1) {
+			throw new IllegalArgumentException("threads must be at least 1");
+		}
+
 		this.scanner = scanner;
 		this.reader = reader;
 		this.archive = new XmlArchive(reader);
+		this.threads = threads;
 	}
 
 	public CollectionResult collect(CollectionRequest request) {
@@ -47,17 +65,24 @@ public class CollectionService {
 
 		listener.onProgress(new CollectionProgress(0, 0, total));
 
-		SourceProcessor processor = new SourceProcessor(request, reader, archive);
-		List<SourceResult> results = new ArrayList<>();
+		ExecutorService executor = Executors.newFixedThreadPool(threads, new WorkerThreadFactory());
 
-		for (ScannedSource source : scanned) {
-			results.add(processor.process(source.index(), source.files(), () -> {
-				processed[0]++;
-				listener.onProgress(new CollectionProgress(source.index(), processed[0], total));
-			}, cancelled));
+		try {
+			SourceProcessor processor = new SourceProcessor(request, reader, archive, executor);
+			List<SourceResult> results = new ArrayList<>();
+
+			for (ScannedSource source : scanned) {
+				results.add(processor.process(source.index(), source.files(), () -> {
+					processed[0]++;
+					listener.onProgress(new CollectionProgress(source.index(), processed[0], total));
+				}, cancelled));
+			}
+
+			return new CollectionResult(results, processor.summary(), failures);
+
+		} finally {
+			executor.shutdownNow();
 		}
-
-		return new CollectionResult(results, processor.summary(), failures);
 	}
 
 	private List<ScannedSource> scan(CollectionRequest request, List<SourceFailure> failures,
@@ -94,5 +119,17 @@ public class CollectionService {
 		}
 
 		return scanned;
+	}
+
+	private static class WorkerThreadFactory implements ThreadFactory {
+
+		private final AtomicInteger counter = new AtomicInteger(1);
+
+		@Override
+		public Thread newThread(Runnable task) {
+			Thread thread = new Thread(task, "xml-collector-worker-" + counter.getAndIncrement());
+			thread.setDaemon(true);
+			return thread;
+		}
 	}
 }
