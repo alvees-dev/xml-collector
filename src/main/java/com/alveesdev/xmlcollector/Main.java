@@ -29,7 +29,7 @@ public class Main extends Application {
         }
 
         FXMLLoader loader = new FXMLLoader(
-                getClass().getResource("/com/alveesdev/xmlcollector/view/MainScreenSceneV0.3.fxml"));
+                getClass().getResource("/com/alveesdev/xmlcollector/view/MainScreenSceneV1.fxml"));
         Scene scene = new Scene(loader.load());
 
         stage.setTitle("Coletor XML");

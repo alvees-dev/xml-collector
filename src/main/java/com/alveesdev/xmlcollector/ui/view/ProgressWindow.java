@@ -17,7 +17,7 @@ import javafx.stage.Window;
 
 public final class ProgressWindow {
 
-	private static final String PROGRESS_FXML = "/com/alveesdev/xmlcollector/view/ProgressV0.1.fxml";
+	private static final String PROGRESS_FXML = "/com/alveesdev/xmlcollector/view/CollectingXmlProgressBarV0.1.fxml";
 
 	private final Stage stage = new Stage();
 

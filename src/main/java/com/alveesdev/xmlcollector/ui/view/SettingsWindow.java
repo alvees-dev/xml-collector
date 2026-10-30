@@ -12,7 +12,7 @@ import javafx.stage.Window;
 
 public final class SettingsWindow {
 
-	private static final String SETTINGS_FXML = "/com/alveesdev/xmlcollector/view/SettingsV0.1.fxml";
+	private static final String SETTINGS_FXML = "/com/alveesdev/xmlcollector/view/SettingsV1.fxml";
 
 	private SettingsWindow() {
 	}

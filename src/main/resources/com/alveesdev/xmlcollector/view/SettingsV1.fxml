@@ -13,7 +13,6 @@
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.VBox?>
 
-
 <VBox maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="500.0" prefWidth="385.0" style="-fx-border-color: #808080; -fx-border-width: 1;" xmlns="http://javafx.com/javafx/26" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.alveesdev.xmlcollector.ui.controller.SettingsController">
    <children>
       <Label fx:id="lblTitle" onMouseDragged="#onTitleDragged" onMousePressed="#onTitlePressed" prefHeight="28.0" prefWidth="385.0" text=" Configurações" />
@@ -23,11 +22,54 @@
                <content>
                   <VBox prefHeight="200.0" prefWidth="100.0">
                      <children>
-                        <Label alignment="CENTER" contentDisplay="CENTER" opacity="0.58" text="Em breve..." VBox.vgrow="ALWAYS">
+                        <Label alignment="CENTER" contentDisplay="CENTER" text="Busca de Arquivos" VBox.vgrow="ALWAYS">
                            <VBox.margin>
-                              <Insets left="165.0" top="180.0" />
+                              <Insets left="20.0" top="30.0" />
                            </VBox.margin>
                         </Label>
+                        <Label text="XML">
+                           <VBox.margin>
+                              <Insets left="49.0" />
+                           </VBox.margin>
+                        </Label>
+                        <ChoiceBox prefWidth="150.0">
+                           <VBox.margin>
+                              <Insets left="140.0" top="-27.0" />
+                           </VBox.margin>
+                        </ChoiceBox>
+                        <Separator prefWidth="200.0">
+                           <VBox.margin>
+                              <Insets top="30.0" />
+                           </VBox.margin>
+                        </Separator>
+                        <Label text="Diretórios de Busca">
+                           <VBox.margin>
+                              <Insets left="20.0" top="10.0" />
+                           </VBox.margin>
+                        </Label>
+                        <Label text="De NFe">
+                           <VBox.margin>
+                              <Insets left="47.0" />
+                           </VBox.margin>
+                        </Label>
+                        <Button fx:id="btnAddPdv1" maxHeight="24.0" maxWidth="24.0" minHeight="24.0" minWidth="24.0" mnemonicParsing="false" onAction="#onAddPdv" prefHeight="24.0" prefWidth="24.0" style="-fx-background-radius: 50; -fx-border-radius: 50; -fx-border-width: 0; -fx-padding: -8 1 0 0; -fx-font-size: 25; -fx-font-weight: bold; -fx-cursor: hand; -fx-alignment: center; -fx-content-display: center;" text="+">
+                           <VBox.margin>
+                              <Insets left="140.0" top="-28.0" />
+                           </VBox.margin>
+                        </Button>
+                        <Button fx:id="btnRemovePdv1" maxHeight="24.0" maxWidth="24.0" minHeight="24.0" minWidth="24.0" mnemonicParsing="false" onAction="#onRemovePdv" prefHeight="24.0" prefWidth="24.0" style="-fx-background-radius: 50; -fx-border-radius: 50; -fx-border-width: 0; -fx-padding: -8 0 0 0; -fx-font-size: 25; -fx-font-weight: bold; -fx-cursor: hand; -fx-alignment: center; -fx-content-display: center;" text="-">
+                           <VBox.margin>
+                              <Insets left="175.0" top="-24.0" />
+                           </VBox.margin>
+                        </Button>
+                        <ScrollPane prefHeight="274.0" prefWidth="383.0">
+                           <VBox.margin>
+                              <Insets top="15.0" />
+                           </VBox.margin>
+                           <content>
+                              <VBox />
+                           </content>
+                        </ScrollPane>
                      </children>
                   </VBox>
                </content>
@@ -40,17 +82,17 @@
                            <children>
                               <Label text="Adicionar PDV">
                                  <HBox.margin>
-                                    <Insets left="15.0" top="15.0" />
+                                    <Insets left="15.0" top="30.0" />
                                  </HBox.margin>
                               </Label>
                               <Button fx:id="btnAddPdv" maxHeight="24.0" maxWidth="24.0" minHeight="24.0" minWidth="24.0" mnemonicParsing="false" onAction="#onAddPdv" prefHeight="24.0" prefWidth="24.0" style="-fx-background-radius: 50; -fx-border-radius: 50; -fx-border-width: 0; -fx-padding: -8 1 0 0; -fx-font-size: 25; -fx-font-weight: bold; -fx-cursor: hand; -fx-alignment: center; -fx-content-display: center;" text="+">
                                  <HBox.margin>
-                                    <Insets left="12.0" top="12.0" />
+                                    <Insets left="10.0" top="27.0" />
                                  </HBox.margin>
                               </Button>
                               <Button fx:id="btnRemovePdv" layoutX="119.0" layoutY="21.0" maxHeight="24.0" maxWidth="24.0" minHeight="24.0" minWidth="24.0" mnemonicParsing="false" onAction="#onRemovePdv" prefHeight="24.0" prefWidth="24.0" style="-fx-background-radius: 50; -fx-border-radius: 50; -fx-border-width: 0; -fx-padding: -8 0 0 0; -fx-font-size: 25; -fx-font-weight: bold; -fx-cursor: hand; -fx-alignment: center; -fx-content-display: center;" text="-">
                                  <HBox.margin>
-                                    <Insets top="12.0" />
+                                    <Insets top="27.0" />
                                  </HBox.margin>
                               </Button>
                            </children>
@@ -93,7 +135,7 @@
                               <Insets left="110.0" top="-30.0" />
                            </VBox.margin>
                         </ChoiceBox>
-                        <RadioButton fx:id="radioSingleFolder" mnemonicParsing="false" selected="true" text="Diretório Único">
+                        <RadioButton fx:id="radioByDay" mnemonicParsing="false" selected="true" text="Separado Por Dia">
                            <VBox.margin>
                               <Insets left="15.0" top="20.0" />
                            </VBox.margin>
@@ -101,7 +143,7 @@
                               <ToggleGroup fx:id="separacaoDiretorio" />
                            </toggleGroup>
                         </RadioButton>
-                        <RadioButton fx:id="radioByDay" mnemonicParsing="false" text="Separado Por Dia" toggleGroup="$separacaoDiretorio">
+                        <RadioButton fx:id="radioSingleFolder" mnemonicParsing="false" text="Diretório Único" toggleGroup="$separacaoDiretorio">
                            <VBox.margin>
                               <Insets left="15.0" top="10.0" />
                            </VBox.margin>
