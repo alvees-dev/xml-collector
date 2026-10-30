@@ -1,16 +1,8 @@
 package com.alveesdev.xmlcollector.application;
 
-public record CollectionProgress(
-		String sourceLabel,
-		int processed,
-		int total,
-		String currentFile) {
+public record CollectionProgress(int sourceIndex, int processed, int total) {
 
 	public boolean isCounting() {
 		return total < 0;
-	}
-
-	public double fraction() {
-		return total <= 0 ? 0 : (double) processed / total;
 	}
 }

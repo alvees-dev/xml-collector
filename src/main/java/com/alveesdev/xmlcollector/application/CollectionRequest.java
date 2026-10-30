@@ -1,17 +1,15 @@
 package com.alveesdev.xmlcollector.application;
 
 import java.nio.file.Path;
-import java.time.LocalDate;
 import java.util.List;
 
-import com.alveesdev.xmlcollector.config.OrganizeMode;
+import com.alveesdev.xmlcollector.domain.model.DateRange;
+import com.alveesdev.xmlcollector.domain.model.OrganizeMode;
 
 public record CollectionRequest(
 		List<String> directories,
-		LocalDate from,
-		LocalDate to,
+		DateRange period,
 		OrganizeMode organizeMode,
-		Path archiveRoot,
-		boolean groupBySeries
+		Path archiveRoot
 ) {
 }

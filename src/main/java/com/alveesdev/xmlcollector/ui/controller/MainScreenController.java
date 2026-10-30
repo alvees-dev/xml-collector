@@ -1,25 +1,25 @@
 package com.alveesdev.xmlcollector.ui.controller;
 
+import java.io.IOException;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
-import com.alveesdev.xmlcollector.application.CollectionProgress;
 import com.alveesdev.xmlcollector.application.CollectionRequest;
 import com.alveesdev.xmlcollector.application.CollectionResult;
 import com.alveesdev.xmlcollector.application.CollectionService;
 import com.alveesdev.xmlcollector.config.AppPaths;
 import com.alveesdev.xmlcollector.config.AppSettings;
-import com.alveesdev.xmlcollector.domain.model.NfceEntry;
+import com.alveesdev.xmlcollector.domain.model.DateRange;
 import com.alveesdev.xmlcollector.ui.model.MissingTableModel;
 import com.alveesdev.xmlcollector.ui.model.NfceRow;
+import com.alveesdev.xmlcollector.ui.model.NfceRowMapper;
 import com.alveesdev.xmlcollector.ui.view.Dialogs;
 import com.alveesdev.xmlcollector.ui.view.ProgressWindow;
 import com.alveesdev.xmlcollector.ui.view.SettingsWindow;
 
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
-import javafx.concurrent.Task;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
 import javafx.scene.control.DatePicker;
@@ -117,42 +117,30 @@ public class MainScreenController {
 			return;
 		}
 
-		CollectionRequest collectionRequest = request.get();
+		boolean pdvMode = RadioButtonColetaXMLCaminhoPDV.isSelected();
+
+		CollectionTask task = new CollectionTask(collectionService, request.get(), pdvMode);
+
+		ProgressWindow progressWindow;
+
+		try {
+			progressWindow = new ProgressWindow(
+					tableView.getScene().getWindow(),
+					task.progressProperty(),
+					task.titleProperty(),
+					task.messageProperty(),
+					task::cancel);
+		} catch (IOException e) {
+			Dialogs.error("Erro ao abrir a tela de progresso: " + e.getMessage());
+			return;
+		}
 
 		btnVerificarDir.setDisable(true);
-
-		Task<CollectionResult> task = new Task<>() {
-
-			@Override
-			protected CollectionResult call() {
-				return collectionService.collect(collectionRequest, this::publishProgress, this::isCancelled);
-			}
-
-			private void publishProgress(CollectionProgress progress) {
-				updateTitle(progress.sourceLabel());
-
-				if (progress.isCounting()) {
-					updateProgress(-1, -1);
-					updateMessage("Contando arquivos...");
-					return;
-				}
-
-				updateProgress(progress.processed(), Math.max(progress.total(), 1));
-				updateMessage(String.format("%d de %d arquivos", progress.processed(), progress.total()));
-			}
-		};
-
-		ProgressWindow progressWindow = new ProgressWindow(
-				tableView.getScene().getWindow(),
-				task.progressProperty(),
-				task.titleProperty(),
-				task.messageProperty(),
-				() -> task.cancel());
 
 		task.setOnSucceeded(event -> {
 			progressWindow.close();
 			btnVerificarDir.setDisable(false);
-			showResult(task.getValue());
+			showResult(task.getValue(), pdvMode);
 		});
 
 		task.setOnFailed(event -> {
@@ -198,20 +186,20 @@ public class MainScreenController {
 				: List.of(txtDirectory.getText().trim());
 
 		return Optional.of(new CollectionRequest(
-				directories, from, to, settings.getOrganizeMode(), paths.xmlArchiveDir(), !pdvMode));
+				directories, new DateRange(from, to), settings.getOrganizeMode(), paths.xmlArchiveDir()));
 	}
 
-	private void showResult(CollectionResult result) {
+	private void showResult(CollectionResult result, boolean pdvMode) {
 
-		List<NfceRow> rows = result.invoices().stream()
-				.map(MainScreenController::toRow)
+		List<NfceRow> rows = result.entries().stream()
+				.map(NfceRowMapper::toRow)
 				.toList();
 
 		tableView.setItems(FXCollections.observableArrayList(rows));
 
-		showMissing(MissingTableModel.fromColumns(result.missingColumns(), result.groupedBySeries()));
+		showMissing(MissingTableModel.fromResult(result, !pdvMode));
 
-		Dialogs.collectionSummary(result, paths.xmlArchiveDir());
+		Dialogs.collectionSummary(result, paths.xmlArchiveDir(), pdvMode);
 	}
 
 	private void showMissing(MissingTableModel model) {
@@ -245,10 +233,5 @@ public class MainScreenController {
 		}
 
 		showMissing(MissingTableModel.forPdvs(pdvCount));
-	}
-
-	private static NfceRow toRow(NfceEntry entry) {
-		return new NfceRow(entry.number(), entry.series(), entry.totalValue(),
-				entry.emissionDate(), entry.accessKey(), entry.status());
 	}
 }

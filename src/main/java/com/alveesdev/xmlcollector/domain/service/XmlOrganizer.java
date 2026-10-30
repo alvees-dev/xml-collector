@@ -7,8 +7,8 @@ import java.nio.file.StandardCopyOption;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 
-import com.alveesdev.xmlcollector.config.OrganizeMode;
 import com.alveesdev.xmlcollector.domain.model.CopyReport;
+import com.alveesdev.xmlcollector.domain.model.OrganizeMode;
 
 public class XmlOrganizer {
 

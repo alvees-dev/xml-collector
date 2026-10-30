@@ -3,108 +3,47 @@ package com.alveesdev.xmlcollector.domain.service;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import java.util.Map;
+import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.TreeSet;
 
-import com.alveesdev.xmlcollector.domain.model.NfceFileData;
-import com.alveesdev.xmlcollector.infra.xml.XmlKeyReader;
+import com.alveesdev.xmlcollector.domain.model.NumberRange;
+import com.alveesdev.xmlcollector.domain.model.XmlDocument.Nfce;
 
-public class MissingNumberFinder {
+public final class MissingNumberFinder {
 
-	private static final int SERIES_START = 22;
-	private static final int NUMBER_START = 25;
-	private static final int NUMBER_END = 34;
-
-	private record SeriesNumber(int series, int number) {
+	private MissingNumberFinder() {
 	}
 
-	public static Map<Integer, List<String>> findMissingBySeries(Collection<NfceFileData> invoices) {
+	public static SortedMap<Integer, List<NumberRange>> findBySeries(Collection<Nfce> invoices) {
 
-		Map<Integer, TreeSet<Integer>> numbersBySeries = new TreeMap<>();
+		SortedMap<Integer, TreeSet<Integer>> numbersBySeries = new TreeMap<>();
 
-		for (NfceFileData data : invoices) {
-			if (data == null || data.cancelledKey() != null) {
-				continue;
-			}
-
-			SeriesNumber found = identify(data);
-
-			if (found != null) {
-				numbersBySeries
-						.computeIfAbsent(found.series(), series -> new TreeSet<>())
-						.add(found.number());
-			}
+		for (Nfce invoice : invoices) {
+			numbersBySeries
+					.computeIfAbsent(invoice.series(), series -> new TreeSet<>())
+					.add(invoice.number());
 		}
 
-		Map<Integer, List<String>> missingBySeries = new TreeMap<>();
+		SortedMap<Integer, List<NumberRange>> missingBySeries = new TreeMap<>();
 
-		numbersBySeries.forEach((series, numbers) -> {
-			List<String> ranges = new ArrayList<>();
-			Integer previous = null;
-
-			for (int number : numbers) {
-				if (previous != null && number - previous > 1) {
-					ranges.add(formatRange(previous + 1, number - 1));
-				}
-				previous = number;
-			}
-
-			missingBySeries.put(series, ranges);
-		});
+		numbersBySeries.forEach((series, numbers) -> missingBySeries.put(series, findGaps(numbers)));
 
 		return missingBySeries;
 	}
 
-	public static List<String> findMissing(Collection<NfceFileData> invoices) {
+	private static List<NumberRange> findGaps(TreeSet<Integer> numbers) {
 
-		Map<Integer, List<String>> missingBySeries = findMissingBySeries(invoices);
-		boolean multipleSeries = missingBySeries.size() > 1;
+		List<NumberRange> gaps = new ArrayList<>();
+		Integer previous = null;
 
-		List<String> missing = new ArrayList<>();
-
-		missingBySeries.forEach((series, ranges) -> {
-			for (String range : ranges) {
-				missing.add(multipleSeries ? "S" + series + ": " + range : range);
+		for (int number : numbers) {
+			if (previous != null && number - previous > 1) {
+				gaps.add(new NumberRange(previous + 1, number - 1));
 			}
-		});
-
-		return missing;
-	}
-
-	private static SeriesNumber identify(NfceFileData data) {
-
-		Integer series = parseInt(data.series());
-		Integer number = parseInt(data.number());
-
-		if (series != null && number != null) {
-			return new SeriesNumber(series, number);
+			previous = number;
 		}
 
-		String key = data.accessKey();
-
-		if (XmlKeyReader.isValidKey(key)) {
-			return new SeriesNumber(
-					Integer.parseInt(key.substring(SERIES_START, NUMBER_START)),
-					Integer.parseInt(key.substring(NUMBER_START, NUMBER_END)));
-		}
-
-		return null;
-	}
-
-	private static Integer parseInt(String value) {
-		if (value == null) {
-			return null;
-		}
-
-		try {
-			return Integer.parseInt(value.trim());
-		} catch (NumberFormatException e) {
-			return null;
-		}
-	}
-
-	private static String formatRange(int start, int end) {
-		return start == end ? String.valueOf(start) : start + " a " + end;
+		return gaps;
 	}
 }

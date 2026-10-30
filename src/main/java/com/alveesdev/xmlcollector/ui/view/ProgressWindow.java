@@ -1,14 +1,15 @@
 package com.alveesdev.xmlcollector.ui.view;
 
+import java.io.IOException;
+import java.net.URL;
+
+import com.alveesdev.xmlcollector.ui.controller.ProgressController;
+
 import javafx.beans.property.ReadOnlyDoubleProperty;
 import javafx.beans.property.ReadOnlyStringProperty;
-import javafx.geometry.Insets;
-import javafx.geometry.Pos;
+import javafx.fxml.FXMLLoader;
+import javafx.scene.Parent;
 import javafx.scene.Scene;
-import javafx.scene.control.Button;
-import javafx.scene.control.Label;
-import javafx.scene.control.ProgressBar;
-import javafx.scene.layout.VBox;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
 import javafx.stage.StageStyle;
@@ -16,35 +17,24 @@ import javafx.stage.Window;
 
 public final class ProgressWindow {
 
+	private static final String PROGRESS_FXML = "/com/alveesdev/xmlcollector/view/ProgressV0.1.fxml";
+
 	private final Stage stage = new Stage();
 
 	public ProgressWindow(Window owner, ReadOnlyDoubleProperty progress, ReadOnlyStringProperty title,
-			ReadOnlyStringProperty message, Runnable onCancel) {
+			ReadOnlyStringProperty message, Runnable onCancel) throws IOException {
 
-		Label heading = new Label("Coletando XML");
-		heading.setStyle("-fx-font-size: 16px; -fx-font-weight: bold;");
+		URL location = ProgressWindow.class.getResource(PROGRESS_FXML);
 
-		Label source = new Label();
-		source.textProperty().bind(title);
+		if (location == null) {
+			throw new IOException("Arquivo da tela de progresso não encontrado.");
+		}
 
-		ProgressBar bar = new ProgressBar();
-		bar.setPrefWidth(380);
-		bar.progressProperty().bind(progress);
+		FXMLLoader loader = new FXMLLoader(location);
+		Parent root = loader.load();
 
-		Label counts = new Label();
-		counts.textProperty().bind(message);
-
-		Button cancel = new Button("Cancelar");
-		cancel.setOnAction(event -> {
-			cancel.setDisable(true);
-			cancel.setText("Cancelando...");
-			onCancel.run();
-		});
-
-		VBox root = new VBox(10, heading, source, bar, counts, cancel);
-		root.setAlignment(Pos.CENTER_LEFT);
-		root.setPadding(new Insets(20));
-		root.setStyle("-fx-background-color: white; -fx-border-color: #888888; -fx-border-width: 1;");
+		ProgressController controller = loader.getController();
+		controller.bind(progress, title, message, onCancel);
 
 		stage.initStyle(StageStyle.UNDECORATED);
 		stage.initModality(Modality.APPLICATION_MODAL);

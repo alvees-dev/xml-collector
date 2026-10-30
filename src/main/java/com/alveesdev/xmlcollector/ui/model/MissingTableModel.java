@@ -2,9 +2,12 @@ package com.alveesdev.xmlcollector.ui.model;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.IntStream;
 
-import com.alveesdev.xmlcollector.domain.model.MissingColumn;
+import com.alveesdev.xmlcollector.application.CollectionResult;
+import com.alveesdev.xmlcollector.application.CollectionResult.SourceResult;
+import com.alveesdev.xmlcollector.domain.model.NumberRange;
 
 public class MissingTableModel {
 
@@ -19,25 +22,66 @@ public class MissingTableModel {
 	}
 
 	public static MissingTableModel forPdvs(int pdvCount) {
-		List<MissingColumn> columns = IntStream.rangeClosed(1, pdvCount)
-				.mapToObj(number -> new MissingColumn(MissingColumn.pdvHeader(number), List.of()))
+		List<String> headers = IntStream.range(0, pdvCount)
+				.mapToObj(SourceLabels::header)
 				.toList();
 
-		return fromColumns(columns, false);
+		List<List<String>> columns = IntStream.range(0, pdvCount)
+				.mapToObj(index -> List.<String>of())
+				.toList();
+
+		return build(headers, columns, false);
 	}
 
-	public static MissingTableModel fromColumns(List<MissingColumn> columns, boolean seriesBased) {
-		List<String> headers = columns.stream().map(MissingColumn::header).toList();
+	public static MissingTableModel fromResult(CollectionResult result, boolean seriesBased) {
 
-		int maxRows = columns.stream().mapToInt(column -> column.ranges().size()).max().orElse(0);
+		List<String> headers = new ArrayList<>();
+		List<List<String>> columns = new ArrayList<>();
 
+		for (SourceResult source : result.sources()) {
+			if (seriesBased) {
+				source.missingBySeries().forEach((series, ranges) -> {
+					headers.add("SERIE " + series);
+					columns.add(ranges.stream().map(MissingTableModel::formatRange).toList());
+				});
+			} else {
+				headers.add(SourceLabels.header(source.sourceIndex()));
+				columns.add(flatten(source.missingBySeries()));
+			}
+		}
+
+		return build(headers, columns, seriesBased);
+	}
+
+	private static List<String> flatten(Map<Integer, List<NumberRange>> missingBySeries) {
+
+		boolean multipleSeries = missingBySeries.size() > 1;
+		List<String> lines = new ArrayList<>();
+
+		missingBySeries.forEach((series, ranges) -> {
+			for (NumberRange range : ranges) {
+				String text = formatRange(range);
+				lines.add(multipleSeries ? "S" + series + ": " + text : text);
+			}
+		});
+
+		return lines;
+	}
+
+	private static String formatRange(NumberRange range) {
+		return range.size() == 1 ? String.valueOf(range.start()) : range.start() + " a " + range.end();
+	}
+
+	private static MissingTableModel build(List<String> headers, List<List<String>> columns, boolean seriesBased) {
+
+		int maxRows = columns.stream().mapToInt(List::size).max().orElse(0);
 		List<List<String>> rows = new ArrayList<>();
 
 		for (int rowIndex = 0; rowIndex < maxRows; rowIndex++) {
 			List<String> row = new ArrayList<>();
 
-			for (MissingColumn column : columns) {
-				row.add(rowIndex < column.ranges().size() ? column.ranges().get(rowIndex) : "");
+			for (List<String> column : columns) {
+				row.add(rowIndex < column.size() ? column.get(rowIndex) : "");
 			}
 
 			rows.add(row);
