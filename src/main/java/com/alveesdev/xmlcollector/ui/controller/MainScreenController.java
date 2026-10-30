@@ -34,7 +34,7 @@ public class MainScreenController {
 	private static final double MISSING_COLUMN_WIDTH = 110;
 
 	private final CollectionService collectionService = new CollectionService();
-	private final AppPaths paths = AppPaths.fromJarLocation();
+	private final AppPaths paths = AppPaths.standard();
 
 	private MissingTableModel missingModel;
 

@@ -1,12 +1,13 @@
 package com.alveesdev.xmlcollector.config;
 
 import java.io.IOException;
-import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
 public final class AppPaths {
 
+	private static final String ROOT_DRIVE = "C:\\";
+	private static final String ROOT_DIR_NAME = "Coletor XML";
 	private static final String CONFIG_DIR_NAME = "Config";
 	private static final String DATABASE_DIR_NAME = "Database";
 	private static final String XML_ARCHIVE_DIR_NAME = "Arquivos_XML";
@@ -18,19 +19,8 @@ public final class AppPaths {
 		this.root = root;
 	}
 
-	public static AppPaths fromJarLocation() {
-		try {
-			Path location = Path.of(AppPaths.class.getProtectionDomain()
-					.getCodeSource().getLocation().toURI());
-
-			Path root = Files.isDirectory(location)
-					? Path.of("").toAbsolutePath()
-					: location.getParent();
-
-			return new AppPaths(root);
-		} catch (URISyntaxException e) {
-			throw new IllegalStateException("Could not resolve the application folder", e);
-		}
+	public static AppPaths standard() {
+		return new AppPaths(Path.of(ROOT_DRIVE, ROOT_DIR_NAME));
 	}
 
 	public Path root() {
