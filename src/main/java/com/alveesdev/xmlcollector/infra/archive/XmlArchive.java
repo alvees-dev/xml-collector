@@ -3,12 +3,19 @@ package com.alveesdev.xmlcollector.infra.archive;
 import java.io.IOException;
 import java.nio.file.AtomicMoveNotSupportedException;
 import java.nio.file.Files;
+import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.nio.file.StandardOpenOption;
+import java.nio.file.attribute.FileTime;
 import java.util.Optional;
 
 import com.alveesdev.xmlcollector.infra.xml.NfceXmlReader;
 
+/**
+ * Stores XML content in the archive. Instances are stateless and safe to use from several threads, as long as two
+ * threads never store to the same target file at the same time (the caller is responsible for that).
+ */
 public class XmlArchive {
 
 	public enum Outcome {
@@ -32,19 +39,17 @@ public class XmlArchive {
 		this.reader = reader;
 	}
 
-	public Outcome store(Path source, Path directory, String preferredName, String canonicalName, String identity)
-			throws IOException {
-
-		Files.createDirectories(directory);
+	public Outcome store(byte[] content, FileTime sourceModified, Path directory, String preferredName,
+			String canonicalName, String identity) throws IOException {
 
 		Path preferred = directory.resolve(preferredName);
 
 		if (!Files.exists(preferred)) {
-			copyAtomically(source, preferred);
+			write(content, sourceModified, preferred);
 			return Outcome.COPIED;
 		}
 
-		State preferredState = inspect(source, preferred, identity);
+		State preferredState = inspect(content, sourceModified, preferred, identity);
 
 		if (preferredState == State.SAME_DOCUMENT) {
 			return Outcome.ALREADY_EXISTS;
@@ -53,28 +58,29 @@ public class XmlArchive {
 		boolean hasCanonicalAlternative = !preferredName.equals(canonicalName);
 
 		if (preferredState == State.BROKEN || !hasCanonicalAlternative) {
-			copyAtomically(source, preferred);
+			write(content, sourceModified, preferred);
 			return Outcome.REPLACED;
 		}
 
 		Path canonical = directory.resolve(canonicalName);
 
 		if (!Files.exists(canonical)) {
-			copyAtomically(source, canonical);
+			write(content, sourceModified, canonical);
 			return Outcome.COPIED_RENAMED;
 		}
 
-		if (inspect(source, canonical, identity) == State.SAME_DOCUMENT) {
+		if (inspect(content, sourceModified, canonical, identity) == State.SAME_DOCUMENT) {
 			return Outcome.ALREADY_EXISTS;
 		}
 
-		copyAtomically(source, canonical);
+		write(content, sourceModified, canonical);
 		return Outcome.REPLACED;
 	}
 
-	private State inspect(Path source, Path existing, String identity) throws IOException {
+	private State inspect(byte[] content, FileTime sourceModified, Path existing, String identity)
+			throws IOException {
 
-		if (sameSizeAndTime(source, existing)) {
+		if (sameSizeAndTime(content, sourceModified, existing)) {
 			return State.SAME_DOCUMENT;
 		}
 
@@ -87,17 +93,19 @@ public class XmlArchive {
 		return found.get().equals(identity) ? State.SAME_DOCUMENT : State.OTHER_DOCUMENT;
 	}
 
-	private static boolean sameSizeAndTime(Path source, Path existing) throws IOException {
-		return Files.size(source) == Files.size(existing)
-				&& Files.getLastModifiedTime(source).equals(Files.getLastModifiedTime(existing));
+	private static boolean sameSizeAndTime(byte[] content, FileTime sourceModified, Path existing)
+			throws IOException {
+		return content.length == Files.size(existing)
+				&& sourceModified.equals(Files.getLastModifiedTime(existing));
 	}
 
-	private static void copyAtomically(Path source, Path target) throws IOException {
+	private static void write(byte[] content, FileTime sourceModified, Path target) throws IOException {
 
 		Path temp = target.resolveSibling(target.getFileName() + TEMP_SUFFIX);
 
 		try {
-			Files.copy(source, temp, StandardCopyOption.COPY_ATTRIBUTES, StandardCopyOption.REPLACE_EXISTING);
+			writeTemp(content, temp);
+			Files.setLastModifiedTime(temp, sourceModified);
 
 			try {
 				Files.move(temp, target, StandardCopyOption.ATOMIC_MOVE);
@@ -108,6 +116,18 @@ public class XmlArchive {
 		} catch (IOException e) {
 			Files.deleteIfExists(temp);
 			throw e;
+		}
+	}
+
+	private static void writeTemp(byte[] content, Path temp) throws IOException {
+		try {
+			Files.write(temp, content, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING,
+					StandardOpenOption.WRITE);
+		} catch (NoSuchFileException e) {
+			// The target directory does not exist yet: create it only now, instead of once per file.
+			Files.createDirectories(temp.getParent());
+			Files.write(temp, content, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING,
+					StandardOpenOption.WRITE);
 		}
 	}
 }

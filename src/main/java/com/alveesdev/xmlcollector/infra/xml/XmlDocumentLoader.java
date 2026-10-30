@@ -1,9 +1,7 @@
 package com.alveesdev.xmlcollector.infra.xml;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import java.io.InputStream;
-import java.nio.file.Files;
-import java.nio.file.Path;
 
 import javax.xml.XMLConstants;
 import javax.xml.parsers.DocumentBuilder;
@@ -36,14 +34,12 @@ public class XmlDocumentLoader {
 		}
 	};
 
-	public Document load(Path file) throws IOException, SAXException {
+	public Document load(byte[] content) throws IOException, SAXException {
 		DocumentBuilder builder = BUILDER.get();
 		builder.reset();
 		builder.setErrorHandler(STRICT_HANDLER);
 
-		try (InputStream input = Files.newInputStream(file)) {
-			return builder.parse(input);
-		}
+		return builder.parse(new ByteArrayInputStream(content));
 	}
 
 	private static DocumentBuilder createBuilder() {
