@@ -2,7 +2,6 @@ package com.alveesdev.xmlcollector.ui.model;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.IntStream;
 
 import com.alveesdev.xmlcollector.application.CollectionResult;
@@ -33,39 +32,19 @@ public class MissingTableModel {
 		return build(headers, columns, false);
 	}
 
-	public static MissingTableModel fromResult(CollectionResult result, boolean seriesBased) {
+	public static MissingTableModel fromResult(CollectionResult result) {
 
 		List<String> headers = new ArrayList<>();
 		List<List<String>> columns = new ArrayList<>();
 
 		for (SourceResult source : result.sources()) {
-			if (seriesBased) {
-				source.missingBySeries().forEach((series, ranges) -> {
-					headers.add("SERIE " + series);
-					columns.add(ranges.stream().map(MissingTableModel::formatRange).toList());
-				});
-			} else {
-				headers.add(SourceLabels.header(source.sourceIndex()));
-				columns.add(flatten(source.missingBySeries()));
-			}
+			source.missingBySeries().forEach((series, ranges) -> {
+				headers.add("SERIE " + series);
+				columns.add(ranges.stream().map(MissingTableModel::formatRange).toList());
+			});
 		}
 
-		return build(headers, columns, seriesBased);
-	}
-
-	private static List<String> flatten(Map<Integer, List<NumberRange>> missingBySeries) {
-
-		boolean multipleSeries = missingBySeries.size() > 1;
-		List<String> lines = new ArrayList<>();
-
-		missingBySeries.forEach((series, ranges) -> {
-			for (NumberRange range : ranges) {
-				String text = formatRange(range);
-				lines.add(multipleSeries ? "S" + series + ": " + text : text);
-			}
-		});
-
-		return lines;
+		return build(headers, columns, true);
 	}
 
 	private static String formatRange(NumberRange range) {

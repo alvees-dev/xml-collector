@@ -11,6 +11,10 @@ public class AppSettings {
 
 	private List<String> pdvDirectories = new ArrayList<>(List.of(""));
 
+	private List<String> nfeSalesDirectories = new ArrayList<>(List.of(""));
+
+	private List<String> nfePurchaseDirectories = new ArrayList<>(List.of(""));
+
 	private OrganizeMode organizeMode = OrganizeMode.SINGLE_FOLDER;
 
 	private AppSettings() {
@@ -30,6 +34,22 @@ public class AppSettings {
 
 	public int getPdvCount() {
 		return pdvDirectories.size();
+	}
+
+	public List<String> getNfeSalesDirectories() {
+		return List.copyOf(nfeSalesDirectories);
+	}
+
+	public void setNfeSalesDirectories(List<String> nfeSalesDirectories) {
+		this.nfeSalesDirectories = new ArrayList<>(nfeSalesDirectories);
+	}
+
+	public List<String> getNfePurchaseDirectories() {
+		return List.copyOf(nfePurchaseDirectories);
+	}
+
+	public void setNfePurchaseDirectories(List<String> nfePurchaseDirectories) {
+		this.nfePurchaseDirectories = new ArrayList<>(nfePurchaseDirectories);
 	}
 
 	public OrganizeMode getOrganizeMode() {

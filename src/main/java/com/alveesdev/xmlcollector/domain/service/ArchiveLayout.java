@@ -4,6 +4,7 @@ import java.nio.file.Path;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 
+import com.alveesdev.xmlcollector.domain.model.DocumentCategory;
 import com.alveesdev.xmlcollector.domain.model.OrganizeMode;
 
 public final class ArchiveLayout {
@@ -18,12 +19,12 @@ public final class ArchiveLayout {
 	private ArchiveLayout() {
 	}
 
-	public static Path directoryFor(Path archiveRoot, LocalDate date, OrganizeMode mode) {
+	public static Path directoryFor(Path archiveRoot, LocalDate date, OrganizeMode mode, DocumentCategory category) {
 		String monthFolder = MONTH_NAMES[date.getMonthValue() - 1] + "_" + date.getYear();
-		Path monthDirectory = archiveRoot.resolve(monthFolder);
+		Path categoryDirectory = archiveRoot.resolve(monthFolder).resolve(category.folderName());
 
 		return mode == OrganizeMode.BY_DAY
-				? monthDirectory.resolve(DAY_FOLDER_FORMAT.format(date))
-				: monthDirectory;
+				? categoryDirectory.resolve(DAY_FOLDER_FORMAT.format(date))
+				: categoryDirectory;
 	}
 }

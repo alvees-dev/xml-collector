@@ -21,7 +21,6 @@ import com.alveesdev.xmlcollector.infra.xml.XmlFileScanner.SourceFile;
 
 public class CollectionService {
 
-	/** Number of files read and copied at the same time. Kept low to avoid overloading the PDV machines. */
 	public static final int DEFAULT_THREADS = 4;
 
 	private record ScannedSource(int index, List<SourceFile> files) {

@@ -1,26 +1,23 @@
 package com.alveesdev.xmlcollector.ui.controller;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import com.alveesdev.xmlcollector.config.AppSettings;
 import com.alveesdev.xmlcollector.domain.model.OrganizeMode;
+import com.alveesdev.xmlcollector.ui.view.DirectoryListEditor;
 
-import javafx.application.Platform;
 import javafx.fxml.FXML;
-import javafx.geometry.Insets;
-import javafx.geometry.Pos;
 import javafx.scene.control.Button;
+import javafx.scene.control.ChoiceBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.RadioButton;
 import javafx.scene.control.ScrollPane;
-import javafx.scene.control.TextField;
 import javafx.scene.input.MouseEvent;
-import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 
 public class SettingsController {
+
+	private static final int NFE_SALES_INDEX = 0;
+	private static final int NFE_PURCHASES_INDEX = 1;
 
 	@FXML
 	private Label lblTitle;
@@ -38,27 +35,46 @@ public class SettingsController {
 	private VBox pdvListBox;
 
 	@FXML
+	private ChoiceBox<String> choiceNfeType;
+
+	@FXML
+	private ScrollPane nfeScrollPane;
+
+	@FXML
 	private RadioButton radioSingleFolder;
 
 	@FXML
 	private RadioButton radioByDay;
 
-	private final List<TextField> pdvFields = new ArrayList<>();
+	private DirectoryListEditor pdvEditor;
+	private DirectoryListEditor nfeSalesEditor;
+	private DirectoryListEditor nfePurchaseEditor;
+
+	private final VBox nfeSalesListBox = new VBox();
+	private final VBox nfePurchaseListBox = new VBox();
 
 	private double dragOffsetX;
 	private double dragOffsetY;
 
 	@FXML
 	public void initialize() {
-		List<String> savedDirectories = AppSettings.getInstance().getPdvDirectories();
+		AppSettings settings = AppSettings.getInstance();
 
-		if (savedDirectories.isEmpty()) {
-			addPdvRow("");
-		} else {
-			savedDirectories.forEach(this::addPdvRow);
-		}
+		pdvEditor = new DirectoryListEditor(pdvListBox, pdvScrollPane, "PDV", 45, 219);
+		nfeSalesEditor = new DirectoryListEditor(nfeSalesListBox, nfeScrollPane, "NFe", 45, 219);
+		nfePurchaseEditor = new DirectoryListEditor(nfePurchaseListBox, nfeScrollPane, "NFe", 45, 219);
 
-		if (AppSettings.getInstance().getOrganizeMode() == OrganizeMode.BY_DAY) {
+		pdvEditor.load(settings.getPdvDirectories());
+		nfeSalesEditor.load(settings.getNfeSalesDirectories());
+		nfePurchaseEditor.load(settings.getNfePurchaseDirectories());
+
+		choiceNfeType.getItems().setAll("NFe Vendas", "NFe Compras");
+		choiceNfeType.getSelectionModel().selectedIndexProperty()
+				.addListener((observable, oldIndex, newIndex) -> showNfeList(newIndex.intValue()));
+		choiceNfeType.getSelectionModel().select(NFE_SALES_INDEX);
+		showNfeList(NFE_SALES_INDEX);
+
+		if (settings.getOrganizeMode() == OrganizeMode.BY_DAY) {
 			radioByDay.setSelected(true);
 		} else {
 			radioSingleFolder.setSelected(true);
@@ -67,29 +83,30 @@ public class SettingsController {
 
 	@FXML
 	private void onAddPdv() {
-		addPdvRow("");
+		pdvEditor.addRow("");
 	}
 
 	@FXML
 	private void onRemovePdv() {
-		if (pdvFields.size() <= 1) {
-			return;
-		}
+		pdvEditor.removeLastRow();
+	}
 
-		int lastIndex = pdvFields.size() - 1;
-		pdvFields.remove(lastIndex);
-		pdvListBox.getChildren().remove(lastIndex);
+	@FXML
+	private void onAddNfe() {
+		selectedNfeEditor().addRow("");
+	}
+
+	@FXML
+	private void onRemoveNfe() {
+		selectedNfeEditor().removeLastRow();
 	}
 
 	@FXML
 	private void onSave() {
-		List<String> directories = new ArrayList<>();
-		for (TextField field : pdvFields) {
-			directories.add(field.getText().trim());
-		}
-
 		AppSettings settings = AppSettings.getInstance();
-		settings.setPdvDirectories(directories);
+		settings.setPdvDirectories(pdvEditor.values());
+		settings.setNfeSalesDirectories(nfeSalesEditor.values());
+		settings.setNfePurchaseDirectories(nfePurchaseEditor.values());
 		settings.setOrganizeMode(radioByDay.isSelected() ? OrganizeMode.BY_DAY : OrganizeMode.SINGLE_FOLDER);
 
 		closeWindow();
@@ -113,25 +130,14 @@ public class SettingsController {
 		stage.setY(event.getScreenY() - dragOffsetY);
 	}
 
-	private void addPdvRow(String directory) {
-		int number = pdvFields.size() + 1;
+	private void showNfeList(int selectedIndex) {
+		nfeScrollPane.setContent(selectedIndex == NFE_PURCHASES_INDEX ? nfePurchaseListBox : nfeSalesListBox);
+	}
 
-		Label label = new Label(String.format("PDV %02d", number));
-		label.setMinWidth(45);
-
-		TextField field = new TextField(directory);
-		field.setPrefWidth(219);
-
-		Button testButton = new Button("Teste");
-
-		HBox row = new HBox(8, label, field, testButton);
-		row.setAlignment(Pos.CENTER_LEFT);
-		row.setPadding(new Insets(8, 0, 0, 15));
-
-		pdvFields.add(field);
-		pdvListBox.getChildren().add(row);
-
-		Platform.runLater(() -> pdvScrollPane.setVvalue(1.0));
+	private DirectoryListEditor selectedNfeEditor() {
+		return choiceNfeType.getSelectionModel().getSelectedIndex() == NFE_PURCHASES_INDEX
+				? nfePurchaseEditor
+				: nfeSalesEditor;
 	}
 
 	private void closeWindow() {

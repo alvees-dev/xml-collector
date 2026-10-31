@@ -25,6 +25,7 @@ import java.util.function.Consumer;
 import com.alveesdev.xmlcollector.application.CollectionResult.SourceResult;
 import com.alveesdev.xmlcollector.application.CollectionSummary.CopyFailure;
 import com.alveesdev.xmlcollector.domain.model.AccessKey;
+import com.alveesdev.xmlcollector.domain.model.DocumentCategory;
 import com.alveesdev.xmlcollector.domain.model.NfceEntry;
 import com.alveesdev.xmlcollector.domain.model.NumberRange;
 import com.alveesdev.xmlcollector.domain.model.XmlDocument;
@@ -34,15 +35,6 @@ import com.alveesdev.xmlcollector.infra.archive.XmlArchive;
 import com.alveesdev.xmlcollector.infra.xml.NfceXmlReader;
 import com.alveesdev.xmlcollector.infra.xml.XmlFileScanner.SourceFile;
 
-/**
- * Processes the files of one source in batches. Each batch runs in three phases:
- * <ol>
- * <li>read and parse every file in parallel (network bound, no shared state);</li>
- * <li>decide, sequentially and in file order, what to do with each document (duplicates, period, counters);</li>
- * <li>store the accepted documents in parallel, never running two jobs that touch the same target file at once.</li>
- * </ol>
- * Only the batch being processed is kept in memory.
- */
 class SourceProcessor {
 
 	private static final int BATCH_SIZE = 400;
@@ -152,8 +144,6 @@ class SourceProcessor {
 				List.copyOf(counters.copyFailures));
 	}
 
-	// Phase 1: parallel read and parse
-
 	private List<ReadFile> readInParallel(List<SourceFile> batch, Runnable onFileDone, BooleanSupplier cancelled) {
 
 		List<Callable<ReadFile>> tasks = new ArrayList<>();
@@ -192,8 +182,6 @@ class SourceProcessor {
 			return new ReadFile(source, fileName, new XmlDocument.Unreadable(reason), null);
 		}
 	}
-
-	// Phase 2: sequential decisions, in file order
 
 	private List<StoreJob> decide(List<ReadFile> readFiles, Set<AccessKey> cancelledKeys, List<Pending> pending) {
 
@@ -255,13 +243,11 @@ class SourceProcessor {
 	}
 
 	private StoreJob job(ReadFile file, LocalDate date, String preferredName, String canonicalName, String identity) {
-		Path directory = ArchiveLayout.directoryFor(request.archiveRoot(), date, request.organizeMode());
+		Path directory = ArchiveLayout.directoryFor(request.archiveRoot(), date, request.organizeMode(), DocumentCategory.NFCE);
 
 		return new StoreJob(file.content(), file.source().lastModified(), file.fileName(), directory, preferredName,
 				canonicalName, identity);
 	}
-
-	// Phase 3: parallel store
 
 	private void storeInParallel(List<StoreJob> jobs, BooleanSupplier cancelled) {
 
@@ -311,11 +297,6 @@ class SourceProcessor {
 		}
 	}
 
-	/**
-	 * Groups jobs that may touch the same target file (by preferred or canonical name), so each group can run
-	 * sequentially, in file order, while different groups run in parallel. This keeps the result identical to a fully
-	 * sequential run even when two different documents share a file name.
-	 */
 	private static List<List<Integer>> groupByTargetFile(List<StoreJob> jobs) {
 
 		int[] parent = new int[jobs.size()];
@@ -352,8 +333,6 @@ class SourceProcessor {
 		return index;
 	}
 
-	// Executor helpers
-
 	private <T> List<Future<T>> submitAll(List<Callable<T>> tasks) {
 		List<Future<T>> futures = new ArrayList<>();
 
@@ -364,7 +343,6 @@ class SourceProcessor {
 		return futures;
 	}
 
-	/** Waits for the futures in submission order, and cancels the remaining ones if anything goes wrong. */
 	private static <T> void awaitAll(List<Future<T>> futures, Consumer<T> onResult) {
 		try {
 			for (Future<T> future : futures) {

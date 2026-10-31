@@ -12,10 +12,6 @@ import java.util.Optional;
 
 import com.alveesdev.xmlcollector.infra.xml.NfceXmlReader;
 
-/**
- * Stores XML content in the archive. Instances are stateless and safe to use from several threads, as long as two
- * threads never store to the same target file at the same time (the caller is responsible for that).
- */
 public class XmlArchive {
 
 	public enum Outcome {
@@ -124,7 +120,6 @@ public class XmlArchive {
 			Files.write(temp, content, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING,
 					StandardOpenOption.WRITE);
 		} catch (NoSuchFileException e) {
-			// The target directory does not exist yet: create it only now, instead of once per file.
 			Files.createDirectories(temp.getParent());
 			Files.write(temp, content, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING,
 					StandardOpenOption.WRITE);

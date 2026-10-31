@@ -11,7 +11,6 @@ public final class AppPaths {
 	private static final String CONFIG_DIR_NAME = "Config";
 	private static final String DATABASE_DIR_NAME = "Database";
 	private static final String XML_ARCHIVE_DIR_NAME = "Arquivos_XML";
-	private static final String VOIDED_DIR_NAME = "Inutilizadas";
 
 	private final Path root;
 
@@ -39,14 +38,9 @@ public final class AppPaths {
 		return root.resolve(XML_ARCHIVE_DIR_NAME);
 	}
 
-	public Path voidedDir() {
-		return xmlArchiveDir().resolve(VOIDED_DIR_NAME);
-	}
-
 	public void ensureDirectories() throws IOException {
 		Files.createDirectories(configDir());
 		Files.createDirectories(databaseDir());
 		Files.createDirectories(xmlArchiveDir());
-		Files.createDirectories(voidedDir());
 	}
 }

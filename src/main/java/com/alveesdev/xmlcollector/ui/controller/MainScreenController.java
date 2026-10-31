@@ -197,7 +197,7 @@ public class MainScreenController {
 
 		tableView.setItems(FXCollections.observableArrayList(rows));
 
-		showMissing(MissingTableModel.fromResult(result, !pdvMode));
+		showMissing(MissingTableModel.fromResult(result));
 
 		Dialogs.collectionSummary(result, paths.xmlArchiveDir(), pdvMode);
 	}
