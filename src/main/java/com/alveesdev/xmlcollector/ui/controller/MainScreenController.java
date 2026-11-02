@@ -10,9 +10,9 @@ import com.alveesdev.xmlcollector.application.collection.CollectionRequest;
 import com.alveesdev.xmlcollector.application.collection.CollectionResult;
 import com.alveesdev.xmlcollector.application.collection.CollectionService;
 import com.alveesdev.xmlcollector.application.dispatch.DispatchService;
-import com.alveesdev.xmlcollector.application.port.EmailSettingsRepository;
 import com.alveesdev.xmlcollector.application.settings.AppPaths;
 import com.alveesdev.xmlcollector.application.settings.AppSettings;
+import com.alveesdev.xmlcollector.application.settings.service.SettingsService;
 import com.alveesdev.xmlcollector.domain.model.DateRange;
 import com.alveesdev.xmlcollector.ui.model.MissingTableModel;
 import com.alveesdev.xmlcollector.ui.model.NfceRow;
@@ -40,7 +40,7 @@ public class MainScreenController {
 
 	private final CollectionService collectionService;
 	private final DispatchService dispatchService;
-	private final EmailSettingsRepository emailSettings;
+	private final SettingsService settingsService;
 	private final AppPaths paths;
 	private final SettingsWindow settingsWindow;
 
@@ -48,10 +48,10 @@ public class MainScreenController {
 	private DispatchTabController dispatchTab;
 
 	public MainScreenController(CollectionService collectionService, DispatchService dispatchService,
-			EmailSettingsRepository emailSettings, AppPaths paths, SettingsWindow settingsWindow) {
+			SettingsService settingsService, AppPaths paths, SettingsWindow settingsWindow) {
 		this.collectionService = collectionService;
 		this.dispatchService = dispatchService;
-		this.emailSettings = emailSettings;
+		this.settingsService = settingsService;
 		this.paths = paths;
 		this.settingsWindow = settingsWindow;
 	}
@@ -139,7 +139,7 @@ public class MainScreenController {
 
 		dispatchTab = new DispatchTabController(
 				txtEmailRecipient, txtEmailSubject, txtEmailBody, choiceYear, choiceMonth, btnSendXml,
-				paths, dispatchService, emailSettings);
+				paths, dispatchService, settingsService);
 		dispatchTab.load();
 	}
 
@@ -225,14 +225,14 @@ public class MainScreenController {
 			return Optional.empty();
 		}
 
-		AppSettings settings = AppSettings.getInstance();
+		AppSettings settings = settingsService.current();
 
 		List<String> directories = pdvMode
-				? settings.getPdvDirectories()
+				? settings.pdvDirectories()
 				: List.of(txtDirectory.getText().trim());
 
 		return Optional.of(new CollectionRequest(
-				directories, new DateRange(from, to), settings.getOrganizeMode(), paths.xmlArchiveDir()));
+				directories, new DateRange(from, to), settings.organizeMode(), paths.xmlArchiveDir()));
 	}
 
 	private void showResult(CollectionResult result, boolean pdvMode) {
@@ -269,7 +269,7 @@ public class MainScreenController {
 
 	private void refreshMissingTable() {
 
-		int pdvCount = AppSettings.getInstance().getPdvCount();
+		int pdvCount = settingsService.current().pdvCount();
 
 		boolean keepCurrent = missingModel != null
 				&& (missingModel.isSeriesBased() || missingModel.getHeaders().size() == pdvCount);

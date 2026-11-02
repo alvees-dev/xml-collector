@@ -11,7 +11,8 @@ public final class AppPaths {
 	private static final String CONFIG_DIR_NAME = "Config";
 	private static final String DATABASE_DIR_NAME = "Database";
 	private static final String XML_ARCHIVE_DIR_NAME = "Arquivos_XML";
-	private static final String EMAIL_SETTINGS_FILE_NAME = "email.properties";
+	private static final String SETTINGS_FILE_NAME = "settings.properties";
+	private static final String LEGACY_EMAIL_SETTINGS_FILE_NAME = "email.properties";
 	private static final String GOOGLE_CREDENTIALS_FILE_NAME = "google_credentials.json";
 	private static final String GOOGLE_TOKENS_DIR_NAME = "google_tokens";
 
@@ -41,8 +42,12 @@ public final class AppPaths {
 		return root.resolve(XML_ARCHIVE_DIR_NAME);
 	}
 
-	public Path emailSettingsFile() {
-		return configDir().resolve(EMAIL_SETTINGS_FILE_NAME);
+	public Path settingsFile() {
+		return configDir().resolve(SETTINGS_FILE_NAME);
+	}
+
+	public Path legacyEmailSettingsFile() {
+		return configDir().resolve(LEGACY_EMAIL_SETTINGS_FILE_NAME);
 	}
 
 	public Path googleCredentialsFile() {

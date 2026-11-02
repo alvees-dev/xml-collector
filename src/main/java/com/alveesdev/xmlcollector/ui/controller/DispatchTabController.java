@@ -12,14 +12,13 @@ import com.alveesdev.xmlcollector.application.dispatch.DispatchRequest;
 import com.alveesdev.xmlcollector.application.dispatch.DispatchResult;
 import com.alveesdev.xmlcollector.application.dispatch.DispatchService;
 import com.alveesdev.xmlcollector.application.port.DispatchException;
-import com.alveesdev.xmlcollector.application.port.EmailSettingsRepository;
 import com.alveesdev.xmlcollector.application.settings.AppPaths;
 import com.alveesdev.xmlcollector.application.settings.AppSettings;
 import com.alveesdev.xmlcollector.application.settings.EmailDraft;
+import com.alveesdev.xmlcollector.application.settings.service.SettingsService;
 import com.alveesdev.xmlcollector.domain.service.ArchiveLayout;
 import com.alveesdev.xmlcollector.ui.view.Dialogs;
 
-import javafx.application.Platform;
 import javafx.scene.control.Button;
 import javafx.scene.control.ChoiceBox;
 import javafx.scene.control.TextArea;
@@ -41,11 +40,11 @@ public class DispatchTabController {
 	private final String sendButtonText;
 	private final AppPaths paths;
 	private final DispatchService service;
-	private final EmailSettingsRepository emailSettings;
+	private final SettingsService settingsService;
 
 	public DispatchTabController(TextField recipientField, TextField subjectField, TextArea bodyArea,
 			ChoiceBox<Integer> yearChoice, ChoiceBox<String> monthChoice, Button sendButton, AppPaths paths,
-			DispatchService service, EmailSettingsRepository emailSettings) {
+			DispatchService service, SettingsService settingsService) {
 		this.recipientField = recipientField;
 		this.subjectField = subjectField;
 		this.bodyArea = bodyArea;
@@ -55,19 +54,11 @@ public class DispatchTabController {
 		this.sendButtonText = sendButton.getText();
 		this.paths = paths;
 		this.service = service;
-		this.emailSettings = emailSettings;
+		this.settingsService = settingsService;
 	}
 
 	public void load() {
-		AppSettings settings = AppSettings.getInstance();
-
-		try {
-			emailSettings.load(settings);
-		} catch (IOException e) {
-			Platform.runLater(() -> Dialogs.warning("Não foi possível ler as configurações de e-mail: " + e.getMessage()));
-		}
-
-		EmailDraft draft = settings.getEmailDraft();
+		EmailDraft draft = settingsService.current().emailDraft();
 		recipientField.setText(draft.recipient());
 		subjectField.setText(draft.subject());
 		bodyArea.setText(draft.body());
@@ -100,11 +91,11 @@ public class DispatchTabController {
 		updateDraft();
 		saveSettings();
 
-		AppSettings settings = AppSettings.getInstance();
-		EmailDraft draft = settings.getEmailDraft();
+		AppSettings settings = settingsService.current();
+		EmailDraft draft = settings.emailDraft();
 
 		DispatchRequest request = new DispatchRequest(
-				List.of(monthDirectory), settings.getEmailAccount(), draft.recipient().trim(), draft.subject(), draft.body());
+				List.of(monthDirectory), settings.emailAccount(), draft.recipient().trim(), draft.subject(), draft.body());
 
 		DispatchTask task = new DispatchTask(service, request);
 
@@ -144,15 +135,15 @@ public class DispatchTabController {
 	}
 
 	private void updateDraft() {
-		AppSettings.getInstance().setEmailDraft(
+		settingsService.updateDraft(
 				new EmailDraft(recipientField.getText(), subjectField.getText(), bodyArea.getText()));
 	}
 
 	private void saveSettings() {
 		try {
-			emailSettings.save(AppSettings.getInstance());
+			settingsService.save(settingsService.current());
 		} catch (IOException e) {
-			Dialogs.warning("Não foi possível salvar as configurações de e-mail: " + e.getMessage());
+			Dialogs.warning("Não foi possível salvar as configurações: " + e.getMessage());
 		}
 	}
 

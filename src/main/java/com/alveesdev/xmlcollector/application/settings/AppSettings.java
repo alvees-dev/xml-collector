@@ -1,82 +1,41 @@
 package com.alveesdev.xmlcollector.application.settings;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import com.alveesdev.xmlcollector.domain.model.OrganizeMode;
 
-public class AppSettings {
+public record AppSettings(
+		List<String> pdvDirectories,
+		List<String> nfeSalesDirectories,
+		List<String> nfePurchaseDirectories,
+		OrganizeMode organizeMode,
+		EmailAccount emailAccount,
+		EmailDraft emailDraft
+) {
 
-	private static final AppSettings INSTANCE = new AppSettings();
+	private static final List<String> ONE_EMPTY_DIRECTORY = List.of("");
 
-	private List<String> pdvDirectories = new ArrayList<>(List.of(""));
-
-	private List<String> nfeSalesDirectories = new ArrayList<>(List.of(""));
-
-	private List<String> nfePurchaseDirectories = new ArrayList<>(List.of(""));
-
-	private OrganizeMode organizeMode = OrganizeMode.SINGLE_FOLDER;
-
-	private EmailAccount emailAccount = DefaultEmailAccount.get();
-
-	private EmailDraft emailDraft = EmailDraft.empty();
-
-	private AppSettings() {
+	public AppSettings {
+		pdvDirectories = List.copyOf(pdvDirectories);
+		nfeSalesDirectories = List.copyOf(nfeSalesDirectories);
+		nfePurchaseDirectories = List.copyOf(nfePurchaseDirectories);
 	}
 
-	public static AppSettings getInstance() {
-		return INSTANCE;
+	public static AppSettings defaults() {
+		return new AppSettings(
+				ONE_EMPTY_DIRECTORY,
+				ONE_EMPTY_DIRECTORY,
+				ONE_EMPTY_DIRECTORY,
+				OrganizeMode.SINGLE_FOLDER,
+				DefaultEmailAccount.get(),
+				EmailDraft.empty());
 	}
 
-	public List<String> getPdvDirectories() {
-		return List.copyOf(pdvDirectories);
-	}
-
-	public void setPdvDirectories(List<String> pdvDirectories) {
-		this.pdvDirectories = new ArrayList<>(pdvDirectories);
-	}
-
-	public int getPdvCount() {
+	public int pdvCount() {
 		return pdvDirectories.size();
 	}
 
-	public List<String> getNfeSalesDirectories() {
-		return List.copyOf(nfeSalesDirectories);
-	}
-
-	public void setNfeSalesDirectories(List<String> nfeSalesDirectories) {
-		this.nfeSalesDirectories = new ArrayList<>(nfeSalesDirectories);
-	}
-
-	public List<String> getNfePurchaseDirectories() {
-		return List.copyOf(nfePurchaseDirectories);
-	}
-
-	public void setNfePurchaseDirectories(List<String> nfePurchaseDirectories) {
-		this.nfePurchaseDirectories = new ArrayList<>(nfePurchaseDirectories);
-	}
-
-	public OrganizeMode getOrganizeMode() {
-		return organizeMode;
-	}
-
-	public void setOrganizeMode(OrganizeMode organizeMode) {
-		this.organizeMode = organizeMode;
-	}
-
-	public EmailAccount getEmailAccount() {
-		return emailAccount;
-	}
-
-	public void setEmailAccount(EmailAccount emailAccount) {
-		this.emailAccount = emailAccount;
-	}
-
-	public EmailDraft getEmailDraft() {
-		return emailDraft;
-	}
-
-	public void setEmailDraft(EmailDraft emailDraft) {
-		this.emailDraft = emailDraft;
+	public AppSettings withEmailDraft(EmailDraft draft) {
+		return new AppSettings(pdvDirectories, nfeSalesDirectories, nfePurchaseDirectories, organizeMode, emailAccount, draft);
 	}
 }

@@ -4,9 +4,9 @@ import java.io.IOException;
 
 import com.alveesdev.xmlcollector.application.settings.AppSettings;
 
-public interface EmailSettingsRepository {
+public interface SettingsRepository {
 
-	void load(AppSettings settings) throws IOException;
+	AppSettings load() throws IOException;
 
 	void save(AppSettings settings) throws IOException;
 }

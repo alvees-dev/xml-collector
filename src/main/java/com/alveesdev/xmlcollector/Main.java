@@ -30,6 +30,12 @@ public class Main extends Application {
             return;
         }
 
+        try {
+            context.settings().load();
+        } catch (IOException e) {
+            new Alert(Alert.AlertType.WARNING, "Não foi possível ler as configurações: " + e.getMessage()).showAndWait();
+        }
+
         FXMLLoader loader = new FXMLLoader(
                 getClass().getResource("/com/alveesdev/xmlcollector/view/MainScreenSceneV1.fxml"));
         loader.setControllerFactory(context::createController);
