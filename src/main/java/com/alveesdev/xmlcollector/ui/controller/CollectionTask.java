@@ -7,6 +7,7 @@ import com.alveesdev.xmlcollector.application.collection.CollectionRequest;
 import com.alveesdev.xmlcollector.application.collection.CollectionResult;
 import com.alveesdev.xmlcollector.application.collection.CollectionService;
 import com.alveesdev.xmlcollector.ui.model.SourceLabels;
+import com.alveesdev.xmlcollector.ui.model.SourceMode;
 
 import javafx.concurrent.Task;
 
@@ -16,12 +17,12 @@ public class CollectionTask extends Task<CollectionResult> {
 
 	private final CollectionService service;
 	private final CollectionRequest request;
-	private final boolean pdvMode;
+	private final SourceMode sourceMode;
 
-	public CollectionTask(CollectionService service, CollectionRequest request, boolean pdvMode) {
+	public CollectionTask(CollectionService service, CollectionRequest request, SourceMode sourceMode) {
 		this.service = service;
 		this.request = request;
-		this.pdvMode = pdvMode;
+		this.sourceMode = sourceMode;
 	}
 
 	@Override
@@ -30,7 +31,7 @@ public class CollectionTask extends Task<CollectionResult> {
 	}
 
 	private void publishProgress(CollectionProgress progress) {
-		updateTitle(SourceLabels.label(progress.sourceIndex(), pdvMode));
+		updateTitle(SourceLabels.label(progress.sourceIndex(), sourceMode));
 
 		if (progress.isCounting()) {
 			updateProgress(-1, -1);

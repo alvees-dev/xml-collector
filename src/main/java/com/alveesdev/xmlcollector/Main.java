@@ -37,7 +37,7 @@ public class Main extends Application {
         }
 
         FXMLLoader loader = new FXMLLoader(
-                getClass().getResource("/com/alveesdev/xmlcollector/view/MainScreenSceneV1.fxml"));
+                getClass().getResource("/com/alveesdev/xmlcollector/view/MainScreen.fxml"));
         loader.setControllerFactory(context::createController);
 
         Scene scene = new Scene(loader.load());

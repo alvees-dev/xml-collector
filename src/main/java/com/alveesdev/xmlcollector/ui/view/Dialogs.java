@@ -8,6 +8,7 @@ import com.alveesdev.xmlcollector.application.collection.CollectionResult;
 import com.alveesdev.xmlcollector.application.collection.CollectionSummary;
 import com.alveesdev.xmlcollector.application.collection.SourceFailure;
 import com.alveesdev.xmlcollector.ui.model.SourceLabels;
+import com.alveesdev.xmlcollector.ui.model.SourceMode;
 
 import javafx.scene.control.Alert;
 
@@ -30,10 +31,10 @@ public final class Dialogs {
 		new Alert(Alert.AlertType.ERROR, message).showAndWait();
 	}
 
-	public static void collectionSummary(CollectionResult result, Path archiveRoot, boolean pdvMode) {
+	public static void collectionSummary(CollectionResult result, Path archiveRoot, SourceMode sourceMode) {
 
 		CollectionSummary summary = result.summary();
-		List<String> failures = describeFailures(result, pdvMode);
+		List<String> failures = describeFailures(result, sourceMode);
 
 		StringBuilder message = new StringBuilder();
 		message.append("Copiados: ").append(summary.copied());
@@ -66,12 +67,12 @@ public final class Dialogs {
 		alert.showAndWait();
 	}
 
-	private static List<String> describeFailures(CollectionResult result, boolean pdvMode) {
+	private static List<String> describeFailures(CollectionResult result, SourceMode sourceMode) {
 
 		List<String> lines = new ArrayList<>();
 
 		for (SourceFailure failure : result.failures()) {
-			String label = SourceLabels.label(failure.sourceIndex(), pdvMode);
+			String label = SourceLabels.label(failure.sourceIndex(), sourceMode);
 
 			lines.add(switch (failure.reason()) {
 				case NOT_INFORMED -> label + ": diretório não informado";

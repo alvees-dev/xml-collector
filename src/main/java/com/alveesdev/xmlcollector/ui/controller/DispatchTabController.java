@@ -19,6 +19,7 @@ import com.alveesdev.xmlcollector.application.settings.service.SettingsService;
 import com.alveesdev.xmlcollector.domain.service.ArchiveLayout;
 import com.alveesdev.xmlcollector.ui.view.Dialogs;
 
+import javafx.fxml.FXML;
 import javafx.scene.control.Button;
 import javafx.scene.control.ChoiceBox;
 import javafx.scene.control.TextArea;
@@ -31,56 +32,64 @@ public class DispatchTabController {
 	private static final String SENDING_TEXT = "Enviando...";
 	private static final int LISTED_YEARS = 6;
 
-	private final TextField recipientField;
-	private final TextField subjectField;
-	private final TextArea bodyArea;
-	private final ChoiceBox<Integer> yearChoice;
-	private final ChoiceBox<String> monthChoice;
-	private final Button sendButton;
-	private final String sendButtonText;
-	private final AppPaths paths;
 	private final DispatchService service;
 	private final SettingsService settingsService;
+	private final AppPaths paths;
 
-	public DispatchTabController(TextField recipientField, TextField subjectField, TextArea bodyArea,
-			ChoiceBox<Integer> yearChoice, ChoiceBox<String> monthChoice, Button sendButton, AppPaths paths,
-			DispatchService service, SettingsService settingsService) {
-		this.recipientField = recipientField;
-		this.subjectField = subjectField;
-		this.bodyArea = bodyArea;
-		this.yearChoice = yearChoice;
-		this.monthChoice = monthChoice;
-		this.sendButton = sendButton;
-		this.sendButtonText = sendButton.getText();
-		this.paths = paths;
+	private String sendButtonText;
+
+	@FXML
+	private TextField txtRecipient;
+
+	@FXML
+	private TextField txtSubject;
+
+	@FXML
+	private TextArea txtBody;
+
+	@FXML
+	private ChoiceBox<Integer> choiceYear;
+
+	@FXML
+	private ChoiceBox<String> choiceMonth;
+
+	@FXML
+	private Button btnSend;
+
+	public DispatchTabController(DispatchService service, SettingsService settingsService, AppPaths paths) {
 		this.service = service;
 		this.settingsService = settingsService;
+		this.paths = paths;
 	}
 
-	public void load() {
+	@FXML
+	public void initialize() {
+		sendButtonText = btnSend.getText();
+
 		EmailDraft draft = settingsService.current().emailDraft();
-		recipientField.setText(draft.recipient());
-		subjectField.setText(draft.subject());
-		bodyArea.setText(draft.body());
+		txtRecipient.setText(draft.recipient());
+		txtSubject.setText(draft.subject());
+		txtBody.setText(draft.body());
 
 		loadMonthChoices();
 
-		recipientField.textProperty().addListener((observable, oldValue, newValue) -> updateDraft());
-		subjectField.textProperty().addListener((observable, oldValue, newValue) -> updateDraft());
-		bodyArea.textProperty().addListener((observable, oldValue, newValue) -> updateDraft());
+		txtRecipient.textProperty().addListener((observable, oldValue, newValue) -> updateDraft());
+		txtSubject.textProperty().addListener((observable, oldValue, newValue) -> updateDraft());
+		txtBody.textProperty().addListener((observable, oldValue, newValue) -> updateDraft());
 	}
 
-	public void send() {
+	@FXML
+	private void onSend() {
 
-		Integer year = yearChoice.getSelectionModel().getSelectedItem();
-		int monthIndex = monthChoice.getSelectionModel().getSelectedIndex();
+		Integer year = choiceYear.getSelectionModel().getSelectedItem();
+		int monthIndex = choiceMonth.getSelectionModel().getSelectedIndex();
 
 		if (year == null || monthIndex < 0) {
 			Dialogs.warning("Selecione o ano e o mês do XML a ser enviado.");
 			return;
 		}
 
-		String monthLabel = monthChoice.getSelectionModel().getSelectedItem() + " de " + year;
+		String monthLabel = choiceMonth.getSelectionModel().getSelectedItem() + " de " + year;
 		Path monthDirectory = ArchiveLayout.monthDirectory(paths.xmlArchiveDir(), YearMonth.of(year, monthIndex + 1).atDay(1));
 
 		if (!Files.isDirectory(monthDirectory)) {
@@ -99,8 +108,8 @@ public class DispatchTabController {
 
 		DispatchTask task = new DispatchTask(service, request);
 
-		sendButton.setDisable(true);
-		sendButton.setText(SENDING_TEXT);
+		btnSend.setDisable(true);
+		btnSend.setText(SENDING_TEXT);
 
 		task.setOnSucceeded(event -> {
 			restoreButton();
@@ -127,16 +136,15 @@ public class DispatchTabController {
 			years.add(year);
 		}
 
-		yearChoice.getItems().setAll(years);
-		monthChoice.getItems().setAll(ArchiveLayout.monthNames());
+		choiceYear.getItems().setAll(years);
+		choiceMonth.getItems().setAll(ArchiveLayout.monthNames());
 
-		yearChoice.getSelectionModel().select(years.indexOf(previousMonth.getYear()));
-		monthChoice.getSelectionModel().select(previousMonth.getMonthValue() - 1);
+		choiceYear.getSelectionModel().select(years.indexOf(previousMonth.getYear()));
+		choiceMonth.getSelectionModel().select(previousMonth.getMonthValue() - 1);
 	}
 
 	private void updateDraft() {
-		settingsService.updateDraft(
-				new EmailDraft(recipientField.getText(), subjectField.getText(), bodyArea.getText()));
+		settingsService.updateDraft(new EmailDraft(txtRecipient.getText(), txtSubject.getText(), txtBody.getText()));
 	}
 
 	private void saveSettings() {
@@ -148,8 +156,8 @@ public class DispatchTabController {
 	}
 
 	private void restoreButton() {
-		sendButton.setDisable(false);
-		sendButton.setText(sendButtonText);
+		btnSend.setDisable(false);
+		btnSend.setText(sendButtonText);
 	}
 
 	private static String describeSuccess(String monthLabel, String recipient, DispatchResult result) {

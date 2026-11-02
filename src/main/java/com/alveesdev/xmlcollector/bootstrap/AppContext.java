@@ -12,7 +12,10 @@ import com.alveesdev.xmlcollector.infra.email.SmtpEmailSender;
 import com.alveesdev.xmlcollector.infra.settings.PropertiesSettingsRepository;
 import com.alveesdev.xmlcollector.infra.xml.FiscalXmlReader;
 import com.alveesdev.xmlcollector.infra.xml.XmlFileScanner;
+import com.alveesdev.xmlcollector.ui.controller.CollectionTabController;
+import com.alveesdev.xmlcollector.ui.controller.DispatchTabController;
 import com.alveesdev.xmlcollector.ui.controller.MainScreenController;
+import com.alveesdev.xmlcollector.ui.controller.MissingTabController;
 import com.alveesdev.xmlcollector.ui.controller.SettingsController;
 import com.alveesdev.xmlcollector.ui.view.SettingsWindow;
 
@@ -49,7 +52,19 @@ public final class AppContext {
 
 	public Object createController(Class<?> type) {
 		if (type == MainScreenController.class) {
-			return new MainScreenController(collectionService, dispatchService, settingsService, paths, settingsWindow);
+			return new MainScreenController(settingsWindow);
+		}
+
+		if (type == CollectionTabController.class) {
+			return new CollectionTabController(collectionService, settingsService, paths);
+		}
+
+		if (type == MissingTabController.class) {
+			return new MissingTabController(settingsService);
+		}
+
+		if (type == DispatchTabController.class) {
+			return new DispatchTabController(dispatchService, settingsService, paths);
 		}
 
 		if (type == SettingsController.class) {

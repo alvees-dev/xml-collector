@@ -1,0 +1,168 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.ChoiceBox?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.PasswordField?>
+<?import javafx.scene.control.RadioButton?>
+<?import javafx.scene.control.ScrollPane?>
+<?import javafx.scene.control.Separator?>
+<?import javafx.scene.control.Tab?>
+<?import javafx.scene.control.TabPane?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.control.ToggleGroup?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.VBox?>
+
+<VBox maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="500.0" prefWidth="385.0" style="-fx-border-color: #808080; -fx-border-width: 1;" xmlns="http://javafx.com/javafx/26" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.alveesdev.xmlcollector.ui.controller.SettingsController">
+   <fx:define>
+      <ToggleGroup fx:id="organizeGroup" />
+   </fx:define>
+   <children>
+      <Label fx:id="lblTitle" onMouseDragged="#onTitleDragged" onMousePressed="#onTitlePressed" prefHeight="28.0" prefWidth="385.0" text=" Configurações" />
+      <TabPane tabClosingPolicy="UNAVAILABLE" VBox.vgrow="ALWAYS">
+        <tabs>
+          <Tab text="Modelos">
+            <content>
+              <VBox>
+                 <children>
+                    <HBox alignment="CENTER_LEFT" spacing="20.0">
+                       <padding>
+                          <Insets bottom="30.0" left="20.0" top="30.0" />
+                       </padding>
+                       <children>
+                          <VBox alignment="CENTER">
+                             <children>
+                                <Label text="Busca de Arquivos" />
+                                <Label text="XML" />
+                             </children>
+                          </VBox>
+                          <ChoiceBox fx:id="choiceNfeType" prefWidth="150.0" />
+                       </children>
+                    </HBox>
+                    <Separator />
+                    <HBox alignment="CENTER_LEFT" spacing="10.0">
+                       <padding>
+                          <Insets bottom="15.0" left="20.0" top="10.0" />
+                       </padding>
+                       <children>
+                          <VBox alignment="CENTER">
+                             <HBox.margin>
+                                <Insets right="10.0" />
+                             </HBox.margin>
+                             <children>
+                                <Label text="Diretórios de Busca" />
+                                <Label text="De NFe" />
+                             </children>
+                          </VBox>
+                          <Button maxHeight="24.0" maxWidth="24.0" minHeight="24.0" minWidth="24.0" mnemonicParsing="false" onAction="#onAddNfe" prefHeight="24.0" prefWidth="24.0" style="-fx-background-radius: 50; -fx-border-radius: 50; -fx-border-width: 0; -fx-padding: -8 1 0 0; -fx-font-size: 25; -fx-font-weight: bold; -fx-cursor: hand; -fx-alignment: center; -fx-content-display: center;" text="+" />
+                          <Button maxHeight="24.0" maxWidth="24.0" minHeight="24.0" minWidth="24.0" mnemonicParsing="false" onAction="#onRemoveNfe" prefHeight="24.0" prefWidth="24.0" style="-fx-background-radius: 50; -fx-border-radius: 50; -fx-border-width: 0; -fx-padding: -8 0 0 0; -fx-font-size: 25; -fx-font-weight: bold; -fx-cursor: hand; -fx-alignment: center; -fx-content-display: center;" text="-" />
+                       </children>
+                    </HBox>
+                    <ScrollPane fx:id="nfeScrollPane" VBox.vgrow="ALWAYS">
+                       <content>
+                          <VBox />
+                       </content>
+                    </ScrollPane>
+                 </children>
+              </VBox>
+            </content>
+          </Tab>
+          <Tab text="Diretórios PDV">
+            <content>
+              <VBox>
+                 <children>
+                    <HBox alignment="CENTER_LEFT" minHeight="80.0" spacing="10.0">
+                       <padding>
+                          <Insets left="15.0" />
+                       </padding>
+                       <children>
+                          <Label text="Adicionar PDV">
+                             <HBox.margin>
+                                <Insets right="10.0" />
+                             </HBox.margin>
+                          </Label>
+                          <Button maxHeight="24.0" maxWidth="24.0" minHeight="24.0" minWidth="24.0" mnemonicParsing="false" onAction="#onAddPdv" prefHeight="24.0" prefWidth="24.0" style="-fx-background-radius: 50; -fx-border-radius: 50; -fx-border-width: 0; -fx-padding: -8 1 0 0; -fx-font-size: 25; -fx-font-weight: bold; -fx-cursor: hand; -fx-alignment: center; -fx-content-display: center;" text="+" />
+                          <Button maxHeight="24.0" maxWidth="24.0" minHeight="24.0" minWidth="24.0" mnemonicParsing="false" onAction="#onRemovePdv" prefHeight="24.0" prefWidth="24.0" style="-fx-background-radius: 50; -fx-border-radius: 50; -fx-border-width: 0; -fx-padding: -8 0 0 0; -fx-font-size: 25; -fx-font-weight: bold; -fx-cursor: hand; -fx-alignment: center; -fx-content-display: center;" text="-" />
+                       </children>
+                    </HBox>
+                    <Separator />
+                    <ScrollPane fx:id="pdvScrollPane" fitToWidth="true" hbarPolicy="NEVER" style="-fx-background-color: transparent; -fx-padding: 0;" VBox.vgrow="ALWAYS">
+                       <content>
+                          <VBox fx:id="pdvListBox" />
+                       </content>
+                    </ScrollPane>
+                    <HBox alignment="CENTER_LEFT" minHeight="60.0">
+                       <padding>
+                          <Insets left="30.0" />
+                       </padding>
+                       <children>
+                          <Button mnemonicParsing="false" text="Testar Todos" />
+                       </children>
+                    </HBox>
+                 </children>
+              </VBox>
+            </content>
+          </Tab>
+          <Tab text="Organizar XML">
+            <content>
+              <VBox spacing="10.0">
+                 <padding>
+                    <Insets left="15.0" top="40.0" />
+                 </padding>
+                 <children>
+                    <HBox alignment="CENTER_LEFT" spacing="20.0">
+                       <children>
+                          <VBox alignment="CENTER">
+                             <children>
+                                <Label text="Modelos" />
+                                <Label text="de Separação" />
+                             </children>
+                          </VBox>
+                          <ChoiceBox prefWidth="150.0" />
+                       </children>
+                    </HBox>
+                    <RadioButton fx:id="radioByDay" mnemonicParsing="false" text="Separado Por Dia" toggleGroup="$organizeGroup">
+                       <VBox.margin>
+                          <Insets top="10.0" />
+                       </VBox.margin>
+                    </RadioButton>
+                    <RadioButton fx:id="radioSingleFolder" mnemonicParsing="false" text="Diretório Único" toggleGroup="$organizeGroup" />
+                 </children>
+              </VBox>
+            </content>
+          </Tab>
+          <Tab text="Email">
+            <content>
+              <VBox>
+                 <padding>
+                    <Insets left="25.0" top="40.0" />
+                 </padding>
+                 <children>
+                    <Label text="Email" />
+                    <TextField fx:id="txtEmailUser" maxWidth="200.0" />
+                    <Label text="Senha">
+                       <VBox.margin>
+                          <Insets top="10.0" />
+                       </VBox.margin>
+                    </Label>
+                    <PasswordField fx:id="txtEmailPassword" maxWidth="200.0" />
+                 </children>
+              </VBox>
+            </content>
+          </Tab>
+        </tabs>
+      </TabPane>
+      <Separator />
+      <HBox alignment="CENTER_RIGHT" minHeight="46.0" spacing="10.0">
+         <padding>
+            <Insets right="10.0" />
+         </padding>
+         <children>
+            <Button fx:id="btnSave" mnemonicParsing="false" onAction="#onSave" text="Salvar" />
+            <Button fx:id="btnCancel" mnemonicParsing="false" onAction="#onCancel" text="Cancelar" />
+         </children>
+      </HBox>
+   </children>
+</VBox>
