@@ -5,7 +5,6 @@ import java.util.List;
 import java.util.stream.IntStream;
 
 import com.alveesdev.xmlcollector.application.collection.CollectionResult;
-import com.alveesdev.xmlcollector.application.collection.CollectionResult.SourceResult;
 import com.alveesdev.xmlcollector.domain.model.NumberRange;
 
 public class MissingTableModel {
@@ -37,12 +36,10 @@ public class MissingTableModel {
 		List<String> headers = new ArrayList<>();
 		List<List<String>> columns = new ArrayList<>();
 
-		for (SourceResult source : result.sources()) {
-			source.missingBySeries().forEach((series, ranges) -> {
-				headers.add("SERIE " + series);
-				columns.add(ranges.stream().map(MissingTableModel::formatRange).toList());
-			});
-		}
+		result.missingBySeries().forEach((series, ranges) -> {
+			headers.add("SERIE " + series);
+			columns.add(ranges.stream().map(MissingTableModel::formatRange).toList());
+		});
 
 		return build(headers, columns, true);
 	}

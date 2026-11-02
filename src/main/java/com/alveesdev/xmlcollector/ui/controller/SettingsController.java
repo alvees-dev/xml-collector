@@ -2,9 +2,9 @@ package com.alveesdev.xmlcollector.ui.controller;
 
 import java.io.IOException;
 
-import com.alveesdev.xmlcollector.application.port.EmailSettingsRepository;
 import com.alveesdev.xmlcollector.application.settings.AppSettings;
 import com.alveesdev.xmlcollector.application.settings.EmailAccount;
+import com.alveesdev.xmlcollector.application.settings.service.SettingsService;
 import com.alveesdev.xmlcollector.domain.model.OrganizeMode;
 import com.alveesdev.xmlcollector.ui.view.Dialogs;
 import com.alveesdev.xmlcollector.ui.view.DirectoryListEditor;
@@ -26,7 +26,7 @@ public class SettingsController {
 	private static final int NFE_SALES_INDEX = 0;
 	private static final int NFE_PURCHASES_INDEX = 1;
 
-	private final EmailSettingsRepository emailSettings;
+	private final SettingsService settingsService;
 
 	@FXML
 	private Label lblTitle;
@@ -71,21 +71,21 @@ public class SettingsController {
 	private double dragOffsetX;
 	private double dragOffsetY;
 
-	public SettingsController(EmailSettingsRepository emailSettings) {
-		this.emailSettings = emailSettings;
+	public SettingsController(SettingsService settingsService) {
+		this.settingsService = settingsService;
 	}
 
 	@FXML
 	public void initialize() {
-		AppSettings settings = AppSettings.getInstance();
+		AppSettings settings = settingsService.current();
 
 		pdvEditor = new DirectoryListEditor(pdvListBox, pdvScrollPane, "PDV", 45, 219);
 		nfeSalesEditor = new DirectoryListEditor(nfeSalesListBox, nfeScrollPane, "NFe", 45, 219);
 		nfePurchaseEditor = new DirectoryListEditor(nfePurchaseListBox, nfeScrollPane, "NFe", 45, 219);
 
-		pdvEditor.load(settings.getPdvDirectories());
-		nfeSalesEditor.load(settings.getNfeSalesDirectories());
-		nfePurchaseEditor.load(settings.getNfePurchaseDirectories());
+		pdvEditor.load(settings.pdvDirectories());
+		nfeSalesEditor.load(settings.nfeSalesDirectories());
+		nfePurchaseEditor.load(settings.nfePurchaseDirectories());
 
 		choiceNfeType.getItems().setAll("NFe Vendas", "NFe Compras");
 		choiceNfeType.getSelectionModel().selectedIndexProperty()
@@ -93,13 +93,13 @@ public class SettingsController {
 		choiceNfeType.getSelectionModel().select(NFE_SALES_INDEX);
 		showNfeList(NFE_SALES_INDEX);
 
-		if (settings.getOrganizeMode() == OrganizeMode.BY_DAY) {
+		if (settings.organizeMode() == OrganizeMode.BY_DAY) {
 			radioByDay.setSelected(true);
 		} else {
 			radioSingleFolder.setSelected(true);
 		}
 
-		loadEmailAccount(settings.getEmailAccount());
+		loadEmailAccount(settings.emailAccount());
 	}
 
 	@FXML
@@ -124,8 +124,6 @@ public class SettingsController {
 
 	@FXML
 	private void onSave() {
-		AppSettings settings = AppSettings.getInstance();
-
 		String email = txtEmailUser.getText().trim();
 
 		if (!email.isEmpty() && !email.contains("@")) {
@@ -133,16 +131,18 @@ public class SettingsController {
 			return;
 		}
 
-		settings.setPdvDirectories(pdvEditor.values());
-		settings.setNfeSalesDirectories(nfeSalesEditor.values());
-		settings.setNfePurchaseDirectories(nfePurchaseEditor.values());
-		settings.setOrganizeMode(radioByDay.isSelected() ? OrganizeMode.BY_DAY : OrganizeMode.SINGLE_FOLDER);
-		settings.setEmailAccount(readEmailAccount(email));
+		AppSettings settings = new AppSettings(
+				pdvEditor.values(),
+				nfeSalesEditor.values(),
+				nfePurchaseEditor.values(),
+				radioByDay.isSelected() ? OrganizeMode.BY_DAY : OrganizeMode.SINGLE_FOLDER,
+				readEmailAccount(email),
+				settingsService.current().emailDraft());
 
 		try {
-			emailSettings.save(settings);
+			settingsService.save(settings);
 		} catch (IOException e) {
-			Dialogs.warning("Não foi possível salvar as configurações de e-mail: " + e.getMessage());
+			Dialogs.warning("Não foi possível salvar as configurações: " + e.getMessage());
 		}
 
 		closeWindow();
@@ -172,7 +172,7 @@ public class SettingsController {
 	}
 
 	private EmailAccount readEmailAccount(String email) {
-		EmailAccount current = AppSettings.getInstance().getEmailAccount();
+		EmailAccount current = settingsService.current().emailAccount();
 
 		return new EmailAccount(
 				current.host(), current.port(), current.security(), email, txtEmailPassword.getText().trim());

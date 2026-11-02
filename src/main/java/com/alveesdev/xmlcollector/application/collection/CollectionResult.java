@@ -3,23 +3,20 @@ package com.alveesdev.xmlcollector.application.collection;
 import java.util.List;
 import java.util.SortedMap;
 
-import com.alveesdev.xmlcollector.domain.model.NfceEntry;
+import com.alveesdev.xmlcollector.domain.model.DocumentEntry;
 import com.alveesdev.xmlcollector.domain.model.NumberRange;
 
 public record CollectionResult(
 		List<SourceResult> sources,
+		SortedMap<Integer, List<NumberRange>> missingBySeries,
 		CollectionSummary summary,
 		List<SourceFailure> failures
 ) {
 
-	public record SourceResult(
-			int sourceIndex,
-			List<NfceEntry> entries,
-			SortedMap<Integer, List<NumberRange>> missingBySeries
-	) {
+	public record SourceResult(int sourceIndex, List<DocumentEntry> entries) {
 	}
 
-	public List<NfceEntry> entries() {
+	public List<DocumentEntry> entries() {
 		return sources.stream()
 				.flatMap(source -> source.entries().stream())
 				.toList();

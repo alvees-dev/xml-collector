@@ -5,8 +5,8 @@ public final class SourceLabels {
 	private SourceLabels() {
 	}
 
-	public static String label(int sourceIndex, boolean pdvMode) {
-		return pdvMode ? String.format("PDV %02d", sourceIndex + 1) : "Diretório";
+	public static String label(int sourceIndex, SourceMode mode) {
+		return mode == SourceMode.PDV_DIRECTORIES ? String.format("PDV %02d", sourceIndex + 1) : "Diretório";
 	}
 
 	public static String header(int sourceIndex) {

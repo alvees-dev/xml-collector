@@ -3,15 +3,12 @@ package com.alveesdev.xmlcollector.application.collection;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.attribute.FileTime;
-import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Set;
 import java.util.SortedMap;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CancellationException;
@@ -27,20 +24,14 @@ import com.alveesdev.xmlcollector.application.port.DocumentArchive;
 import com.alveesdev.xmlcollector.application.port.DocumentReader;
 import com.alveesdev.xmlcollector.application.port.SourceFiles;
 import com.alveesdev.xmlcollector.application.port.SourceFiles.SourceFile;
-import com.alveesdev.xmlcollector.domain.model.AccessKey;
-import com.alveesdev.xmlcollector.domain.model.DocumentCategory;
-import com.alveesdev.xmlcollector.domain.model.NfceEntry;
 import com.alveesdev.xmlcollector.domain.model.NumberRange;
 import com.alveesdev.xmlcollector.domain.model.XmlDocument;
 import com.alveesdev.xmlcollector.domain.service.ArchiveLayout;
-import com.alveesdev.xmlcollector.domain.service.MissingNumberFinder;
+import com.alveesdev.xmlcollector.domain.service.CollectionRules;
 
 class SourceProcessor {
 
 	private static final int BATCH_SIZE = 400;
-
-	private record Pending(String fileName, XmlDocument.Nfce nfce) {
-	}
 
 	private record ReadFile(SourceFile source, String fileName, XmlDocument document, byte[] content) {
 	}
@@ -88,9 +79,8 @@ class SourceProcessor {
 	private final DocumentArchive archive;
 	private final ExecutorService executor;
 
+	private final CollectionRules rules;
 	private final Counters counters = new Counters();
-	private final Set<AccessKey> seenKeys = new HashSet<>();
-	private final Set<String> seenEventIds = new HashSet<>();
 
 	SourceProcessor(CollectionRequest request, SourceFiles sourceFiles, DocumentReader reader, DocumentArchive archive,
 			ExecutorService executor) {
@@ -99,12 +89,10 @@ class SourceProcessor {
 		this.reader = reader;
 		this.archive = archive;
 		this.executor = executor;
+		this.rules = new CollectionRules(request.period());
 	}
 
-	SourceResult process(int sourceIndex, List<SourceFile> files, Runnable onFileDone, BooleanSupplier cancelled) {
-
-		Set<AccessKey> cancelledKeys = new HashSet<>();
-		List<Pending> pending = new ArrayList<>();
+	void process(int sourceIndex, List<SourceFile> files, Runnable onFileDone, BooleanSupplier cancelled) {
 
 		for (int start = 0; start < files.size(); start += BATCH_SIZE) {
 			throwIfCancelled(cancelled);
@@ -112,26 +100,17 @@ class SourceProcessor {
 			List<SourceFile> batch = files.subList(start, Math.min(start + BATCH_SIZE, files.size()));
 
 			List<ReadFile> readFiles = readInParallel(batch, onFileDone, cancelled);
-			List<StoreJob> jobs = decide(readFiles, cancelledKeys, pending);
+			List<StoreJob> jobs = decide(sourceIndex, readFiles);
 			storeInParallel(jobs, cancelled);
 		}
+	}
 
-		List<NfceEntry> entries = new ArrayList<>();
-		List<XmlDocument.Nfce> invoices = new ArrayList<>();
+	SourceResult result(int sourceIndex) {
+		return new SourceResult(sourceIndex, rules.entriesOf(sourceIndex));
+	}
 
-		for (Pending item : pending) {
-			if (item.nfce() == null) {
-				entries.add(NfceEntry.error(item.fileName()));
-				continue;
-			}
-
-			entries.add(NfceEntry.of(item.nfce(), cancelledKeys.contains(item.nfce().key()), item.fileName()));
-			invoices.add(item.nfce());
-		}
-
-		SortedMap<Integer, List<NumberRange>> missing = MissingNumberFinder.findBySeries(invoices);
-
-		return new SourceResult(sourceIndex, entries, missing);
+	SortedMap<Integer, List<NumberRange>> missingNumbers() {
+		return rules.missingNumbers();
 	}
 
 	CollectionSummary summary() {
@@ -174,9 +153,9 @@ class SourceProcessor {
 
 		try {
 			byte[] content = sourceFiles.read(source);
-			XmlDocument document = reader.read(content);
+			XmlDocument document = reader.read(content, request.category().models());
 
-			boolean needsStoring = document instanceof XmlDocument.Nfce || document instanceof XmlDocument.CancelEvent;
+			boolean needsStoring = document instanceof XmlDocument.Invoice || document instanceof XmlDocument.CancelEvent;
 
 			return new ReadFile(source, fileName, document, needsStoring ? content : null);
 
@@ -186,70 +165,37 @@ class SourceProcessor {
 		}
 	}
 
-	private List<StoreJob> decide(List<ReadFile> readFiles, Set<AccessKey> cancelledKeys, List<Pending> pending) {
+	private List<StoreJob> decide(int sourceIndex, List<ReadFile> readFiles) {
 
 		List<StoreJob> jobs = new ArrayList<>();
 
 		for (ReadFile file : readFiles) {
-			XmlDocument document = file.document();
+			CollectionRules.Decision decision = rules.decide(sourceIndex, file.fileName(), file.document());
 
-			if (document instanceof XmlDocument.Nfce nfce) {
-				handleInvoice(file, nfce, pending, jobs);
-			} else if (document instanceof XmlDocument.CancelEvent event) {
-				handleCancelEvent(file, event, cancelledKeys, jobs);
-			} else if (document instanceof XmlDocument.Ignored) {
-				counters.ignored++;
-			} else {
-				counters.errors++;
-				pending.add(new Pending(file.fileName(), null));
+			if (decision instanceof CollectionRules.Store store) {
+				jobs.add(job(file, store));
+			} else if (decision instanceof CollectionRules.Skip skip) {
+				count(skip.reason());
 			}
 		}
 
 		return jobs;
 	}
 
-	private void handleInvoice(ReadFile file, XmlDocument.Nfce nfce, List<Pending> pending, List<StoreJob> jobs) {
-
-		if (!seenKeys.add(nfce.key())) {
-			counters.duplicates++;
-			return;
+	private void count(CollectionRules.SkipReason reason) {
+		switch (reason) {
+			case DUPLICATE -> counters.duplicates++;
+			case OUT_OF_PERIOD -> counters.outOfPeriod++;
+			case IGNORED -> counters.ignored++;
+			case UNREADABLE -> counters.errors++;
 		}
-
-		if (!request.period().contains(nfce.date())) {
-			counters.outOfPeriod++;
-			return;
-		}
-
-		pending.add(new Pending(file.fileName(), nfce));
-
-		String key = nfce.key().value();
-		jobs.add(job(file, nfce.date(), file.fileName(), key + ".xml", key));
 	}
 
-	private void handleCancelEvent(ReadFile file, XmlDocument.CancelEvent event, Set<AccessKey> cancelledKeys,
-			List<StoreJob> jobs) {
+	private StoreJob job(ReadFile file, CollectionRules.Store store) {
+		Path directory = ArchiveLayout.directoryFor(request.archiveRoot(), store.date(), request.organizeMode(), request.category());
 
-		cancelledKeys.add(event.cancelledKey());
-
-		if (!seenEventIds.add(event.eventId())) {
-			counters.duplicates++;
-			return;
-		}
-
-		if (!request.period().contains(event.date())) {
-			counters.outOfPeriod++;
-			return;
-		}
-
-		String name = event.eventId() + ".xml";
-		jobs.add(job(file, event.date(), name, name, event.eventId()));
-	}
-
-	private StoreJob job(ReadFile file, LocalDate date, String preferredName, String canonicalName, String identity) {
-		Path directory = ArchiveLayout.directoryFor(request.archiveRoot(), date, request.organizeMode(), DocumentCategory.NFCE);
-
-		return new StoreJob(file.content(), file.source().lastModified(), file.fileName(), directory, preferredName,
-				canonicalName, identity);
+		return new StoreJob(file.content(), file.source().lastModified(), file.fileName(), directory,
+				store.preferredName(), store.canonicalName(), store.identity());
 	}
 
 	private void storeInParallel(List<StoreJob> jobs, BooleanSupplier cancelled) {

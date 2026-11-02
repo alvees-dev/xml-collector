@@ -8,18 +8,18 @@ import java.util.TreeMap;
 import java.util.TreeSet;
 
 import com.alveesdev.xmlcollector.domain.model.NumberRange;
-import com.alveesdev.xmlcollector.domain.model.XmlDocument.Nfce;
+import com.alveesdev.xmlcollector.domain.model.XmlDocument.Invoice;
 
 public final class MissingNumberFinder {
 
 	private MissingNumberFinder() {
 	}
 
-	public static SortedMap<Integer, List<NumberRange>> findBySeries(Collection<Nfce> invoices) {
+	public static SortedMap<Integer, List<NumberRange>> findBySeries(Collection<Invoice> invoices) {
 
 		SortedMap<Integer, TreeSet<Integer>> numbersBySeries = new TreeMap<>();
 
-		for (Nfce invoice : invoices) {
+		for (Invoice invoice : invoices) {
 			numbersBySeries
 					.computeIfAbsent(invoice.series(), series -> new TreeSet<>())
 					.add(invoice.number());

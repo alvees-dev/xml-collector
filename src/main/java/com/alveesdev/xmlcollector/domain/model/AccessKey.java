@@ -1,8 +1,8 @@
 package com.alveesdev.xmlcollector.domain.model;
 
-public record AccessKey(String value) {
+import java.util.Optional;
 
-	public static final String NFCE_MODEL = "65";
+public record AccessKey(String value) {
 
 	private static final int LENGTH = 44;
 	private static final int MODEL_START = 20;
@@ -14,11 +14,11 @@ public record AccessKey(String value) {
 		}
 	}
 
-	public String model() {
+	public String modelCode() {
 		return value.substring(MODEL_START, MODEL_END);
 	}
 
-	public boolean isNfce() {
-		return NFCE_MODEL.equals(model());
+	public Optional<DocumentModel> model() {
+		return DocumentModel.fromCode(modelCode());
 	}
 }

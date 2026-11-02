@@ -13,7 +13,7 @@ import javafx.util.Callback;
 
 public final class SettingsWindow {
 
-	private static final String SETTINGS_FXML = "/com/alveesdev/xmlcollector/view/SettingsV1.fxml";
+	private static final String SETTINGS_FXML = "/com/alveesdev/xmlcollector/view/Settings.fxml";
 
 	private final Callback<Class<?>, Object> controllerFactory;
 

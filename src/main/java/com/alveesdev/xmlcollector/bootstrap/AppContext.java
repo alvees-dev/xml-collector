@@ -3,16 +3,19 @@ package com.alveesdev.xmlcollector.bootstrap;
 import com.alveesdev.xmlcollector.application.collection.CollectionService;
 import com.alveesdev.xmlcollector.application.dispatch.DispatchService;
 import com.alveesdev.xmlcollector.application.port.DocumentReader;
-import com.alveesdev.xmlcollector.application.port.EmailSettingsRepository;
 import com.alveesdev.xmlcollector.application.settings.AppPaths;
+import com.alveesdev.xmlcollector.application.settings.service.SettingsService;
 import com.alveesdev.xmlcollector.infra.archive.MonthZipArchiver;
 import com.alveesdev.xmlcollector.infra.archive.XmlArchive;
 import com.alveesdev.xmlcollector.infra.drive.GoogleDriveStorage;
 import com.alveesdev.xmlcollector.infra.email.SmtpEmailSender;
-import com.alveesdev.xmlcollector.infra.settings.PropertiesEmailSettingsRepository;
-import com.alveesdev.xmlcollector.infra.xml.NfceXmlReader;
+import com.alveesdev.xmlcollector.infra.settings.PropertiesSettingsRepository;
+import com.alveesdev.xmlcollector.infra.xml.FiscalXmlReader;
 import com.alveesdev.xmlcollector.infra.xml.XmlFileScanner;
+import com.alveesdev.xmlcollector.ui.controller.CollectionTabController;
+import com.alveesdev.xmlcollector.ui.controller.DispatchTabController;
 import com.alveesdev.xmlcollector.ui.controller.MainScreenController;
+import com.alveesdev.xmlcollector.ui.controller.MissingTabController;
 import com.alveesdev.xmlcollector.ui.controller.SettingsController;
 import com.alveesdev.xmlcollector.ui.view.SettingsWindow;
 
@@ -21,20 +24,21 @@ public final class AppContext {
 	private final AppPaths paths;
 	private final CollectionService collectionService;
 	private final DispatchService dispatchService;
-	private final EmailSettingsRepository emailSettings;
+	private final SettingsService settingsService;
 	private final SettingsWindow settingsWindow;
 
 	public AppContext(AppPaths paths) {
 		this.paths = paths;
 
-		DocumentReader reader = new NfceXmlReader();
+		DocumentReader reader = new FiscalXmlReader();
 
 		this.collectionService = new CollectionService(new XmlFileScanner(), reader, new XmlArchive(reader));
 		this.dispatchService = new DispatchService(
 				new MonthZipArchiver(),
 				new SmtpEmailSender(),
 				new GoogleDriveStorage(paths.googleCredentialsFile(), paths.googleTokensDir()));
-		this.emailSettings = new PropertiesEmailSettingsRepository(paths.emailSettingsFile());
+		this.settingsService = new SettingsService(
+				new PropertiesSettingsRepository(paths.settingsFile(), paths.legacyEmailSettingsFile()));
 		this.settingsWindow = new SettingsWindow(this::createController);
 	}
 
@@ -42,13 +46,29 @@ public final class AppContext {
 		return paths;
 	}
 
+	public SettingsService settings() {
+		return settingsService;
+	}
+
 	public Object createController(Class<?> type) {
 		if (type == MainScreenController.class) {
-			return new MainScreenController(collectionService, dispatchService, emailSettings, paths, settingsWindow);
+			return new MainScreenController(settingsWindow);
+		}
+
+		if (type == CollectionTabController.class) {
+			return new CollectionTabController(collectionService, settingsService, paths);
+		}
+
+		if (type == MissingTabController.class) {
+			return new MissingTabController(settingsService);
+		}
+
+		if (type == DispatchTabController.class) {
+			return new DispatchTabController(dispatchService, settingsService, paths);
 		}
 
 		if (type == SettingsController.class) {
-			return new SettingsController(emailSettings);
+			return new SettingsController(settingsService);
 		}
 
 		throw new IllegalArgumentException("Unknown controller: " + type.getName());
