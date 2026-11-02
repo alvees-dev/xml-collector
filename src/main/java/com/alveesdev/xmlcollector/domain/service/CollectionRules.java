@@ -11,7 +11,7 @@ import java.util.SortedMap;
 
 import com.alveesdev.xmlcollector.domain.model.AccessKey;
 import com.alveesdev.xmlcollector.domain.model.DateRange;
-import com.alveesdev.xmlcollector.domain.model.NfceEntry;
+import com.alveesdev.xmlcollector.domain.model.DocumentEntry;
 import com.alveesdev.xmlcollector.domain.model.NumberRange;
 import com.alveesdev.xmlcollector.domain.model.XmlDocument;
 
@@ -33,7 +33,7 @@ public final class CollectionRules {
 		UNREADABLE
 	}
 
-	private record Accepted(String fileName, XmlDocument.Nfce nfce) {
+	private record Accepted(String fileName, XmlDocument.Invoice invoice) {
 	}
 
 	private final DateRange period;
@@ -48,8 +48,8 @@ public final class CollectionRules {
 
 	public Decision decide(int sourceIndex, String fileName, XmlDocument document) {
 
-		if (document instanceof XmlDocument.Nfce nfce) {
-			return decideInvoice(sourceIndex, fileName, nfce);
+		if (document instanceof XmlDocument.Invoice invoice) {
+			return decideInvoice(sourceIndex, fileName, invoice);
 		}
 
 		if (document instanceof XmlDocument.CancelEvent event) {
@@ -64,14 +64,14 @@ public final class CollectionRules {
 		return new Skip(SkipReason.UNREADABLE);
 	}
 
-	public List<NfceEntry> entriesOf(int sourceIndex) {
+	public List<DocumentEntry> entriesOf(int sourceIndex) {
 
-		List<NfceEntry> entries = new ArrayList<>();
+		List<DocumentEntry> entries = new ArrayList<>();
 
 		for (Accepted item : accepted(sourceIndex)) {
-			entries.add(item.nfce() == null
-					? NfceEntry.error(item.fileName())
-					: NfceEntry.of(item.nfce(), cancelledKeys.contains(item.nfce().key()), item.fileName()));
+			entries.add(item.invoice() == null
+					? DocumentEntry.error(item.fileName())
+					: DocumentEntry.of(item.invoice(), cancelledKeys.contains(item.invoice().key()), item.fileName()));
 		}
 
 		return entries;
@@ -79,29 +79,29 @@ public final class CollectionRules {
 
 	public SortedMap<Integer, List<NumberRange>> missingNumbers() {
 
-		List<XmlDocument.Nfce> invoices = acceptedBySource.values().stream()
+		List<XmlDocument.Invoice> invoices = acceptedBySource.values().stream()
 				.flatMap(List::stream)
-				.map(Accepted::nfce)
-				.filter(nfce -> nfce != null)
+				.map(Accepted::invoice)
+				.filter(invoice -> invoice != null)
 				.toList();
 
 		return MissingNumberFinder.findBySeries(invoices);
 	}
 
-	private Decision decideInvoice(int sourceIndex, String fileName, XmlDocument.Nfce nfce) {
+	private Decision decideInvoice(int sourceIndex, String fileName, XmlDocument.Invoice invoice) {
 
-		if (!seenKeys.add(nfce.key())) {
+		if (!seenKeys.add(invoice.key())) {
 			return new Skip(SkipReason.DUPLICATE);
 		}
 
-		if (!period.contains(nfce.date())) {
+		if (!period.contains(invoice.date())) {
 			return new Skip(SkipReason.OUT_OF_PERIOD);
 		}
 
-		accepted(sourceIndex).add(new Accepted(fileName, nfce));
+		accepted(sourceIndex).add(new Accepted(fileName, invoice));
 
-		String key = nfce.key().value();
-		return new Store(nfce.date(), fileName, key + ".xml", key);
+		String key = invoice.key().value();
+		return new Store(invoice.date(), fileName, key + ".xml", key);
 	}
 
 	private Decision decideCancelEvent(XmlDocument.CancelEvent event) {

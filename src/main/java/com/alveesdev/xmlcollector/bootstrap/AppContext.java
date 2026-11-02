@@ -10,7 +10,7 @@ import com.alveesdev.xmlcollector.infra.archive.XmlArchive;
 import com.alveesdev.xmlcollector.infra.drive.GoogleDriveStorage;
 import com.alveesdev.xmlcollector.infra.email.SmtpEmailSender;
 import com.alveesdev.xmlcollector.infra.settings.PropertiesSettingsRepository;
-import com.alveesdev.xmlcollector.infra.xml.NfceXmlReader;
+import com.alveesdev.xmlcollector.infra.xml.FiscalXmlReader;
 import com.alveesdev.xmlcollector.infra.xml.XmlFileScanner;
 import com.alveesdev.xmlcollector.ui.controller.MainScreenController;
 import com.alveesdev.xmlcollector.ui.controller.SettingsController;
@@ -27,7 +27,7 @@ public final class AppContext {
 	public AppContext(AppPaths paths) {
 		this.paths = paths;
 
-		DocumentReader reader = new NfceXmlReader();
+		DocumentReader reader = new FiscalXmlReader();
 
 		this.collectionService = new CollectionService(new XmlFileScanner(), reader, new XmlArchive(reader));
 		this.dispatchService = new DispatchService(

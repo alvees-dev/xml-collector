@@ -24,7 +24,6 @@ import com.alveesdev.xmlcollector.application.port.DocumentArchive;
 import com.alveesdev.xmlcollector.application.port.DocumentReader;
 import com.alveesdev.xmlcollector.application.port.SourceFiles;
 import com.alveesdev.xmlcollector.application.port.SourceFiles.SourceFile;
-import com.alveesdev.xmlcollector.domain.model.DocumentCategory;
 import com.alveesdev.xmlcollector.domain.model.NumberRange;
 import com.alveesdev.xmlcollector.domain.model.XmlDocument;
 import com.alveesdev.xmlcollector.domain.service.ArchiveLayout;
@@ -154,9 +153,9 @@ class SourceProcessor {
 
 		try {
 			byte[] content = sourceFiles.read(source);
-			XmlDocument document = reader.read(content);
+			XmlDocument document = reader.read(content, request.category().models());
 
-			boolean needsStoring = document instanceof XmlDocument.Nfce || document instanceof XmlDocument.CancelEvent;
+			boolean needsStoring = document instanceof XmlDocument.Invoice || document instanceof XmlDocument.CancelEvent;
 
 			return new ReadFile(source, fileName, document, needsStoring ? content : null);
 
@@ -193,7 +192,7 @@ class SourceProcessor {
 	}
 
 	private StoreJob job(ReadFile file, CollectionRules.Store store) {
-		Path directory = ArchiveLayout.directoryFor(request.archiveRoot(), store.date(), request.organizeMode(), DocumentCategory.NFCE);
+		Path directory = ArchiveLayout.directoryFor(request.archiveRoot(), store.date(), request.organizeMode(), request.category());
 
 		return new StoreJob(file.content(), file.source().lastModified(), file.fileName(), directory,
 				store.preferredName(), store.canonicalName(), store.identity());

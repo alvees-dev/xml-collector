@@ -8,10 +8,13 @@ import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
 import java.nio.file.attribute.FileTime;
+import java.util.EnumSet;
 import java.util.Optional;
+import java.util.Set;
 
 import com.alveesdev.xmlcollector.application.port.DocumentArchive;
 import com.alveesdev.xmlcollector.application.port.DocumentReader;
+import com.alveesdev.xmlcollector.domain.model.DocumentModel;
 
 public class XmlArchive implements DocumentArchive {
 
@@ -22,6 +25,7 @@ public class XmlArchive implements DocumentArchive {
 	}
 
 	private static final String TEMP_SUFFIX = ".part";
+	private static final Set<DocumentModel> ALL_MODELS = EnumSet.allOf(DocumentModel.class);
 
 	private final DocumentReader reader;
 
@@ -86,7 +90,7 @@ public class XmlArchive implements DocumentArchive {
 
 	private Optional<String> identityOf(Path existing) {
 		try {
-			return reader.read(Files.readAllBytes(existing)).identity();
+			return reader.read(Files.readAllBytes(existing), ALL_MODELS).identity();
 		} catch (IOException e) {
 			return Optional.empty();
 		}

@@ -2,7 +2,7 @@ package com.alveesdev.xmlcollector.ui.model;
 
 import javafx.beans.property.SimpleStringProperty;
 
-public class NfceRow {
+public class DocumentRow {
 
     private final SimpleStringProperty number;
     private final SimpleStringProperty series;
@@ -11,7 +11,7 @@ public class NfceRow {
     private final SimpleStringProperty accessKey;
     private final SimpleStringProperty status;
 
-    public NfceRow(String number, String series, String totalValue, String emissionDate,String accessKey, String status) {
+    public DocumentRow(String number, String series, String totalValue, String emissionDate,String accessKey, String status) {
         this.number = new SimpleStringProperty(number);
         this.series = new SimpleStringProperty(series);
         this.totalValue = new SimpleStringProperty(totalValue);

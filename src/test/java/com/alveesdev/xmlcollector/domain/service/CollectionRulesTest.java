@@ -14,8 +14,8 @@ import java.util.Map;
 import org.junit.jupiter.api.Test;
 
 import com.alveesdev.xmlcollector.domain.model.DateRange;
-import com.alveesdev.xmlcollector.domain.model.NfceEntry;
-import com.alveesdev.xmlcollector.domain.model.NfceStatus;
+import com.alveesdev.xmlcollector.domain.model.DocumentEntry;
+import com.alveesdev.xmlcollector.domain.model.DocumentStatus;
 import com.alveesdev.xmlcollector.domain.model.NumberRange;
 import com.alveesdev.xmlcollector.domain.model.XmlDocument;
 import com.alveesdev.xmlcollector.domain.service.CollectionRules.Decision;
@@ -35,11 +35,11 @@ class CollectionRulesTest {
 
 	@Test
 	void storesAnInvoiceInThePeriodKeepingItsFileName() {
-		XmlDocument.Nfce invoice = invoice(1, IN_PERIOD);
+		XmlDocument.Invoice invoice = invoice(1, IN_PERIOD);
 		String key = invoice.key().value();
 
 		assertEquals(new Store(IN_PERIOD, "nota.xml", key + ".xml", key), rules.decide(0, "nota.xml", invoice));
-		assertEquals(NfceStatus.AUTHORIZED, onlyEntry(0).status());
+		assertEquals(DocumentStatus.AUTHORIZED, onlyEntry(0).status());
 	}
 
 	@Test
@@ -96,9 +96,9 @@ class CollectionRulesTest {
 		rules.decide(2, "nota3.xml", invoice(3, IN_PERIOD));
 
 		assertEquals(
-				List.of(NfceStatus.CANCELLED, NfceStatus.CANCELLED),
-				rules.entriesOf(0).stream().map(NfceEntry::status).toList());
-		assertEquals(NfceStatus.CANCELLED, onlyEntry(2).status());
+				List.of(DocumentStatus.CANCELLED, DocumentStatus.CANCELLED),
+				rules.entriesOf(0).stream().map(DocumentEntry::status).toList());
+		assertEquals(DocumentStatus.CANCELLED, onlyEntry(2).status());
 	}
 
 	@Test
@@ -106,7 +106,7 @@ class CollectionRulesTest {
 		rules.decide(0, "nota.xml", invoice(1, IN_PERIOD));
 
 		assertSkipped(SkipReason.OUT_OF_PERIOD, rules.decide(0, "evento.xml", cancellation(1, AFTER_PERIOD)));
-		assertEquals(NfceStatus.CANCELLED, onlyEntry(0).status());
+		assertEquals(DocumentStatus.CANCELLED, onlyEntry(0).status());
 	}
 
 	@Test
@@ -114,7 +114,7 @@ class CollectionRulesTest {
 		rules.decide(0, "nota.xml", invoice(1, IN_PERIOD));
 		rules.decide(0, "evento.xml", cancellation(2, IN_PERIOD));
 
-		assertEquals(NfceStatus.AUTHORIZED, onlyEntry(0).status());
+		assertEquals(DocumentStatus.AUTHORIZED, onlyEntry(0).status());
 	}
 
 	@Test
@@ -127,11 +127,11 @@ class CollectionRulesTest {
 	void listsAnUnreadableFileAsAnError() {
 		assertSkipped(SkipReason.UNREADABLE, rules.decide(0, "ruim.xml", new XmlDocument.Unreadable("broken")));
 
-		NfceEntry entry = onlyEntry(0);
+		DocumentEntry entry = onlyEntry(0);
 
-		assertEquals(NfceStatus.ERROR, entry.status());
+		assertEquals(DocumentStatus.ERROR, entry.status());
 		assertEquals("ruim.xml", entry.fileName());
-		assertNull(entry.nfce());
+		assertNull(entry.invoice());
 	}
 
 	@Test
@@ -180,8 +180,8 @@ class CollectionRulesTest {
 		assertTrue(rules.missingNumbers().isEmpty());
 	}
 
-	private NfceEntry onlyEntry(int sourceIndex) {
-		List<NfceEntry> entries = rules.entriesOf(sourceIndex);
+	private DocumentEntry onlyEntry(int sourceIndex) {
+		List<DocumentEntry> entries = rules.entriesOf(sourceIndex);
 		assertEquals(1, entries.size());
 		return entries.get(0);
 	}

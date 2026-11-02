@@ -9,7 +9,7 @@ public sealed interface XmlDocument {
 
 	Optional<String> identity();
 
-	record Nfce(
+	record Invoice(
 			AccessKey key,
 			int series,
 			int number,

@@ -14,9 +14,10 @@ import com.alveesdev.xmlcollector.application.settings.AppPaths;
 import com.alveesdev.xmlcollector.application.settings.AppSettings;
 import com.alveesdev.xmlcollector.application.settings.service.SettingsService;
 import com.alveesdev.xmlcollector.domain.model.DateRange;
+import com.alveesdev.xmlcollector.domain.model.DocumentCategory;
 import com.alveesdev.xmlcollector.ui.model.MissingTableModel;
-import com.alveesdev.xmlcollector.ui.model.NfceRow;
-import com.alveesdev.xmlcollector.ui.model.NfceRowMapper;
+import com.alveesdev.xmlcollector.ui.model.DocumentRow;
+import com.alveesdev.xmlcollector.ui.model.DocumentRowMapper;
 import com.alveesdev.xmlcollector.ui.view.Dialogs;
 import com.alveesdev.xmlcollector.ui.view.ProgressWindow;
 import com.alveesdev.xmlcollector.ui.view.SettingsWindow;
@@ -72,25 +73,25 @@ public class MainScreenController {
 	private DatePicker dpTo;
 
 	@FXML
-	private TableView<NfceRow> tableView;
+	private TableView<DocumentRow> tableView;
 
 	@FXML
-	private TableColumn<NfceRow, String> numberColumn;
+	private TableColumn<DocumentRow, String> numberColumn;
 
 	@FXML
-	private TableColumn<NfceRow, String> serieColumn;
+	private TableColumn<DocumentRow, String> serieColumn;
 
 	@FXML
-	private TableColumn<NfceRow, String> totalValueColumn;
+	private TableColumn<DocumentRow, String> totalValueColumn;
 
 	@FXML
-	private TableColumn<NfceRow, String> emissionDateColumn;
+	private TableColumn<DocumentRow, String> emissionDateColumn;
 
 	@FXML
-	private TableColumn<NfceRow, String> nfKeyColumn;
+	private TableColumn<DocumentRow, String> nfKeyColumn;
 
 	@FXML
-	private TableColumn<NfceRow, String> statusColumn;
+	private TableColumn<DocumentRow, String> statusColumn;
 
 	@FXML
 	private TableView<List<String>> missingTableView;
@@ -232,13 +233,13 @@ public class MainScreenController {
 				: List.of(txtDirectory.getText().trim());
 
 		return Optional.of(new CollectionRequest(
-				directories, new DateRange(from, to), settings.organizeMode(), paths.xmlArchiveDir()));
+				directories, DocumentCategory.NFCE, new DateRange(from, to), settings.organizeMode(), paths.xmlArchiveDir()));
 	}
 
 	private void showResult(CollectionResult result, boolean pdvMode) {
 
-		List<NfceRow> rows = result.entries().stream()
-				.map(NfceRowMapper::toRow)
+		List<DocumentRow> rows = result.entries().stream()
+				.map(DocumentRowMapper::toRow)
 				.toList();
 
 		tableView.setItems(FXCollections.observableArrayList(rows));

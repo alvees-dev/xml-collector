@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeParseException;
+import java.util.Set;
 
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
@@ -13,9 +14,10 @@ import org.xml.sax.SAXException;
 
 import com.alveesdev.xmlcollector.application.port.DocumentReader;
 import com.alveesdev.xmlcollector.domain.model.AccessKey;
+import com.alveesdev.xmlcollector.domain.model.DocumentModel;
 import com.alveesdev.xmlcollector.domain.model.XmlDocument;
 
-public class NfceXmlReader implements DocumentReader {
+public class FiscalXmlReader implements DocumentReader {
 
 	private static final String CANCEL_EVENT_TYPE = "110111";
 	private static final String NFE_ID_PREFIX = "NFe";
@@ -25,7 +27,7 @@ public class NfceXmlReader implements DocumentReader {
 	private final XmlDocumentLoader loader = new XmlDocumentLoader();
 
 	@Override
-	public XmlDocument read(byte[] content) {
+	public XmlDocument read(byte[] content, Set<DocumentModel> acceptedModels) {
 
 		Document document;
 
@@ -39,23 +41,23 @@ public class NfceXmlReader implements DocumentReader {
 			Element invoice = firstElement(document, "infNFe");
 
 			if (invoice != null) {
-				return readInvoice(invoice);
+				return readInvoice(invoice, acceptedModels);
 			}
 
 			Element event = firstElement(document, "evento");
 
 			if (event != null) {
-				return readEvent(event);
+				return readEvent(event, acceptedModels);
 			}
 
-			return new XmlDocument.Ignored("not an NFCe or a cancellation event");
+			return new XmlDocument.Ignored("not an invoice or a cancellation event");
 
 		} catch (XmlFormatException e) {
 			return new XmlDocument.Unreadable(e.getMessage());
 		}
 	}
 
-	private static XmlDocument readInvoice(Element invoice) throws XmlFormatException {
+	private static XmlDocument readInvoice(Element invoice, Set<DocumentModel> acceptedModels) throws XmlFormatException {
 
 		String id = invoice.getAttribute("Id").trim();
 
@@ -65,8 +67,8 @@ public class NfceXmlReader implements DocumentReader {
 
 		AccessKey key = toKey(id.substring(NFE_ID_PREFIX.length()));
 
-		if (!key.isNfce()) {
-			return new XmlDocument.Ignored("document model " + key.model() + " is not NFCe");
+		if (!isAccepted(key, acceptedModels)) {
+			return new XmlDocument.Ignored("document model " + key.modelCode() + " is not accepted");
 		}
 
 		Element identification = requiredChild(invoice, "ide");
@@ -76,10 +78,10 @@ public class NfceXmlReader implements DocumentReader {
 		Element totals = requiredChild(requiredChild(invoice, "total"), "ICMSTot");
 		BigDecimal totalValue = requiredDecimal(totals, "vNF");
 
-		return new XmlDocument.Nfce(key, series, number, issuedAt, totalValue);
+		return new XmlDocument.Invoice(key, series, number, issuedAt, totalValue);
 	}
 
-	private static XmlDocument readEvent(Element event) throws XmlFormatException {
+	private static XmlDocument readEvent(Element event, Set<DocumentModel> acceptedModels) throws XmlFormatException {
 
 		Element info = requiredChild(event, "infEvento");
 		String type = requiredText(info, "tpEvento");
@@ -90,14 +92,18 @@ public class NfceXmlReader implements DocumentReader {
 
 		AccessKey cancelledKey = toKey(requiredText(info, "chNFe"));
 
-		if (!cancelledKey.isNfce()) {
-			return new XmlDocument.Ignored("document model " + cancelledKey.model() + " is not NFCe");
+		if (!isAccepted(cancelledKey, acceptedModels)) {
+			return new XmlDocument.Ignored("document model " + cancelledKey.modelCode() + " is not accepted");
 		}
 
 		String eventId = toEventId(info.getAttribute("Id").trim(), cancelledKey);
 		OffsetDateTime eventAt = requiredDateTime(info, "dhEvento");
 
 		return new XmlDocument.CancelEvent(eventId, cancelledKey, eventAt);
+	}
+
+	private static boolean isAccepted(AccessKey key, Set<DocumentModel> acceptedModels) {
+		return key.model().filter(acceptedModels::contains).isPresent();
 	}
 
 	private static String toEventId(String id, AccessKey cancelledKey) throws XmlFormatException {

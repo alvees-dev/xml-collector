@@ -12,7 +12,7 @@ import java.util.stream.IntStream;
 import org.junit.jupiter.api.Test;
 
 import com.alveesdev.xmlcollector.domain.model.NumberRange;
-import com.alveesdev.xmlcollector.domain.model.XmlDocument.Nfce;
+import com.alveesdev.xmlcollector.domain.model.XmlDocument.Invoice;
 
 class MissingNumberFinderTest {
 
@@ -47,14 +47,14 @@ class MissingNumberFinderTest {
 
 	@Test
 	void separatesGapsBySeries() {
-		List<Nfce> invoices = List.of(invoice(1, 1, DATE), invoice(1, 3, DATE), invoice(2, 10, DATE), invoice(2, 13, DATE));
+		List<Invoice> invoices = List.of(invoice(1, 1, DATE), invoice(1, 3, DATE), invoice(2, 10, DATE), invoice(2, 13, DATE));
 
 		assertEquals(
 				Map.of(1, List.of(new NumberRange(2, 2)), 2, List.of(new NumberRange(11, 12))),
 				MissingNumberFinder.findBySeries(invoices));
 	}
 
-	private static List<Nfce> invoices(int... numbers) {
+	private static List<Invoice> invoices(int... numbers) {
 		return IntStream.of(numbers).mapToObj(number -> invoice(number, DATE)).toList();
 	}
 }

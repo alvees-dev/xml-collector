@@ -6,11 +6,12 @@ import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 
 import com.alveesdev.xmlcollector.domain.model.AccessKey;
+import com.alveesdev.xmlcollector.domain.model.DocumentModel;
 import com.alveesdev.xmlcollector.domain.model.XmlDocument;
 
 public final class TestDocuments {
 
-	private static final String KEY_PREFIX = "35260112345678000190" + AccessKey.NFCE_MODEL;
+	private static final String KEY_PREFIX = "35260112345678000190" + DocumentModel.NFCE.code();
 	private static final ZoneOffset BRASILIA = ZoneOffset.ofHours(-3);
 
 	private TestDocuments() {
@@ -24,12 +25,12 @@ public final class TestDocuments {
 		return new AccessKey(KEY_PREFIX + String.format("%03d%09d1%09d", series, number, number));
 	}
 
-	public static XmlDocument.Nfce invoice(int number, LocalDate date) {
+	public static XmlDocument.Invoice invoice(int number, LocalDate date) {
 		return invoice(1, number, date);
 	}
 
-	public static XmlDocument.Nfce invoice(int series, int number, LocalDate date) {
-		return new XmlDocument.Nfce(key(series, number), series, number, atNoon(date), new BigDecimal("10.50"));
+	public static XmlDocument.Invoice invoice(int series, int number, LocalDate date) {
+		return new XmlDocument.Invoice(key(series, number), series, number, atNoon(date), new BigDecimal("10.50"));
 	}
 
 	public static XmlDocument.CancelEvent cancellation(int number, LocalDate date) {

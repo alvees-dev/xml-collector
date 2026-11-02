@@ -7,27 +7,30 @@ import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
+import java.util.EnumSet;
+import java.util.Set;
 
 import org.junit.jupiter.api.Test;
 
+import com.alveesdev.xmlcollector.domain.model.DocumentModel;
 import com.alveesdev.xmlcollector.domain.model.XmlDocument;
 
-class NfceXmlReaderTest {
+class FiscalXmlReaderTest {
 
 	private static final String KEY = key(7).value();
 	private static final String NFE_MODEL_KEY = KEY.substring(0, 20) + "55" + KEY.substring(22);
 
-	private final NfceXmlReader reader = new NfceXmlReader();
+	private final FiscalXmlReader reader = new FiscalXmlReader();
 
 	@Test
 	void readsAnNfce() {
-		XmlDocument.Nfce nfce = assertInstanceOf(XmlDocument.Nfce.class, read(invoiceXml(KEY)));
+		XmlDocument.Invoice invoice = assertInstanceOf(XmlDocument.Invoice.class, read(invoiceXml(KEY)));
 
-		assertEquals(KEY, nfce.key().value());
-		assertEquals(2, nfce.series());
-		assertEquals(7, nfce.number());
-		assertEquals(LocalDate.of(2026, 1, 15), nfce.date());
-		assertEquals(new BigDecimal("10.50"), nfce.totalValue());
+		assertEquals(KEY, invoice.key().value());
+		assertEquals(2, invoice.series());
+		assertEquals(7, invoice.number());
+		assertEquals(LocalDate.of(2026, 1, 15), invoice.date());
+		assertEquals(new BigDecimal("10.50"), invoice.totalValue());
 	}
 
 	@Test
@@ -63,6 +66,39 @@ class NfceXmlReaderTest {
 	}
 
 	@Test
+	void readsAnNfeWhenItsModelIsAccepted() {
+		XmlDocument.Invoice invoice = assertInstanceOf(XmlDocument.Invoice.class,
+				read(invoiceXml(NFE_MODEL_KEY), Set.of(DocumentModel.NFE)));
+
+		assertEquals(NFE_MODEL_KEY, invoice.key().value());
+	}
+
+	@Test
+	void readsACancellationOfAnNfeWhenItsModelIsAccepted() {
+		assertInstanceOf(XmlDocument.CancelEvent.class,
+				read(eventXml("110111", NFE_MODEL_KEY, "ID110111" + NFE_MODEL_KEY + "01"), Set.of(DocumentModel.NFE)));
+	}
+
+	@Test
+	void ignoresAnNfceWhenOnlyNfeIsAccepted() {
+		assertInstanceOf(XmlDocument.Ignored.class, read(invoiceXml(KEY), Set.of(DocumentModel.NFE)));
+	}
+
+	@Test
+	void ignoresAnIncompleteInvoiceOfAModelThatIsNotAccepted() {
+		String xml = invoiceXml(NFE_MODEL_KEY).replace("<nNF>7</nNF>", "");
+
+		assertInstanceOf(XmlDocument.Ignored.class, read(xml));
+	}
+
+	@Test
+	void ignoresAnUnknownModelEvenWhenAllModelsAreAccepted() {
+		String otherModelKey = KEY.substring(0, 20) + "57" + KEY.substring(22);
+
+		assertInstanceOf(XmlDocument.Ignored.class, read(invoiceXml(otherModelKey), EnumSet.allOf(DocumentModel.class)));
+	}
+
+	@Test
 	void ignoresUnrelatedXml() {
 		assertInstanceOf(XmlDocument.Ignored.class, read("<outro><coisa/></outro>"));
 	}
@@ -92,7 +128,11 @@ class NfceXmlReaderTest {
 	}
 
 	private XmlDocument read(String xml) {
-		return reader.read(xml.getBytes(StandardCharsets.UTF_8));
+		return read(xml, Set.of(DocumentModel.NFCE));
+	}
+
+	private XmlDocument read(String xml, Set<DocumentModel> acceptedModels) {
+		return reader.read(xml.getBytes(StandardCharsets.UTF_8), acceptedModels);
 	}
 
 	private static String invoiceXml(String key) {

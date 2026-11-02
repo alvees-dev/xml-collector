@@ -16,7 +16,9 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.CancellationException;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.junit.jupiter.api.Test;
 
@@ -24,8 +26,10 @@ import com.alveesdev.xmlcollector.application.port.DocumentArchive;
 import com.alveesdev.xmlcollector.application.port.DocumentReader;
 import com.alveesdev.xmlcollector.application.port.SourceFiles;
 import com.alveesdev.xmlcollector.domain.model.DateRange;
-import com.alveesdev.xmlcollector.domain.model.NfceEntry;
-import com.alveesdev.xmlcollector.domain.model.NfceStatus;
+import com.alveesdev.xmlcollector.domain.model.DocumentCategory;
+import com.alveesdev.xmlcollector.domain.model.DocumentEntry;
+import com.alveesdev.xmlcollector.domain.model.DocumentModel;
+import com.alveesdev.xmlcollector.domain.model.DocumentStatus;
 import com.alveesdev.xmlcollector.domain.model.NumberRange;
 import com.alveesdev.xmlcollector.domain.model.OrganizeMode;
 import com.alveesdev.xmlcollector.domain.model.XmlDocument;
@@ -46,7 +50,7 @@ class CollectionServiceTest {
 		sources.add("pdv1", "nota.xml", invoice(1, IN_PERIOD));
 		sources.add("pdv1", "evento.xml", cancellation(1, IN_PERIOD));
 
-		assertEquals(NfceStatus.CANCELLED, onlyEntry(collect("pdv1")).status());
+		assertEquals(DocumentStatus.CANCELLED, onlyEntry(collect("pdv1")).status());
 	}
 
 	@Test
@@ -54,7 +58,7 @@ class CollectionServiceTest {
 		sources.add("pdv1", "nota.xml", invoice(1, IN_PERIOD));
 		sources.add("pdv2", "evento.xml", cancellation(1, IN_PERIOD));
 
-		assertEquals(NfceStatus.CANCELLED, onlyEntry(collect("pdv1", "pdv2")).status());
+		assertEquals(DocumentStatus.CANCELLED, onlyEntry(collect("pdv1", "pdv2")).status());
 	}
 
 	@Test
@@ -62,7 +66,7 @@ class CollectionServiceTest {
 		sources.add("pdv1", "evento.xml", cancellation(1, IN_PERIOD));
 		sources.add("pdv2", "nota.xml", invoice(1, IN_PERIOD));
 
-		assertEquals(NfceStatus.CANCELLED, onlyEntry(collect("pdv1", "pdv2")).status());
+		assertEquals(DocumentStatus.CANCELLED, onlyEntry(collect("pdv1", "pdv2")).status());
 	}
 
 	@Test
@@ -189,6 +193,16 @@ class CollectionServiceTest {
 	}
 
 	@Test
+	void readsOnlyTheModelsOfTheCategoryAndStoresInItsFolder() {
+		sources.add("nfe", "a.xml", invoice(1, IN_PERIOD));
+
+		service.collect(request(DocumentCategory.NFE_SALES, "nfe"));
+
+		assertEquals(Set.of(Set.of(DocumentModel.NFE)), sources.requestedModels);
+		assertEquals(ARCHIVE.resolve("Janeiro_2026").resolve("NFe_Vendas"), archive.stored.get(0).directory());
+	}
+
+	@Test
 	void stopsWhenCancelled() {
 		sources.add("pdv1", "a.xml", invoice(1, IN_PERIOD));
 
@@ -201,10 +215,14 @@ class CollectionServiceTest {
 	}
 
 	private static CollectionRequest request(String... directories) {
-		return new CollectionRequest(List.of(directories), JANUARY, OrganizeMode.SINGLE_FOLDER, ARCHIVE);
+		return request(DocumentCategory.NFCE, directories);
 	}
 
-	private static NfceEntry onlyEntry(CollectionResult result) {
+	private static CollectionRequest request(DocumentCategory category, String... directories) {
+		return new CollectionRequest(List.of(directories), category, JANUARY, OrganizeMode.SINGLE_FOLDER, ARCHIVE);
+	}
+
+	private static DocumentEntry onlyEntry(CollectionResult result) {
 		assertEquals(1, result.entries().size());
 		return result.entries().get(0);
 	}
@@ -218,6 +236,7 @@ class CollectionServiceTest {
 
 		private final Map<String, List<SourceFile>> directories = new LinkedHashMap<>();
 		private final Map<String, XmlDocument> documents = new HashMap<>();
+		private final Set<Set<DocumentModel>> requestedModels = ConcurrentHashMap.newKeySet();
 
 		void add(String directory, String fileName, XmlDocument document) {
 			Path path = Path.of(directory, fileName);
@@ -242,7 +261,8 @@ class CollectionServiceTest {
 		}
 
 		@Override
-		public XmlDocument read(byte[] content) {
+		public XmlDocument read(byte[] content, Set<DocumentModel> acceptedModels) {
+			requestedModels.add(acceptedModels);
 			return documents.get(new String(content, StandardCharsets.UTF_8));
 		}
 	}
