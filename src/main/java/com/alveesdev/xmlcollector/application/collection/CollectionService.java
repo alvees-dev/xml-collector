@@ -64,16 +64,21 @@ public class CollectionService {
 
 		try {
 			SourceProcessor processor = new SourceProcessor(request, sourceFiles, reader, archive, executor);
+
+			for (ScannedSource source : scanned) {
+				processor.process(source.index(), source.files(), () -> {
+					processed[0]++;
+					listener.onProgress(new CollectionProgress(source.index(), processed[0], total));
+				}, cancelled);
+			}
+
 			List<SourceResult> results = new ArrayList<>();
 
 			for (ScannedSource source : scanned) {
-				results.add(processor.process(source.index(), source.files(), () -> {
-					processed[0]++;
-					listener.onProgress(new CollectionProgress(source.index(), processed[0], total));
-				}, cancelled));
+				results.add(processor.result(source.index()));
 			}
 
-			return new CollectionResult(results, processor.summary(), failures);
+			return new CollectionResult(results, processor.missingNumbers(), processor.summary(), failures);
 
 		} finally {
 			executor.shutdownNow();

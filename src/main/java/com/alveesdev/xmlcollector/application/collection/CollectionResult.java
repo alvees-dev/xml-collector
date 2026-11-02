@@ -8,15 +8,12 @@ import com.alveesdev.xmlcollector.domain.model.NumberRange;
 
 public record CollectionResult(
 		List<SourceResult> sources,
+		SortedMap<Integer, List<NumberRange>> missingBySeries,
 		CollectionSummary summary,
 		List<SourceFailure> failures
 ) {
 
-	public record SourceResult(
-			int sourceIndex,
-			List<NfceEntry> entries,
-			SortedMap<Integer, List<NumberRange>> missingBySeries
-	) {
+	public record SourceResult(int sourceIndex, List<NfceEntry> entries) {
 	}
 
 	public List<NfceEntry> entries() {
