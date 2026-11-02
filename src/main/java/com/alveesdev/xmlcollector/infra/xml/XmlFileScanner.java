@@ -7,19 +7,20 @@ import java.nio.file.NotDirectoryException;
 import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
-import java.nio.file.attribute.FileTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
-public class XmlFileScanner {
+import com.alveesdev.xmlcollector.application.port.SourceFiles;
 
-	public record SourceFile(Path path, FileTime lastModified) {
+public class XmlFileScanner implements SourceFiles {
+
+	@Override
+	public byte[] read(SourceFile file) throws IOException {
+		return Files.readAllBytes(file.path());
 	}
 
-	public record ScanResult(List<SourceFile> files, List<Path> inaccessible) {
-	}
-
+	@Override
 	public ScanResult scan(Path directory, Path excludedRoot) throws IOException {
 
 		if (!Files.isDirectory(directory)) {

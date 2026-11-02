@@ -2,10 +2,10 @@ package com.alveesdev.xmlcollector.ui.controller;
 
 import java.util.Locale;
 
-import com.alveesdev.xmlcollector.application.CollectionProgress;
-import com.alveesdev.xmlcollector.application.CollectionRequest;
-import com.alveesdev.xmlcollector.application.CollectionResult;
-import com.alveesdev.xmlcollector.application.CollectionService;
+import com.alveesdev.xmlcollector.application.collection.CollectionProgress;
+import com.alveesdev.xmlcollector.application.collection.CollectionRequest;
+import com.alveesdev.xmlcollector.application.collection.CollectionResult;
+import com.alveesdev.xmlcollector.application.collection.CollectionService;
 import com.alveesdev.xmlcollector.ui.model.SourceLabels;
 
 import javafx.concurrent.Task;

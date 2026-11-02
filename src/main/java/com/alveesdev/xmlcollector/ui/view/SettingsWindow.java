@@ -9,15 +9,19 @@ import javafx.stage.Modality;
 import javafx.stage.Stage;
 import javafx.stage.StageStyle;
 import javafx.stage.Window;
+import javafx.util.Callback;
 
 public final class SettingsWindow {
 
 	private static final String SETTINGS_FXML = "/com/alveesdev/xmlcollector/view/SettingsV1.fxml";
 
-	private SettingsWindow() {
+	private final Callback<Class<?>, Object> controllerFactory;
+
+	public SettingsWindow(Callback<Class<?>, Object> controllerFactory) {
+		this.controllerFactory = controllerFactory;
 	}
 
-	public static void showAndWait(Window owner) {
+	public void showAndWait(Window owner) {
 		try {
 			URL fxmlLocation = SettingsWindow.class.getResource(SETTINGS_FXML);
 
@@ -26,7 +30,10 @@ public final class SettingsWindow {
 				return;
 			}
 
-			Scene scene = new Scene(new FXMLLoader(fxmlLocation).load());
+			FXMLLoader loader = new FXMLLoader(fxmlLocation);
+			loader.setControllerFactory(controllerFactory);
+
+			Scene scene = new Scene(loader.load());
 
 			Stage stage = new Stage();
 			stage.initStyle(StageStyle.UNDECORATED);

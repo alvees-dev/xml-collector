@@ -4,8 +4,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.IntStream;
 
-import com.alveesdev.xmlcollector.application.CollectionResult;
-import com.alveesdev.xmlcollector.application.CollectionResult.SourceResult;
+import com.alveesdev.xmlcollector.application.collection.CollectionResult;
+import com.alveesdev.xmlcollector.application.collection.CollectionResult.SourceResult;
 import com.alveesdev.xmlcollector.domain.model.NumberRange;
 
 public class MissingTableModel {

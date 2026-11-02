@@ -1,4 +1,4 @@
-package com.alveesdev.xmlcollector.application;
+package com.alveesdev.xmlcollector.application.collection;
 
 import java.io.IOException;
 import java.nio.file.InvalidPathException;
@@ -11,13 +11,13 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BooleanSupplier;
 
-import com.alveesdev.xmlcollector.application.CollectionResult.SourceResult;
-import com.alveesdev.xmlcollector.application.SourceFailure.Reason;
-import com.alveesdev.xmlcollector.infra.archive.XmlArchive;
-import com.alveesdev.xmlcollector.infra.xml.NfceXmlReader;
-import com.alveesdev.xmlcollector.infra.xml.XmlFileScanner;
-import com.alveesdev.xmlcollector.infra.xml.XmlFileScanner.ScanResult;
-import com.alveesdev.xmlcollector.infra.xml.XmlFileScanner.SourceFile;
+import com.alveesdev.xmlcollector.application.collection.CollectionResult.SourceResult;
+import com.alveesdev.xmlcollector.application.collection.SourceFailure.Reason;
+import com.alveesdev.xmlcollector.application.port.DocumentArchive;
+import com.alveesdev.xmlcollector.application.port.DocumentReader;
+import com.alveesdev.xmlcollector.application.port.SourceFiles;
+import com.alveesdev.xmlcollector.application.port.SourceFiles.ScanResult;
+import com.alveesdev.xmlcollector.application.port.SourceFiles.SourceFile;
 
 public class CollectionService {
 
@@ -26,27 +26,23 @@ public class CollectionService {
 	private record ScannedSource(int index, List<SourceFile> files) {
 	}
 
-	private final XmlFileScanner scanner;
-	private final NfceXmlReader reader;
-	private final XmlArchive archive;
+	private final SourceFiles sourceFiles;
+	private final DocumentReader reader;
+	private final DocumentArchive archive;
 	private final int threads;
 
-	public CollectionService() {
-		this(new XmlFileScanner(), new NfceXmlReader(), DEFAULT_THREADS);
+	public CollectionService(SourceFiles sourceFiles, DocumentReader reader, DocumentArchive archive) {
+		this(sourceFiles, reader, archive, DEFAULT_THREADS);
 	}
 
-	public CollectionService(XmlFileScanner scanner, NfceXmlReader reader) {
-		this(scanner, reader, DEFAULT_THREADS);
-	}
-
-	public CollectionService(XmlFileScanner scanner, NfceXmlReader reader, int threads) {
+	public CollectionService(SourceFiles sourceFiles, DocumentReader reader, DocumentArchive archive, int threads) {
 		if (threads < 1) {
 			throw new IllegalArgumentException("threads must be at least 1");
 		}
 
-		this.scanner = scanner;
+		this.sourceFiles = sourceFiles;
 		this.reader = reader;
-		this.archive = new XmlArchive(reader);
+		this.archive = archive;
 		this.threads = threads;
 	}
 
@@ -67,7 +63,7 @@ public class CollectionService {
 		ExecutorService executor = Executors.newFixedThreadPool(threads, new WorkerThreadFactory());
 
 		try {
-			SourceProcessor processor = new SourceProcessor(request, reader, archive, executor);
+			SourceProcessor processor = new SourceProcessor(request, sourceFiles, reader, archive, executor);
 			List<SourceResult> results = new ArrayList<>();
 
 			for (ScannedSource source : scanned) {
@@ -103,7 +99,7 @@ public class CollectionService {
 			}
 
 			try {
-				ScanResult result = scanner.scan(Path.of(directory), request.archiveRoot());
+				ScanResult result = sourceFiles.scan(Path.of(directory), request.archiveRoot());
 
 				for (Path inaccessible : result.inaccessible()) {
 					failures.add(new SourceFailure(index, Reason.SUBFOLDER_INACCESSIBLE, inaccessible.toString()));

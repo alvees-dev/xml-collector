@@ -2,14 +2,17 @@ package com.alveesdev.xmlcollector.ui.controller;
 
 import java.io.IOException;
 import java.time.LocalDate;
+import java.time.YearMonth;
 import java.util.List;
 import java.util.Optional;
 
-import com.alveesdev.xmlcollector.application.CollectionRequest;
-import com.alveesdev.xmlcollector.application.CollectionResult;
-import com.alveesdev.xmlcollector.application.CollectionService;
-import com.alveesdev.xmlcollector.config.AppPaths;
-import com.alveesdev.xmlcollector.config.AppSettings;
+import com.alveesdev.xmlcollector.application.collection.CollectionRequest;
+import com.alveesdev.xmlcollector.application.collection.CollectionResult;
+import com.alveesdev.xmlcollector.application.collection.CollectionService;
+import com.alveesdev.xmlcollector.application.dispatch.DispatchService;
+import com.alveesdev.xmlcollector.application.port.EmailSettingsRepository;
+import com.alveesdev.xmlcollector.application.settings.AppPaths;
+import com.alveesdev.xmlcollector.application.settings.AppSettings;
 import com.alveesdev.xmlcollector.domain.model.DateRange;
 import com.alveesdev.xmlcollector.ui.model.MissingTableModel;
 import com.alveesdev.xmlcollector.ui.model.NfceRow;
@@ -22,10 +25,12 @@ import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
+import javafx.scene.control.ChoiceBox;
 import javafx.scene.control.DatePicker;
 import javafx.scene.control.RadioButton;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
+import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
 import javafx.scene.control.cell.PropertyValueFactory;
 
@@ -33,10 +38,23 @@ public class MainScreenController {
 
 	private static final double MISSING_COLUMN_WIDTH = 110;
 
-	private final CollectionService collectionService = new CollectionService();
-	private final AppPaths paths = AppPaths.standard();
+	private final CollectionService collectionService;
+	private final DispatchService dispatchService;
+	private final EmailSettingsRepository emailSettings;
+	private final AppPaths paths;
+	private final SettingsWindow settingsWindow;
 
 	private MissingTableModel missingModel;
+	private DispatchTabController dispatchTab;
+
+	public MainScreenController(CollectionService collectionService, DispatchService dispatchService,
+			EmailSettingsRepository emailSettings, AppPaths paths, SettingsWindow settingsWindow) {
+		this.collectionService = collectionService;
+		this.dispatchService = dispatchService;
+		this.emailSettings = emailSettings;
+		this.paths = paths;
+		this.settingsWindow = settingsWindow;
+	}
 
 	@FXML
 	private RadioButton RadioButtonColetaXMLCaminhoPDV;
@@ -78,6 +96,24 @@ public class MainScreenController {
 	private TableView<List<String>> missingTableView;
 
 	@FXML
+	private TextField txtEmailRecipient;
+
+	@FXML
+	private TextField txtEmailSubject;
+
+	@FXML
+	private TextArea txtEmailBody;
+
+	@FXML
+	private ChoiceBox<Integer> choiceYear;
+
+	@FXML
+	private ChoiceBox<String> choiceMonth;
+
+	@FXML
+	private Button btnSendXml;
+
+	@FXML
 	public void initialize() {
 		numberColumn.setCellValueFactory(new PropertyValueFactory<>("number"));
 
@@ -95,16 +131,26 @@ public class MainScreenController {
 
 		txtDirectory.disableProperty().bind(RadioButtonColetaXMLCaminhoPDV.selectedProperty());
 
-		LocalDate today = LocalDate.now();
-		dpFrom.setValue(today.withDayOfMonth(1));
-		dpTo.setValue(today.withDayOfMonth(today.lengthOfMonth()));
+		YearMonth previousMonth = YearMonth.now().minusMonths(1);
+		dpFrom.setValue(previousMonth.atDay(1));
+		dpTo.setValue(previousMonth.atEndOfMonth());
 
 		refreshMissingTable();
+
+		dispatchTab = new DispatchTabController(
+				txtEmailRecipient, txtEmailSubject, txtEmailBody, choiceYear, choiceMonth, btnSendXml,
+				paths, dispatchService, emailSettings);
+		dispatchTab.load();
+	}
+
+	@FXML
+	private void onSendXml() {
+		dispatchTab.send();
 	}
 
 	@FXML
 	private void onOpenSettings() {
-		SettingsWindow.showAndWait(tableView.getScene().getWindow());
+		settingsWindow.showAndWait(tableView.getScene().getWindow());
 		refreshMissingTable();
 	}
 
