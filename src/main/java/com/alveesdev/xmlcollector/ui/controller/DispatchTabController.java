@@ -8,15 +8,14 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
-import com.alveesdev.xmlcollector.application.DispatchException;
-import com.alveesdev.xmlcollector.application.DispatchRequest;
-import com.alveesdev.xmlcollector.application.DispatchResult;
-import com.alveesdev.xmlcollector.application.DispatchServiceFactory;
-import com.alveesdev.xmlcollector.application.DispatchService;
+import com.alveesdev.xmlcollector.application.dispatch.DispatchRequest;
+import com.alveesdev.xmlcollector.application.dispatch.DispatchResult;
+import com.alveesdev.xmlcollector.application.dispatch.DispatchService;
+import com.alveesdev.xmlcollector.application.port.DispatchException;
+import com.alveesdev.xmlcollector.application.port.EmailSettingsRepository;
 import com.alveesdev.xmlcollector.application.settings.AppPaths;
 import com.alveesdev.xmlcollector.application.settings.AppSettings;
 import com.alveesdev.xmlcollector.application.settings.EmailDraft;
-import com.alveesdev.xmlcollector.application.settings.EmailSettingsStore;
 import com.alveesdev.xmlcollector.domain.service.ArchiveLayout;
 import com.alveesdev.xmlcollector.ui.view.Dialogs;
 
@@ -42,10 +41,11 @@ public class DispatchTabController {
 	private final String sendButtonText;
 	private final AppPaths paths;
 	private final DispatchService service;
-	private final EmailSettingsStore store;
+	private final EmailSettingsRepository emailSettings;
 
 	public DispatchTabController(TextField recipientField, TextField subjectField, TextArea bodyArea,
-			ChoiceBox<Integer> yearChoice, ChoiceBox<String> monthChoice, Button sendButton, AppPaths paths) {
+			ChoiceBox<Integer> yearChoice, ChoiceBox<String> monthChoice, Button sendButton, AppPaths paths,
+			DispatchService service, EmailSettingsRepository emailSettings) {
 		this.recipientField = recipientField;
 		this.subjectField = subjectField;
 		this.bodyArea = bodyArea;
@@ -54,15 +54,15 @@ public class DispatchTabController {
 		this.sendButton = sendButton;
 		this.sendButtonText = sendButton.getText();
 		this.paths = paths;
-		this.service = DispatchServiceFactory.standard(paths);
-		this.store = new EmailSettingsStore(paths.emailSettingsFile());
+		this.service = service;
+		this.emailSettings = emailSettings;
 	}
 
 	public void load() {
 		AppSettings settings = AppSettings.getInstance();
 
 		try {
-			store.load(settings);
+			emailSettings.load(settings);
 		} catch (IOException e) {
 			Platform.runLater(() -> Dialogs.warning("Não foi possível ler as configurações de e-mail: " + e.getMessage()));
 		}
@@ -150,7 +150,7 @@ public class DispatchTabController {
 
 	private void saveSettings() {
 		try {
-			store.save(AppSettings.getInstance());
+			emailSettings.save(AppSettings.getInstance());
 		} catch (IOException e) {
 			Dialogs.warning("Não foi possível salvar as configurações de e-mail: " + e.getMessage());
 		}

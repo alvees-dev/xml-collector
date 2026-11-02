@@ -8,8 +8,8 @@ import java.nio.file.Path;
 import java.security.GeneralSecurityException;
 import java.util.List;
 
-import com.alveesdev.xmlcollector.application.CloudStorage;
-import com.alveesdev.xmlcollector.application.DispatchException;
+import com.alveesdev.xmlcollector.application.port.CloudStorage;
+import com.alveesdev.xmlcollector.application.port.DispatchException;
 import com.google.api.client.auth.oauth2.AuthorizationCodeRequestUrl;
 import com.google.api.client.auth.oauth2.Credential;
 import com.google.api.client.extensions.java6.auth.oauth2.AuthorizationCodeInstalledApp;

@@ -3,6 +3,7 @@ package com.alveesdev.xmlcollector;
 import java.io.IOException;
 
 import com.alveesdev.xmlcollector.application.settings.AppPaths;
+import com.alveesdev.xmlcollector.bootstrap.AppContext;
 
 import javafx.application.Application;
 import javafx.application.Platform;
@@ -15,7 +16,8 @@ public class Main extends Application {
 
     @Override
     public void start(Stage stage) throws Exception {
-        AppPaths paths = AppPaths.standard();
+        AppContext context = new AppContext(AppPaths.standard());
+        AppPaths paths = context.paths();
 
         try {
             paths.ensureDirectories();
@@ -30,6 +32,8 @@ public class Main extends Application {
 
         FXMLLoader loader = new FXMLLoader(
                 getClass().getResource("/com/alveesdev/xmlcollector/view/MainScreenSceneV1.fxml"));
+        loader.setControllerFactory(context::createController);
+
         Scene scene = new Scene(loader.load());
 
         stage.setTitle("Coletor XML");

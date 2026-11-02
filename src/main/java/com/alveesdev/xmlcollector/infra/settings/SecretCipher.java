@@ -1,4 +1,4 @@
-package com.alveesdev.xmlcollector.application.settings;
+package com.alveesdev.xmlcollector.infra.settings;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;

@@ -10,16 +10,10 @@ import java.nio.file.StandardOpenOption;
 import java.nio.file.attribute.FileTime;
 import java.util.Optional;
 
-import com.alveesdev.xmlcollector.infra.xml.NfceXmlReader;
+import com.alveesdev.xmlcollector.application.port.DocumentArchive;
+import com.alveesdev.xmlcollector.application.port.DocumentReader;
 
-public class XmlArchive {
-
-	public enum Outcome {
-		COPIED,
-		COPIED_RENAMED,
-		REPLACED,
-		ALREADY_EXISTS
-	}
+public class XmlArchive implements DocumentArchive {
 
 	private enum State {
 		SAME_DOCUMENT,
@@ -29,12 +23,13 @@ public class XmlArchive {
 
 	private static final String TEMP_SUFFIX = ".part";
 
-	private final NfceXmlReader reader;
+	private final DocumentReader reader;
 
-	public XmlArchive(NfceXmlReader reader) {
+	public XmlArchive(DocumentReader reader) {
 		this.reader = reader;
 	}
 
+	@Override
 	public Outcome store(byte[] content, FileTime sourceModified, Path directory, String preferredName,
 			String canonicalName, String identity) throws IOException {
 
@@ -80,13 +75,21 @@ public class XmlArchive {
 			return State.SAME_DOCUMENT;
 		}
 
-		Optional<String> found = reader.read(existing).identity();
+		Optional<String> found = identityOf(existing);
 
 		if (found.isEmpty()) {
 			return State.BROKEN;
 		}
 
 		return found.get().equals(identity) ? State.SAME_DOCUMENT : State.OTHER_DOCUMENT;
+	}
+
+	private Optional<String> identityOf(Path existing) {
+		try {
+			return reader.read(Files.readAllBytes(existing)).identity();
+		} catch (IOException e) {
+			return Optional.empty();
+		}
 	}
 
 	private static boolean sameSizeAndTime(byte[] content, FileTime sourceModified, Path existing)

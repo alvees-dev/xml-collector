@@ -1,4 +1,4 @@
-package com.alveesdev.xmlcollector.application;
+package com.alveesdev.xmlcollector.application.port;
 
 import java.nio.file.Path;
 import java.util.List;

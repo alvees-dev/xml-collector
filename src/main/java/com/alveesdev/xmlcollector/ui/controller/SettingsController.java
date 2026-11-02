@@ -2,10 +2,9 @@ package com.alveesdev.xmlcollector.ui.controller;
 
 import java.io.IOException;
 
-import com.alveesdev.xmlcollector.application.settings.AppPaths;
+import com.alveesdev.xmlcollector.application.port.EmailSettingsRepository;
 import com.alveesdev.xmlcollector.application.settings.AppSettings;
 import com.alveesdev.xmlcollector.application.settings.EmailAccount;
-import com.alveesdev.xmlcollector.application.settings.EmailSettingsStore;
 import com.alveesdev.xmlcollector.domain.model.OrganizeMode;
 import com.alveesdev.xmlcollector.ui.view.Dialogs;
 import com.alveesdev.xmlcollector.ui.view.DirectoryListEditor;
@@ -26,6 +25,8 @@ public class SettingsController {
 
 	private static final int NFE_SALES_INDEX = 0;
 	private static final int NFE_PURCHASES_INDEX = 1;
+
+	private final EmailSettingsRepository emailSettings;
 
 	@FXML
 	private Label lblTitle;
@@ -69,6 +70,10 @@ public class SettingsController {
 
 	private double dragOffsetX;
 	private double dragOffsetY;
+
+	public SettingsController(EmailSettingsRepository emailSettings) {
+		this.emailSettings = emailSettings;
+	}
 
 	@FXML
 	public void initialize() {
@@ -135,7 +140,7 @@ public class SettingsController {
 		settings.setEmailAccount(readEmailAccount(email));
 
 		try {
-			new EmailSettingsStore(AppPaths.standard().emailSettingsFile()).save(settings);
+			emailSettings.save(settings);
 		} catch (IOException e) {
 			Dialogs.warning("Não foi possível salvar as configurações de e-mail: " + e.getMessage());
 		}

@@ -1,4 +1,4 @@
-package com.alveesdev.xmlcollector.application;
+package com.alveesdev.xmlcollector.application.port;
 
 import com.alveesdev.xmlcollector.application.settings.EmailAccount;
 

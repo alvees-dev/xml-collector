@@ -1,4 +1,4 @@
-package com.alveesdev.xmlcollector.application.settings;
+package com.alveesdev.xmlcollector.infra.settings;
 
 import java.io.IOException;
 import java.io.Reader;
@@ -10,7 +10,14 @@ import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.Properties;
 
-public final class EmailSettingsStore {
+import com.alveesdev.xmlcollector.application.port.EmailSettingsRepository;
+import com.alveesdev.xmlcollector.application.settings.AppSettings;
+import com.alveesdev.xmlcollector.application.settings.DefaultEmailAccount;
+import com.alveesdev.xmlcollector.application.settings.EmailAccount;
+import com.alveesdev.xmlcollector.application.settings.EmailDraft;
+import com.alveesdev.xmlcollector.application.settings.EmailSecurity;
+
+public final class PropertiesEmailSettingsRepository implements EmailSettingsRepository {
 
 	private static final String HOST_KEY = "smtp.host";
 	private static final String PORT_KEY = "smtp.port";
@@ -23,10 +30,11 @@ public final class EmailSettingsStore {
 
 	private final Path file;
 
-	public EmailSettingsStore(Path file) {
+	public PropertiesEmailSettingsRepository(Path file) {
 		this.file = file;
 	}
 
+	@Override
 	public void load(AppSettings settings) throws IOException {
 		if (!Files.isRegularFile(file)) {
 			return;
@@ -58,6 +66,7 @@ public final class EmailSettingsStore {
 				properties.getProperty(BODY_KEY, "")));
 	}
 
+	@Override
 	public void save(AppSettings settings) throws IOException {
 		EmailAccount account = settings.getEmailAccount();
 		EmailDraft draft = settings.getEmailDraft();

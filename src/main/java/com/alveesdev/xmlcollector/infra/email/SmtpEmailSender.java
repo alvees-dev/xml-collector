@@ -6,9 +6,9 @@ import java.nio.file.Path;
 import java.util.Date;
 import java.util.Properties;
 
-import com.alveesdev.xmlcollector.application.DispatchException;
-import com.alveesdev.xmlcollector.application.EmailMessage;
-import com.alveesdev.xmlcollector.application.EmailSender;
+import com.alveesdev.xmlcollector.application.port.DispatchException;
+import com.alveesdev.xmlcollector.application.port.EmailMessage;
+import com.alveesdev.xmlcollector.application.port.EmailSender;
 import com.alveesdev.xmlcollector.application.settings.EmailAccount;
 import com.alveesdev.xmlcollector.application.settings.EmailSecurity;
 

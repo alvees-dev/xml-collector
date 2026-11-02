@@ -6,9 +6,11 @@ import java.time.YearMonth;
 import java.util.List;
 import java.util.Optional;
 
-import com.alveesdev.xmlcollector.application.CollectionRequest;
-import com.alveesdev.xmlcollector.application.CollectionResult;
-import com.alveesdev.xmlcollector.application.CollectionService;
+import com.alveesdev.xmlcollector.application.collection.CollectionRequest;
+import com.alveesdev.xmlcollector.application.collection.CollectionResult;
+import com.alveesdev.xmlcollector.application.collection.CollectionService;
+import com.alveesdev.xmlcollector.application.dispatch.DispatchService;
+import com.alveesdev.xmlcollector.application.port.EmailSettingsRepository;
 import com.alveesdev.xmlcollector.application.settings.AppPaths;
 import com.alveesdev.xmlcollector.application.settings.AppSettings;
 import com.alveesdev.xmlcollector.domain.model.DateRange;
@@ -36,11 +38,23 @@ public class MainScreenController {
 
 	private static final double MISSING_COLUMN_WIDTH = 110;
 
-	private final CollectionService collectionService = new CollectionService();
-	private final AppPaths paths = AppPaths.standard();
+	private final CollectionService collectionService;
+	private final DispatchService dispatchService;
+	private final EmailSettingsRepository emailSettings;
+	private final AppPaths paths;
+	private final SettingsWindow settingsWindow;
 
 	private MissingTableModel missingModel;
 	private DispatchTabController dispatchTab;
+
+	public MainScreenController(CollectionService collectionService, DispatchService dispatchService,
+			EmailSettingsRepository emailSettings, AppPaths paths, SettingsWindow settingsWindow) {
+		this.collectionService = collectionService;
+		this.dispatchService = dispatchService;
+		this.emailSettings = emailSettings;
+		this.paths = paths;
+		this.settingsWindow = settingsWindow;
+	}
 
 	@FXML
 	private RadioButton RadioButtonColetaXMLCaminhoPDV;
@@ -124,7 +138,8 @@ public class MainScreenController {
 		refreshMissingTable();
 
 		dispatchTab = new DispatchTabController(
-				txtEmailRecipient, txtEmailSubject, txtEmailBody, choiceYear, choiceMonth, btnSendXml, paths);
+				txtEmailRecipient, txtEmailSubject, txtEmailBody, choiceYear, choiceMonth, btnSendXml,
+				paths, dispatchService, emailSettings);
 		dispatchTab.load();
 	}
 
@@ -135,7 +150,7 @@ public class MainScreenController {
 
 	@FXML
 	private void onOpenSettings() {
-		SettingsWindow.showAndWait(tableView.getScene().getWindow());
+		settingsWindow.showAndWait(tableView.getScene().getWindow());
 		refreshMissingTable();
 	}
 

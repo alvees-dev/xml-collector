@@ -2,8 +2,6 @@ package com.alveesdev.xmlcollector.infra.xml;
 
 import java.io.IOException;
 import java.math.BigDecimal;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeParseException;
 
@@ -13,10 +11,11 @@ import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
 
+import com.alveesdev.xmlcollector.application.port.DocumentReader;
 import com.alveesdev.xmlcollector.domain.model.AccessKey;
 import com.alveesdev.xmlcollector.domain.model.XmlDocument;
 
-public class NfceXmlReader {
+public class NfceXmlReader implements DocumentReader {
 
 	private static final String CANCEL_EVENT_TYPE = "110111";
 	private static final String NFE_ID_PREFIX = "NFe";
@@ -25,19 +24,7 @@ public class NfceXmlReader {
 
 	private final XmlDocumentLoader loader = new XmlDocumentLoader();
 
-	public XmlDocument read(Path file) {
-
-		byte[] content;
-
-		try {
-			content = Files.readAllBytes(file);
-		} catch (IOException e) {
-			return new XmlDocument.Unreadable(describe(e));
-		}
-
-		return read(content);
-	}
-
+	@Override
 	public XmlDocument read(byte[] content) {
 
 		Document document;

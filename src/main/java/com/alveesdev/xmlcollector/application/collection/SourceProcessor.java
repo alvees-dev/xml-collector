@@ -1,7 +1,6 @@
-package com.alveesdev.xmlcollector.application;
+package com.alveesdev.xmlcollector.application.collection;
 
 import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.FileTime;
 import java.time.LocalDate;
@@ -22,8 +21,12 @@ import java.util.concurrent.Future;
 import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 
-import com.alveesdev.xmlcollector.application.CollectionResult.SourceResult;
-import com.alveesdev.xmlcollector.application.CollectionSummary.CopyFailure;
+import com.alveesdev.xmlcollector.application.collection.CollectionResult.SourceResult;
+import com.alveesdev.xmlcollector.application.collection.CollectionSummary.CopyFailure;
+import com.alveesdev.xmlcollector.application.port.DocumentArchive;
+import com.alveesdev.xmlcollector.application.port.DocumentReader;
+import com.alveesdev.xmlcollector.application.port.SourceFiles;
+import com.alveesdev.xmlcollector.application.port.SourceFiles.SourceFile;
 import com.alveesdev.xmlcollector.domain.model.AccessKey;
 import com.alveesdev.xmlcollector.domain.model.DocumentCategory;
 import com.alveesdev.xmlcollector.domain.model.NfceEntry;
@@ -31,9 +34,6 @@ import com.alveesdev.xmlcollector.domain.model.NumberRange;
 import com.alveesdev.xmlcollector.domain.model.XmlDocument;
 import com.alveesdev.xmlcollector.domain.service.ArchiveLayout;
 import com.alveesdev.xmlcollector.domain.service.MissingNumberFinder;
-import com.alveesdev.xmlcollector.infra.archive.XmlArchive;
-import com.alveesdev.xmlcollector.infra.xml.NfceXmlReader;
-import com.alveesdev.xmlcollector.infra.xml.XmlFileScanner.SourceFile;
 
 class SourceProcessor {
 
@@ -67,7 +67,7 @@ class SourceProcessor {
 		}
 	}
 
-	private record StoreResult(XmlArchive.Outcome outcome, CopyFailure failure) {
+	private record StoreResult(DocumentArchive.Outcome outcome, CopyFailure failure) {
 	}
 
 	private static class Counters {
@@ -83,16 +83,19 @@ class SourceProcessor {
 	}
 
 	private final CollectionRequest request;
-	private final NfceXmlReader reader;
-	private final XmlArchive archive;
+	private final SourceFiles sourceFiles;
+	private final DocumentReader reader;
+	private final DocumentArchive archive;
 	private final ExecutorService executor;
 
 	private final Counters counters = new Counters();
 	private final Set<AccessKey> seenKeys = new HashSet<>();
 	private final Set<String> seenEventIds = new HashSet<>();
 
-	SourceProcessor(CollectionRequest request, NfceXmlReader reader, XmlArchive archive, ExecutorService executor) {
+	SourceProcessor(CollectionRequest request, SourceFiles sourceFiles, DocumentReader reader, DocumentArchive archive,
+			ExecutorService executor) {
 		this.request = request;
+		this.sourceFiles = sourceFiles;
 		this.reader = reader;
 		this.archive = archive;
 		this.executor = executor;
@@ -170,7 +173,7 @@ class SourceProcessor {
 		String fileName = source.path().getFileName().toString();
 
 		try {
-			byte[] content = Files.readAllBytes(source.path());
+			byte[] content = sourceFiles.read(source);
 			XmlDocument document = reader.read(content);
 
 			boolean needsStoring = document instanceof XmlDocument.Nfce || document instanceof XmlDocument.CancelEvent;

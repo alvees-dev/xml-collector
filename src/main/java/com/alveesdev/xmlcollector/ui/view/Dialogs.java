@@ -4,9 +4,9 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.alveesdev.xmlcollector.application.CollectionResult;
-import com.alveesdev.xmlcollector.application.CollectionSummary;
-import com.alveesdev.xmlcollector.application.SourceFailure;
+import com.alveesdev.xmlcollector.application.collection.CollectionResult;
+import com.alveesdev.xmlcollector.application.collection.CollectionSummary;
+import com.alveesdev.xmlcollector.application.collection.SourceFailure;
 import com.alveesdev.xmlcollector.ui.model.SourceLabels;
 
 import javafx.scene.control.Alert;

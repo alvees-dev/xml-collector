@@ -1,4 +1,4 @@
-package com.alveesdev.xmlcollector.application;
+package com.alveesdev.xmlcollector.application.collection;
 
 public record CollectionProgress(int sourceIndex, int processed, int total) {
 

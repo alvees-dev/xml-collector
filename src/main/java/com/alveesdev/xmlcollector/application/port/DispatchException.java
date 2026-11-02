@@ -1,4 +1,4 @@
-package com.alveesdev.xmlcollector.application;
+package com.alveesdev.xmlcollector.application.port;
 
 public class DispatchException extends Exception {
 

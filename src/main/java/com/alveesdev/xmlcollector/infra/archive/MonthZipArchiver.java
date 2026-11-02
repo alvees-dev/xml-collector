@@ -8,18 +8,19 @@ import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.util.Optional;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
-public class MonthZipArchiver {
+import com.alveesdev.xmlcollector.application.port.DirectoryCompressor;
 
-	public record ZipResult(Path file, int entries) {
-	}
+public class MonthZipArchiver implements DirectoryCompressor {
 
 	private static final String ZIP_SUFFIX = ".zip";
 	private static final String TEMP_SUFFIX = ".part";
 
-	public ZipResult zip(Path monthDirectory) throws IOException {
+	@Override
+	public Optional<CompressedFile> compress(Path monthDirectory) throws IOException {
 
 		String rootName = monthDirectory.getFileName().toString();
 		Path zipFile = monthDirectory.resolveSibling(rootName + ZIP_SUFFIX);
@@ -60,6 +61,11 @@ public class MonthZipArchiver {
 			Files.move(temp, zipFile, StandardCopyOption.REPLACE_EXISTING);
 		}
 
-		return new ZipResult(zipFile, entries[0]);
+		if (entries[0] == 0) {
+			Files.deleteIfExists(zipFile);
+			return Optional.empty();
+		}
+
+		return Optional.of(new CompressedFile(zipFile, Files.size(zipFile)));
 	}
 }

@@ -1,8 +1,8 @@
 package com.alveesdev.xmlcollector.ui.controller;
 
-import com.alveesdev.xmlcollector.application.DispatchRequest;
-import com.alveesdev.xmlcollector.application.DispatchResult;
-import com.alveesdev.xmlcollector.application.DispatchService;
+import com.alveesdev.xmlcollector.application.dispatch.DispatchRequest;
+import com.alveesdev.xmlcollector.application.dispatch.DispatchResult;
+import com.alveesdev.xmlcollector.application.dispatch.DispatchService;
 
 import javafx.concurrent.Task;
 
