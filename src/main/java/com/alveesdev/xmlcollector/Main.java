@@ -2,7 +2,7 @@ package com.alveesdev.xmlcollector;
 
 import java.io.IOException;
 
-import com.alveesdev.xmlcollector.config.AppPaths;
+import com.alveesdev.xmlcollector.application.settings.AppPaths;
 
 import javafx.application.Application;
 import javafx.application.Platform;

@@ -1,15 +1,23 @@
 package com.alveesdev.xmlcollector.ui.controller;
 
-import com.alveesdev.xmlcollector.config.AppSettings;
+import java.io.IOException;
+
+import com.alveesdev.xmlcollector.application.settings.AppPaths;
+import com.alveesdev.xmlcollector.application.settings.AppSettings;
+import com.alveesdev.xmlcollector.application.settings.EmailAccount;
+import com.alveesdev.xmlcollector.application.settings.EmailSettingsStore;
 import com.alveesdev.xmlcollector.domain.model.OrganizeMode;
+import com.alveesdev.xmlcollector.ui.view.Dialogs;
 import com.alveesdev.xmlcollector.ui.view.DirectoryListEditor;
 
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
 import javafx.scene.control.ChoiceBox;
 import javafx.scene.control.Label;
+import javafx.scene.control.PasswordField;
 import javafx.scene.control.RadioButton;
 import javafx.scene.control.ScrollPane;
+import javafx.scene.control.TextField;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
@@ -46,6 +54,12 @@ public class SettingsController {
 	@FXML
 	private RadioButton radioByDay;
 
+	@FXML
+	private TextField txtEmailUser;
+
+	@FXML
+	private PasswordField txtEmailPassword;
+
 	private DirectoryListEditor pdvEditor;
 	private DirectoryListEditor nfeSalesEditor;
 	private DirectoryListEditor nfePurchaseEditor;
@@ -79,6 +93,8 @@ public class SettingsController {
 		} else {
 			radioSingleFolder.setSelected(true);
 		}
+
+		loadEmailAccount(settings.getEmailAccount());
 	}
 
 	@FXML
@@ -104,10 +120,25 @@ public class SettingsController {
 	@FXML
 	private void onSave() {
 		AppSettings settings = AppSettings.getInstance();
+
+		String email = txtEmailUser.getText().trim();
+
+		if (!email.isEmpty() && !email.contains("@")) {
+			Dialogs.warning("Informe um e-mail válido.");
+			return;
+		}
+
 		settings.setPdvDirectories(pdvEditor.values());
 		settings.setNfeSalesDirectories(nfeSalesEditor.values());
 		settings.setNfePurchaseDirectories(nfePurchaseEditor.values());
 		settings.setOrganizeMode(radioByDay.isSelected() ? OrganizeMode.BY_DAY : OrganizeMode.SINGLE_FOLDER);
+		settings.setEmailAccount(readEmailAccount(email));
+
+		try {
+			new EmailSettingsStore(AppPaths.standard().emailSettingsFile()).save(settings);
+		} catch (IOException e) {
+			Dialogs.warning("Não foi possível salvar as configurações de e-mail: " + e.getMessage());
+		}
 
 		closeWindow();
 	}
@@ -128,6 +159,18 @@ public class SettingsController {
 		Stage stage = (Stage) lblTitle.getScene().getWindow();
 		stage.setX(event.getScreenX() - dragOffsetX);
 		stage.setY(event.getScreenY() - dragOffsetY);
+	}
+
+	private void loadEmailAccount(EmailAccount account) {
+		txtEmailUser.setText(account.username());
+		txtEmailPassword.setText(account.password());
+	}
+
+	private EmailAccount readEmailAccount(String email) {
+		EmailAccount current = AppSettings.getInstance().getEmailAccount();
+
+		return new EmailAccount(
+				current.host(), current.port(), current.security(), email, txtEmailPassword.getText().trim());
 	}
 
 	private void showNfeList(int selectedIndex) {

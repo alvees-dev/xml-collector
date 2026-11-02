@@ -18,6 +18,10 @@ public final class Dialogs {
 	private Dialogs() {
 	}
 
+	public static void info(String message) {
+		new Alert(Alert.AlertType.INFORMATION, message).showAndWait();
+	}
+
 	public static void warning(String message) {
 		new Alert(Alert.AlertType.WARNING, message).showAndWait();
 	}

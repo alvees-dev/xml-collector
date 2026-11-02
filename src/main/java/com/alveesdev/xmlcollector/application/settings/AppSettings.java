@@ -1,4 +1,4 @@
-package com.alveesdev.xmlcollector.config;
+package com.alveesdev.xmlcollector.application.settings;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -16,6 +16,10 @@ public class AppSettings {
 	private List<String> nfePurchaseDirectories = new ArrayList<>(List.of(""));
 
 	private OrganizeMode organizeMode = OrganizeMode.SINGLE_FOLDER;
+
+	private EmailAccount emailAccount = DefaultEmailAccount.get();
+
+	private EmailDraft emailDraft = EmailDraft.empty();
 
 	private AppSettings() {
 	}
@@ -58,5 +62,21 @@ public class AppSettings {
 
 	public void setOrganizeMode(OrganizeMode organizeMode) {
 		this.organizeMode = organizeMode;
+	}
+
+	public EmailAccount getEmailAccount() {
+		return emailAccount;
+	}
+
+	public void setEmailAccount(EmailAccount emailAccount) {
+		this.emailAccount = emailAccount;
+	}
+
+	public EmailDraft getEmailDraft() {
+		return emailDraft;
+	}
+
+	public void setEmailDraft(EmailDraft emailDraft) {
+		this.emailDraft = emailDraft;
 	}
 }
