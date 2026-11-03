@@ -461,6 +461,10 @@ class CollectionServiceTest {
 		private IOException failure;
 
 		@Override
+		public void initialize() {
+		}
+
+		@Override
 		public void saveAll(Collection<IssuedNumber> numbers) throws IOException {
 			if (failure != null) {
 				throw failure;

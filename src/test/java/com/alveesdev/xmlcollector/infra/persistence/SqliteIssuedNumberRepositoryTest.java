@@ -3,6 +3,7 @@ package com.alveesdev.xmlcollector.infra.persistence;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -45,6 +46,30 @@ class SqliteIssuedNumberRepositoryTest {
 		repository.saveAll(List.of(new IssuedNumber(CNPJ, NFCE, 1, 2)));
 
 		assertEquals(List.of(new IssuedNumber(CNPJ, NFCE, 1, 2)), stored());
+	}
+
+	@Test
+	void initializingCreatesAnEmptyDatabaseWithItsTable() throws Exception {
+		repository.initialize();
+
+		assertTrue(Files.isRegularFile(file));
+		assertEquals(List.of(), stored());
+	}
+
+	@Test
+	void initializingAgainKeepsWhatWasSaved() throws Exception {
+		repository.saveAll(List.of(new IssuedNumber(CNPJ, NFCE, 1, 2)));
+
+		new SqliteIssuedNumberRepository(file).initialize();
+
+		assertEquals(List.of(new IssuedNumber(CNPJ, NFCE, 1, 2)), stored());
+	}
+
+	@Test
+	void reportsWhenTheDatabaseCannotBeCreated() throws Exception {
+		Files.createDirectories(file);
+
+		assertThrows(IOException.class, repository::initialize);
 	}
 
 	@Test
