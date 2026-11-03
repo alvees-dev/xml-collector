@@ -35,6 +35,10 @@ public record AppSettings(
 		return pdvDirectories.size();
 	}
 
+	public AppSettings withEmailAccount(EmailAccount account) {
+		return new AppSettings(pdvDirectories, nfeSalesDirectories, nfePurchaseDirectories, organizeMode, account, emailDraft);
+	}
+
 	public AppSettings withEmailDraft(EmailDraft draft) {
 		return new AppSettings(pdvDirectories, nfeSalesDirectories, nfePurchaseDirectories, organizeMode, emailAccount, draft);
 	}

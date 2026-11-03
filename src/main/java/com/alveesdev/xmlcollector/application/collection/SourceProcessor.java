@@ -9,6 +9,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 import java.util.SortedMap;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CancellationException;
@@ -24,6 +25,7 @@ import com.alveesdev.xmlcollector.application.port.DocumentArchive;
 import com.alveesdev.xmlcollector.application.port.DocumentReader;
 import com.alveesdev.xmlcollector.application.port.SourceFiles;
 import com.alveesdev.xmlcollector.application.port.SourceFiles.SourceFile;
+import com.alveesdev.xmlcollector.domain.model.IssuedNumber;
 import com.alveesdev.xmlcollector.domain.model.NumberRange;
 import com.alveesdev.xmlcollector.domain.model.XmlDocument;
 import com.alveesdev.xmlcollector.domain.service.ArchiveLayout;
@@ -107,6 +109,10 @@ class SourceProcessor {
 
 	SourceResult result(int sourceIndex) {
 		return new SourceResult(sourceIndex, rules.entriesOf(sourceIndex));
+	}
+
+	Set<IssuedNumber> issuedNumbers() {
+		return rules.issuedNumbers();
 	}
 
 	SortedMap<Integer, List<NumberRange>> missingNumbers() {

@@ -1,3 +1,6 @@
+### Credentials ###
+src/main/resources/default-email.properties
+
 ### Java ###
 # Compiled class file
 *.class

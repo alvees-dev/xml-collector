@@ -3,6 +3,7 @@ package com.alveesdev.xmlcollector.application.collection;
 import static com.alveesdev.xmlcollector.domain.TestDocuments.cancellation;
 import static com.alveesdev.xmlcollector.domain.TestDocuments.invoice;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.io.IOException;
@@ -12,7 +13,9 @@ import java.nio.file.Path;
 import java.nio.file.attribute.FileTime;
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -24,12 +27,14 @@ import org.junit.jupiter.api.Test;
 
 import com.alveesdev.xmlcollector.application.port.DocumentArchive;
 import com.alveesdev.xmlcollector.application.port.DocumentReader;
+import com.alveesdev.xmlcollector.application.port.IssuedNumberRepository;
 import com.alveesdev.xmlcollector.application.port.SourceFiles;
 import com.alveesdev.xmlcollector.domain.model.DateRange;
 import com.alveesdev.xmlcollector.domain.model.DocumentCategory;
 import com.alveesdev.xmlcollector.domain.model.DocumentEntry;
 import com.alveesdev.xmlcollector.domain.model.DocumentModel;
 import com.alveesdev.xmlcollector.domain.model.DocumentStatus;
+import com.alveesdev.xmlcollector.domain.model.IssuedNumber;
 import com.alveesdev.xmlcollector.domain.model.NumberRange;
 import com.alveesdev.xmlcollector.domain.model.OrganizeMode;
 import com.alveesdev.xmlcollector.domain.model.XmlDocument;
@@ -43,7 +48,8 @@ class CollectionServiceTest {
 
 	private final FakeSources sources = new FakeSources();
 	private final FakeArchive archive = new FakeArchive();
-	private final CollectionService service = new CollectionService(sources, sources, archive, 2);
+	private final FakeIssuedNumbers issuedNumbers = new FakeIssuedNumbers();
+	private final CollectionService service = new CollectionService(sources, sources, archive, issuedNumbers, 2);
 
 	@Test
 	void marksInvoiceAsCancelledWhenTheEventIsInTheSameSource() {
@@ -203,6 +209,42 @@ class CollectionServiceTest {
 	}
 
 	@Test
+	void savesTheNumbersOfAcceptedInvoicesOnce() {
+		sources.add("pdv1", "a.xml", invoice(1, 1, IN_PERIOD));
+		sources.add("pdv2", "copia.xml", invoice(1, 1, IN_PERIOD));
+		sources.add("pdv2", "b.xml", invoice(2, 5, IN_PERIOD));
+		sources.add("pdv2", "fora.xml", invoice(2, 6, AFTER_PERIOD));
+
+		CollectionResult result = collect("pdv1", "pdv2");
+
+		assertEquals(
+				Set.of(IssuedNumber.of(invoice(1, 1, IN_PERIOD)), IssuedNumber.of(invoice(2, 5, IN_PERIOD))),
+				issuedNumbers.saved);
+		assertNull(result.historyFailure());
+	}
+
+	@Test
+	void reportsAHistoryFailureWithoutLosingTheCollection() {
+		sources.add("pdv1", "a.xml", invoice(1, IN_PERIOD));
+		issuedNumbers.failure = new IOException("banco travado");
+
+		CollectionResult result = collect("pdv1");
+
+		assertEquals("banco travado", result.historyFailure());
+		assertEquals(1, result.summary().copied());
+		assertEquals(1, result.entries().size());
+	}
+
+	@Test
+	void savesNoNumbersWhenTheCollectionIsCancelled() {
+		sources.add("pdv1", "a.xml", invoice(1, IN_PERIOD));
+
+		assertThrows(CancellationException.class,
+				() -> service.collect(request("pdv1"), ProgressListener.NONE, () -> true));
+		assertEquals(Set.of(), issuedNumbers.saved);
+	}
+
+	@Test
 	void stopsWhenCancelled() {
 		sources.add("pdv1", "a.xml", invoice(1, IN_PERIOD));
 
@@ -264,6 +306,21 @@ class CollectionServiceTest {
 		public XmlDocument read(byte[] content, Set<DocumentModel> acceptedModels) {
 			requestedModels.add(acceptedModels);
 			return documents.get(new String(content, StandardCharsets.UTF_8));
+		}
+	}
+
+	private static class FakeIssuedNumbers implements IssuedNumberRepository {
+
+		private final Set<IssuedNumber> saved = new HashSet<>();
+		private IOException failure;
+
+		@Override
+		public void saveAll(Collection<IssuedNumber> numbers) throws IOException {
+			if (failure != null) {
+				throw failure;
+			}
+
+			saved.addAll(numbers);
 		}
 	}
 

@@ -8,10 +8,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.SortedMap;
+import java.util.stream.Collectors;
 
 import com.alveesdev.xmlcollector.domain.model.AccessKey;
 import com.alveesdev.xmlcollector.domain.model.DateRange;
 import com.alveesdev.xmlcollector.domain.model.DocumentEntry;
+import com.alveesdev.xmlcollector.domain.model.IssuedNumber;
 import com.alveesdev.xmlcollector.domain.model.NumberRange;
 import com.alveesdev.xmlcollector.domain.model.XmlDocument;
 
@@ -78,14 +80,21 @@ public final class CollectionRules {
 	}
 
 	public SortedMap<Integer, List<NumberRange>> missingNumbers() {
+		return MissingNumberFinder.findBySeries(acceptedInvoices());
+	}
 
-		List<XmlDocument.Invoice> invoices = acceptedBySource.values().stream()
+	public Set<IssuedNumber> issuedNumbers() {
+		return acceptedInvoices().stream()
+				.map(IssuedNumber::of)
+				.collect(Collectors.toSet());
+	}
+
+	private List<XmlDocument.Invoice> acceptedInvoices() {
+		return acceptedBySource.values().stream()
 				.flatMap(List::stream)
 				.map(Accepted::invoice)
 				.filter(invoice -> invoice != null)
 				.toList();
-
-		return MissingNumberFinder.findBySeries(invoices);
 	}
 
 	private Decision decideInvoice(int sourceIndex, String fileName, XmlDocument.Invoice invoice) {

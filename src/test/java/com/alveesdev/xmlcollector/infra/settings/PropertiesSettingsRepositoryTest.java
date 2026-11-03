@@ -16,6 +16,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 import com.alveesdev.xmlcollector.application.settings.AppSettings;
+import com.alveesdev.xmlcollector.application.settings.DefaultEmailAccount;
 import com.alveesdev.xmlcollector.application.settings.EmailAccount;
 import com.alveesdev.xmlcollector.application.settings.EmailDraft;
 import com.alveesdev.xmlcollector.application.settings.EmailSecurity;
@@ -24,6 +25,8 @@ import com.alveesdev.xmlcollector.domain.model.OrganizeMode;
 class PropertiesSettingsRepositoryTest {
 
 	private static final String PASSWORD = "senha-de-teste";
+	private static final EmailAccount DEFAULT_ACCOUNT = new EmailAccount(
+			"smtp.gmail.com", 587, EmailSecurity.STARTTLS, "envio@exemplo.com", "senha-padrao");
 
 	@TempDir
 	Path directory;
@@ -36,7 +39,54 @@ class PropertiesSettingsRepositoryTest {
 	void setUp() {
 		file = directory.resolve("settings.properties");
 		legacyFile = directory.resolve("email.properties");
-		repository = new PropertiesSettingsRepository(file, legacyFile);
+		repository = new PropertiesSettingsRepository(file, legacyFile, DefaultEmailAccount.get());
+	}
+
+	@Test
+	void usesTheDefaultAccountWhenThereIsNoFile() throws IOException {
+		assertEquals(DEFAULT_ACCOUNT, repositoryWithDefaultAccount().load().emailAccount());
+	}
+
+	@Test
+	void usesTheDefaultAccountWhenTheSavedOneIsIncomplete() throws IOException {
+		Files.writeString(file, "smtp.username=\nsmtp.password=\n", StandardCharsets.UTF_8);
+
+		assertEquals(DEFAULT_ACCOUNT, repositoryWithDefaultAccount().load().emailAccount());
+	}
+
+	@Test
+	void keepsAnotherAccountSavedByTheUser() throws IOException {
+		PropertiesSettingsRepository repository = repositoryWithDefaultAccount();
+
+		repository.save(sampleSettings());
+
+		assertEquals(sampleSettings().emailAccount(), repository.load().emailAccount());
+	}
+
+	@Test
+	void doesNotCopyTheDefaultAccountToTheFile() throws IOException {
+		PropertiesSettingsRepository repository = repositoryWithDefaultAccount();
+
+		repository.save(sampleSettings().withEmailAccount(DEFAULT_ACCOUNT));
+
+		String content = Files.readString(file);
+
+		assertFalse(content.contains(DEFAULT_ACCOUNT.username()));
+		assertFalse(content.contains("smtp.password"));
+		assertEquals(DEFAULT_ACCOUNT, repository.load().emailAccount());
+	}
+
+	@Test
+	void aNewDefaultPasswordReachesInstallationsThatAlreadySaved() throws IOException {
+		repositoryWithDefaultAccount().save(sampleSettings().withEmailAccount(DEFAULT_ACCOUNT));
+
+		EmailAccount rotated = new EmailAccount("smtp.gmail.com", 587, EmailSecurity.STARTTLS, DEFAULT_ACCOUNT.username(), "senha-nova");
+
+		assertEquals(rotated, new PropertiesSettingsRepository(file, legacyFile, rotated).load().emailAccount());
+	}
+
+	private PropertiesSettingsRepository repositoryWithDefaultAccount() {
+		return new PropertiesSettingsRepository(file, legacyFile, DEFAULT_ACCOUNT);
 	}
 
 	@Test
@@ -50,7 +100,7 @@ class PropertiesSettingsRepositoryTest {
 
 		repository.save(settings);
 
-		assertEquals(settings, new PropertiesSettingsRepository(file, legacyFile).load());
+		assertEquals(settings, new PropertiesSettingsRepository(file, legacyFile, DefaultEmailAccount.get()).load());
 	}
 
 	@Test

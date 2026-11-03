@@ -15,6 +15,7 @@ import com.alveesdev.xmlcollector.application.collection.CollectionResult.Source
 import com.alveesdev.xmlcollector.application.collection.SourceFailure.Reason;
 import com.alveesdev.xmlcollector.application.port.DocumentArchive;
 import com.alveesdev.xmlcollector.application.port.DocumentReader;
+import com.alveesdev.xmlcollector.application.port.IssuedNumberRepository;
 import com.alveesdev.xmlcollector.application.port.SourceFiles;
 import com.alveesdev.xmlcollector.application.port.SourceFiles.ScanResult;
 import com.alveesdev.xmlcollector.application.port.SourceFiles.SourceFile;
@@ -29,13 +30,16 @@ public class CollectionService {
 	private final SourceFiles sourceFiles;
 	private final DocumentReader reader;
 	private final DocumentArchive archive;
+	private final IssuedNumberRepository issuedNumbers;
 	private final int threads;
 
-	public CollectionService(SourceFiles sourceFiles, DocumentReader reader, DocumentArchive archive) {
-		this(sourceFiles, reader, archive, DEFAULT_THREADS);
+	public CollectionService(SourceFiles sourceFiles, DocumentReader reader, DocumentArchive archive,
+			IssuedNumberRepository issuedNumbers) {
+		this(sourceFiles, reader, archive, issuedNumbers, DEFAULT_THREADS);
 	}
 
-	public CollectionService(SourceFiles sourceFiles, DocumentReader reader, DocumentArchive archive, int threads) {
+	public CollectionService(SourceFiles sourceFiles, DocumentReader reader, DocumentArchive archive,
+			IssuedNumberRepository issuedNumbers, int threads) {
 		if (threads < 1) {
 			throw new IllegalArgumentException("threads must be at least 1");
 		}
@@ -43,6 +47,7 @@ public class CollectionService {
 		this.sourceFiles = sourceFiles;
 		this.reader = reader;
 		this.archive = archive;
+		this.issuedNumbers = issuedNumbers;
 		this.threads = threads;
 	}
 
@@ -78,10 +83,21 @@ public class CollectionService {
 				results.add(processor.result(source.index()));
 			}
 
-			return new CollectionResult(results, processor.missingNumbers(), processor.summary(), failures);
+			String historyFailure = saveIssuedNumbers(processor);
+
+			return new CollectionResult(results, processor.missingNumbers(), processor.summary(), failures, historyFailure);
 
 		} finally {
 			executor.shutdownNow();
+		}
+	}
+
+	private String saveIssuedNumbers(SourceProcessor processor) {
+		try {
+			issuedNumbers.saveAll(processor.issuedNumbers());
+			return null;
+		} catch (IOException e) {
+			return e.getMessage() == null ? e.getClass().getSimpleName() : e.getMessage();
 		}
 	}
 
