@@ -106,7 +106,7 @@ public final class Dialogs {
 
 	public static void voidingSummary(List<VoidingOutcome> outcomes, FiscalEnvironment environment) {
 
-		boolean allApproved = outcomes.stream().allMatch(outcome -> outcome.stage() == VoidingProgress.Stage.APPROVED && outcome.archiveFailure() == null);
+		boolean allApproved = outcomes.stream().allMatch(outcome -> outcome.stage() == VoidingProgress.Stage.APPROVED && outcome.archiveFailure() == null && outcome.pdvFailures().isEmpty());
 
 		Alert alert = new Alert(allApproved ? Alert.AlertType.INFORMATION : Alert.AlertType.WARNING, VoidingText.summary(outcomes, environment));
 		alert.setHeaderText("Inutilização concluída");

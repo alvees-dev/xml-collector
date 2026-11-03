@@ -49,11 +49,13 @@ class VoidingTextTest {
 	@Test
 	void theSummaryNamesEachResultAndAnArchiveFailure() {
 		String text = VoidingText.summary(List.of(
-				new VoidingOutcome(SINGLE, Stage.APPROVED, "102 - Homologado", "disco cheio"),
-				new VoidingOutcome(RANGE, Stage.NOT_SENT, null, null)), FiscalEnvironment.PRODUCTION);
+				new VoidingOutcome(SINGLE, Stage.APPROVED, "102 - Homologado", "disco cheio", List.of("pdv1: sem acesso")),
+				new VoidingOutcome(RANGE, Stage.NOT_SENT, null)), FiscalEnvironment.PRODUCTION);
 
 		assertTrue(text.contains("Série 1: 7: OK (102 - Homologado)"));
 		assertTrue(text.contains("não foi salvo: disco cheio"));
+		assertTrue(text.contains("NÃO foi salvo na pasta do PDV"));
+		assertTrue(text.contains("pdv1: sem acesso"));
 		assertTrue(text.contains("Série 2: 10 a 12: Não enviada"));
 		assertFalse(text.contains("homologação"));
 	}

@@ -2,6 +2,7 @@ package com.alveesdev.xmlcollector.ui.controller;
 
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 
@@ -22,17 +23,19 @@ public class VoidingTask extends Task<List<VoidingOutcome>> {
 	private final CertificateSettings certificate;
 	private final OrganizeMode organizeMode;
 	private final Path archiveRoot;
+	private final Map<Integer, List<Path>> pdvFolders;
 	private final Consumer<VoidingProgress> onProgress;
 
 	private final AtomicBoolean stopRequested = new AtomicBoolean();
 
 	public VoidingTask(VoidingBatch batch, List<VoidingRequest> requests, CertificateSettings certificate,
-			OrganizeMode organizeMode, Path archiveRoot, Consumer<VoidingProgress> onProgress) {
+			OrganizeMode organizeMode, Path archiveRoot, Map<Integer, List<Path>> pdvFolders, Consumer<VoidingProgress> onProgress) {
 		this.batch = batch;
 		this.requests = requests;
 		this.certificate = certificate;
 		this.organizeMode = organizeMode;
 		this.archiveRoot = archiveRoot;
+		this.pdvFolders = pdvFolders;
 		this.onProgress = onProgress;
 	}
 
@@ -43,7 +46,7 @@ public class VoidingTask extends Task<List<VoidingOutcome>> {
 
 	@Override
 	protected List<VoidingOutcome> call() throws Exception {
-		return batch.run(requests, certificate, organizeMode, archiveRoot,
+		return batch.run(requests, certificate, organizeMode, archiveRoot, pdvFolders,
 				progress -> Platform.runLater(() -> onProgress.accept(progress)), stopRequested::get);
 	}
 }
