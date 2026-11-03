@@ -619,6 +619,11 @@ class CollectionServiceTest {
 		}
 
 		@Override
+		public Set<Integer> issuedIn(String cnpj, String modelCode, int series, NumberRange range) {
+			return Set.of();
+		}
+
+		@Override
 		public void saveAll(Collection<IssuedNumber> numbers) throws IOException {
 			if (failure != null) {
 				throw failure;
