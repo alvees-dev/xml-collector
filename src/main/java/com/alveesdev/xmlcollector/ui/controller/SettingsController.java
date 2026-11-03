@@ -144,11 +144,18 @@ public class SettingsController {
 			return;
 		}
 
+		PdvSearchModel pdvModel = choicePdvModel.getValue();
+
+		if (pdvModel == null && !choicePdvModel.getItems().isEmpty()) {
+			Dialogs.warning("Selecione o Modelo de Busca PDV na aba Modelos.");
+			return;
+		}
+
 		AppSettings settings = new AppSettings(
 				pdvEditor.values(),
 				nfeEditor.values(),
 				choicePdvType.getValue(),
-				choicePdvModel.getValue().id(),
+				pdvModel == null ? PdvSearchModel.NONE.id() : pdvModel.id(),
 				choiceNfeModel.getValue().id(),
 				radioByDay.isSelected() ? OrganizeMode.BY_DAY : OrganizeMode.SINGLE_FOLDER,
 				choiceSeparation.getValue(),
@@ -209,7 +216,7 @@ public class SettingsController {
 		choicePdvModel.setValue(models.stream()
 				.filter(model -> model.id().equals(selectedId))
 				.findFirst()
-				.orElse(PdvSearchModel.NONE));
+				.orElse(null));
 	}
 
 	private static <T> StringConverter<T> labelled(Function<T, String> label) {

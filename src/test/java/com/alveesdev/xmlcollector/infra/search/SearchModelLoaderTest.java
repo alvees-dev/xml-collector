@@ -38,7 +38,7 @@ class SearchModelLoaderTest {
 	}
 
 	@Test
-	void listsNoModelFirstAndOnlyTheModelsOfTheType() {
+	void listsOnlyTheModelsOfTheTypeWithoutAnEmptyOption() {
 		PdvSearchModel food = new PdvSearchModel("f", "F", PdvType.FOOD, List.of("a"), List.of(), "");
 
 		SearchModelCatalog catalog = new SearchModelCatalog(new SearchModelProvider() {
@@ -54,7 +54,7 @@ class SearchModelLoaderTest {
 			}
 		});
 
-		assertEquals(List.of(PdvSearchModel.NONE), catalog.pdvModels(PdvType.PDV));
-		assertEquals(List.of(PdvSearchModel.NONE, food), catalog.pdvModels(PdvType.FOOD));
+		assertEquals(List.of(), catalog.pdvModels(PdvType.PDV));
+		assertEquals(List.of(food), catalog.pdvModels(PdvType.FOOD));
 	}
 }

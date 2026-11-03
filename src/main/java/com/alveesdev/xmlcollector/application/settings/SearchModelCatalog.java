@@ -19,10 +19,7 @@ public final class SearchModelCatalog {
 	}
 
 	public List<PdvSearchModel> pdvModels(PdvType type) {
-		List<PdvSearchModel> models = new ArrayList<>();
-		models.add(PdvSearchModel.NONE);
-		pdvModels.stream().filter(model -> model.type() == type).forEach(models::add);
-		return models;
+		return pdvModels.stream().filter(model -> model.type() == type).toList();
 	}
 
 	public List<NfeSearchModel> nfeModels() {
