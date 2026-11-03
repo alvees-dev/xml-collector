@@ -1,36 +1,90 @@
 package com.alveesdev.xmlcollector.ui.controller;
 
-import javafx.beans.property.ReadOnlyDoubleProperty;
-import javafx.beans.property.ReadOnlyStringProperty;
+import java.util.HashMap;
+import java.util.Map;
+
+import com.alveesdev.xmlcollector.application.collection.CollectionProgress;
+import com.alveesdev.xmlcollector.ui.model.SourceProgressText;
+
 import javafx.fxml.FXML;
+import javafx.geometry.Pos;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.ProgressBar;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.Priority;
+import javafx.scene.layout.VBox;
 
 public class ProgressController {
 
-	@FXML
-	private Label lblSource;
+	private static final double SOURCE_LABEL_WIDTH = 60;
+	private static final double STATUS_LABEL_WIDTH = 130;
+	private static final String DONE_STYLE = "-fx-text-fill: #2e7d32; -fx-font-weight: bold;";
+	private static final String FAILED_STYLE = "-fx-text-fill: #c62828; -fx-font-weight: bold;";
+
+	private record SourceRow(ProgressBar bar, Label status) {
+	}
 
 	@FXML
-	private ProgressBar progressBar;
-
-	@FXML
-	private Label lblCounts;
+	private VBox sourcesBox;
 
 	@FXML
 	private Button btnCancel;
 
+	private final Map<Integer, SourceRow> rows = new HashMap<>();
+
 	private Runnable cancelAction = () -> {
 	};
 
-	public void bind(ReadOnlyDoubleProperty progress, ReadOnlyStringProperty source,
-			ReadOnlyStringProperty counts, Runnable cancelAction) {
+	public void showSources(Map<Integer, String> labels) {
+		labels.forEach((sourceIndex, label) -> addRow(sourceIndex, label));
+	}
 
-		progressBar.progressProperty().bind(progress);
-		lblSource.textProperty().bind(source);
-		lblCounts.textProperty().bind(counts);
+	public void setCancelAction(Runnable cancelAction) {
 		this.cancelAction = cancelAction;
+	}
+
+	public void update(CollectionProgress progress) {
+
+		SourceRow row = rows.get(progress.sourceIndex());
+
+		if (row == null) {
+			return;
+		}
+
+		row.status().setText(SourceProgressText.of(progress));
+
+		switch (progress.stage()) {
+			case COUNTING -> row.bar().setProgress(ProgressBar.INDETERMINATE_PROGRESS);
+			case READING -> row.bar().setProgress((double) progress.processed() / Math.max(progress.total(), 1));
+			case DONE -> {
+				row.bar().setProgress(1);
+				row.status().setStyle(DONE_STYLE);
+			}
+			case FAILED -> {
+				row.bar().setProgress(0);
+				row.status().setStyle(FAILED_STYLE);
+			}
+		}
+	}
+
+	private void addRow(int sourceIndex, String text) {
+
+		Label label = new Label(text);
+		label.setMinWidth(SOURCE_LABEL_WIDTH);
+
+		ProgressBar bar = new ProgressBar(0);
+		bar.setMaxWidth(Double.MAX_VALUE);
+		HBox.setHgrow(bar, Priority.ALWAYS);
+
+		Label status = new Label(SourceProgressText.WAITING);
+		status.setMinWidth(STATUS_LABEL_WIDTH);
+
+		HBox row = new HBox(8, label, bar, status);
+		row.setAlignment(Pos.CENTER_LEFT);
+
+		rows.put(sourceIndex, new SourceRow(bar, status));
+		sourcesBox.getChildren().add(row);
 	}
 
 	@FXML

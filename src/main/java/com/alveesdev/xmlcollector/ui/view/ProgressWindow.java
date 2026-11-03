@@ -2,11 +2,11 @@ package com.alveesdev.xmlcollector.ui.view;
 
 import java.io.IOException;
 import java.net.URL;
+import java.util.Map;
 
+import com.alveesdev.xmlcollector.application.collection.CollectionProgress;
 import com.alveesdev.xmlcollector.ui.controller.ProgressController;
 
-import javafx.beans.property.ReadOnlyDoubleProperty;
-import javafx.beans.property.ReadOnlyStringProperty;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
@@ -20,9 +20,9 @@ public final class ProgressWindow {
 	private static final String PROGRESS_FXML = "/com/alveesdev/xmlcollector/view/CollectionProgress.fxml";
 
 	private final Stage stage = new Stage();
+	private final ProgressController controller;
 
-	public ProgressWindow(Window owner, ReadOnlyDoubleProperty progress, ReadOnlyStringProperty title,
-			ReadOnlyStringProperty message, Runnable onCancel) throws IOException {
+	public ProgressWindow(Window owner, Map<Integer, String> sourceLabels) throws IOException {
 
 		URL location = ProgressWindow.class.getResource(PROGRESS_FXML);
 
@@ -33,14 +33,22 @@ public final class ProgressWindow {
 		FXMLLoader loader = new FXMLLoader(location);
 		Parent root = loader.load();
 
-		ProgressController controller = loader.getController();
-		controller.bind(progress, title, message, onCancel);
+		controller = loader.getController();
+		controller.showSources(sourceLabels);
 
 		stage.initStyle(StageStyle.UNDECORATED);
 		stage.initModality(Modality.APPLICATION_MODAL);
 		stage.initOwner(owner);
 		stage.setResizable(false);
 		stage.setScene(new Scene(root));
+	}
+
+	public void setCancelAction(Runnable cancelAction) {
+		controller.setCancelAction(cancelAction);
+	}
+
+	public void update(CollectionProgress progress) {
+		controller.update(progress);
 	}
 
 	public void show() {

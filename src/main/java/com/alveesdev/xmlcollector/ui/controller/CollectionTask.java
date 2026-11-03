@@ -1,28 +1,33 @@
 package com.alveesdev.xmlcollector.ui.controller;
 
-import java.util.Locale;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Consumer;
 
 import com.alveesdev.xmlcollector.application.collection.CollectionProgress;
 import com.alveesdev.xmlcollector.application.collection.CollectionRequest;
 import com.alveesdev.xmlcollector.application.collection.CollectionResult;
 import com.alveesdev.xmlcollector.application.collection.CollectionService;
-import com.alveesdev.xmlcollector.ui.model.SourceLabels;
-import com.alveesdev.xmlcollector.ui.model.SourceMode;
 
+import javafx.application.Platform;
 import javafx.concurrent.Task;
 
 public class CollectionTask extends Task<CollectionResult> {
 
-	private static final Locale BRAZIL = Locale.forLanguageTag("pt-BR");
-
 	private final CollectionService service;
 	private final CollectionRequest request;
-	private final SourceMode sourceMode;
+	private final Consumer<CollectionProgress> onProgress;
 
-	public CollectionTask(CollectionService service, CollectionRequest request, SourceMode sourceMode) {
+	// One entry per source, so a burst of file events reaches the screen as its latest state.
+	private final Map<Integer, CollectionProgress> pending = new ConcurrentHashMap<>();
+	private final AtomicBoolean deliveryScheduled = new AtomicBoolean();
+
+	public CollectionTask(CollectionService service, CollectionRequest request, Consumer<CollectionProgress> onProgress) {
 		this.service = service;
 		this.request = request;
-		this.sourceMode = sourceMode;
+		this.onProgress = onProgress;
 	}
 
 	@Override
@@ -31,15 +36,22 @@ public class CollectionTask extends Task<CollectionResult> {
 	}
 
 	private void publishProgress(CollectionProgress progress) {
-		updateTitle(SourceLabels.label(progress.sourceIndex(), sourceMode));
+		pending.put(progress.sourceIndex(), progress);
 
-		if (progress.stage() == CollectionProgress.Stage.COUNTING) {
-			updateProgress(-1, -1);
-			updateMessage("Contando arquivos...");
-			return;
+		if (deliveryScheduled.compareAndSet(false, true)) {
+			Platform.runLater(this::deliverProgress);
 		}
+	}
 
-		updateProgress(progress.processed(), Math.max(progress.total(), 1));
-		updateMessage(String.format(BRAZIL, "%,d de %,d arquivos", progress.processed(), progress.total()));
+	private void deliverProgress() {
+		deliveryScheduled.set(false);
+
+		for (Integer sourceIndex : List.copyOf(pending.keySet())) {
+			CollectionProgress progress = pending.remove(sourceIndex);
+
+			if (progress != null) {
+				onProgress.accept(progress);
+			}
+		}
 	}
 }
