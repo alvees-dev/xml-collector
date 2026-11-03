@@ -31,6 +31,12 @@ public class Main extends Application {
         }
 
         try {
+            context.issuedNumbers().initialize();
+        } catch (IOException e) {
+            new Alert(Alert.AlertType.WARNING, e.getMessage()).showAndWait();
+        }
+
+        try {
             context.settings().load();
         } catch (IOException e) {
             new Alert(Alert.AlertType.WARNING, "Não foi possível ler as configurações: " + e.getMessage()).showAndWait();

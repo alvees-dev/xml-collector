@@ -3,6 +3,7 @@ package com.alveesdev.xmlcollector.bootstrap;
 import com.alveesdev.xmlcollector.application.collection.CollectionService;
 import com.alveesdev.xmlcollector.application.dispatch.DispatchService;
 import com.alveesdev.xmlcollector.application.port.DocumentReader;
+import com.alveesdev.xmlcollector.application.port.IssuedNumberRepository;
 import com.alveesdev.xmlcollector.application.settings.AppPaths;
 import com.alveesdev.xmlcollector.application.settings.SearchModelCatalog;
 import com.alveesdev.xmlcollector.application.settings.service.SettingsService;
@@ -26,6 +27,7 @@ import com.alveesdev.xmlcollector.ui.view.SettingsWindow;
 public final class AppContext {
 
 	private final AppPaths paths;
+	private final IssuedNumberRepository issuedNumbers;
 	private final CollectionService collectionService;
 	private final DispatchService dispatchService;
 	private final SettingsService settingsService;
@@ -37,8 +39,8 @@ public final class AppContext {
 
 		DocumentReader reader = new FiscalXmlReader();
 
-		this.collectionService = new CollectionService(
-				new XmlFileScanner(), reader, new XmlArchive(reader), new SqliteIssuedNumberRepository(paths.databaseFile()));
+		this.issuedNumbers = new SqliteIssuedNumberRepository(paths.databaseFile());
+		this.collectionService = new CollectionService(new XmlFileScanner(), reader, new XmlArchive(reader), issuedNumbers);
 		this.dispatchService = new DispatchService(
 				new MonthZipArchiver(),
 				new SmtpEmailSender(),
@@ -55,6 +57,10 @@ public final class AppContext {
 
 	public SettingsService settings() {
 		return settingsService;
+	}
+
+	public IssuedNumberRepository issuedNumbers() {
+		return issuedNumbers;
 	}
 
 	public Object createController(Class<?> type) {

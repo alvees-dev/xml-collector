@@ -35,6 +35,18 @@ public class SqliteIssuedNumberRepository implements IssuedNumberRepository {
 	}
 
 	@Override
+	public void initialize() throws IOException {
+
+		Files.createDirectories(file.getParent());
+
+		try (Connection connection = DriverManager.getConnection("jdbc:sqlite:" + file)) {
+			createTable(connection);
+		} catch (SQLException e) {
+			throw new IOException("Não foi possível criar o banco de dados: " + e.getMessage(), e);
+		}
+	}
+
+	@Override
 	public void saveAll(Collection<IssuedNumber> numbers) throws IOException {
 
 		if (numbers.isEmpty()) {
