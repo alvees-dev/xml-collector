@@ -5,8 +5,6 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.function.IntPredicate;
 import java.util.function.Predicate;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import com.alveesdev.xmlcollector.domain.model.AccessKey;
 import com.alveesdev.xmlcollector.domain.model.NumberRange;
@@ -20,8 +18,6 @@ public record CollectionTarget(
 
 	public static final CollectionTarget ALL = new CollectionTarget(index -> true, name -> true, invoice -> true);
 
-	private static final Pattern KEY_IN_NAME = Pattern.compile("(?<![0-9])[0-9]{44}(?![0-9])");
-
 	public static CollectionTarget missing(Map<Integer, List<NumberRange>> wantedBySeries, IntPredicate source, String fileSuffix) {
 		String suffix = fileSuffix.toLowerCase(Locale.ROOT);
 
@@ -32,14 +28,9 @@ public record CollectionTarget(
 	}
 
 	private static boolean nameMayBeWanted(String name, Map<Integer, List<NumberRange>> wantedBySeries) {
-		Matcher matcher = KEY_IN_NAME.matcher(name);
-
-		if (!matcher.find()) {
-			return true;
-		}
-
-		AccessKey key = new AccessKey(matcher.group());
-		return isWanted(wantedBySeries, key.series(), key.number());
+		return AccessKey.findIn(name)
+				.map(key -> isWanted(wantedBySeries, key.series(), key.number()))
+				.orElse(true);
 	}
 
 	private static boolean isWanted(Map<Integer, List<NumberRange>> wantedBySeries, int series, int number) {
