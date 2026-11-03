@@ -2,6 +2,7 @@ package com.alveesdev.xmlcollector.application.collection;
 
 import static com.alveesdev.xmlcollector.domain.TestDocuments.cancellation;
 import static com.alveesdev.xmlcollector.domain.TestDocuments.invoice;
+import static com.alveesdev.xmlcollector.domain.TestDocuments.key;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -259,7 +260,7 @@ class CollectionServiceTest {
 
 		CollectionResult result = service.collect(new CollectionRequest(
 				List.of("pdv1"), DocumentCategory.NFCE, JANUARY, OrganizeMode.SINGLE_FOLDER, ARCHIVE,
-				List.of("enviados"), invoice -> true));
+				List.of("enviados"), CollectionTarget.ALL));
 
 		assertEquals("a.xml", onlyEntry(result).fileName());
 	}
@@ -268,7 +269,7 @@ class CollectionServiceTest {
 	void reportsARootWithoutAnyFolderOfTheModel() {
 		CollectionResult result = service.collect(new CollectionRequest(
 				List.of("pdv1"), DocumentCategory.NFCE, JANUARY, OrganizeMode.SINGLE_FOLDER, ARCHIVE,
-				List.of("enviados"), invoice -> true));
+				List.of("enviados"), CollectionTarget.ALL));
 
 		assertEquals(SourceFailure.Reason.NO_MODEL_FOLDER, result.failures().get(0).reason());
 	}
@@ -277,7 +278,7 @@ class CollectionServiceTest {
 	void reportsAnInaccessibleRootOfAModel() {
 		CollectionResult result = service.collect(new CollectionRequest(
 				List.of("sem-acesso"), DocumentCategory.NFCE, JANUARY, OrganizeMode.SINGLE_FOLDER, ARCHIVE,
-				List.of("enviados"), invoice -> true));
+				List.of("enviados"), CollectionTarget.ALL));
 
 		assertEquals(SourceFailure.Reason.INACCESSIBLE, result.failures().get(0).reason());
 	}
@@ -289,10 +290,64 @@ class CollectionServiceTest {
 
 		CollectionResult result = service.collect(new CollectionRequest(
 				List.of("pdv1"), DocumentCategory.NFCE, JANUARY, OrganizeMode.SINGLE_FOLDER, ARCHIVE,
-				List.of(), invoice -> invoice.number() == 2));
+				List.of(), CollectionTarget.missing(Map.of(1, List.of(new NumberRange(2, 2))), index -> true, "")));
 
 		assertEquals("b.xml", onlyEntry(result).fileName());
 		assertEquals(1, archive.stored.size());
+	}
+
+	@Test
+	void searchesOnlyInThePdvsOfTheTargetAndDoesNotComplainAboutTheOthers() {
+		sources.add("pdv1", "a.xml", invoice(1, 10, IN_PERIOD));
+		sources.add("pdv2", "b.xml", invoice(2, 15, IN_PERIOD));
+
+		CollectionResult result = service.collect(new CollectionRequest(
+				List.of("pdv1", "", "pdv2"), DocumentCategory.NFCE, JANUARY, OrganizeMode.SINGLE_FOLDER, ARCHIVE,
+				List.of(), CollectionTarget.missing(Map.of(2, List.of(new NumberRange(15, 15))), index -> index == 2, "")));
+
+		assertEquals("b.xml", onlyEntry(result).fileName());
+		assertEquals(List.of(), result.failures());
+		assertEquals(List.of(Path.of("pdv2", "b.xml").toString()), sources.reads);
+	}
+
+	@Test
+	void doesNotOpenAFileWhenItsNameShowsItIsNotWanted() {
+		String wanted = key(1, 10).value() + "-nfe.xml";
+		String other = key(1, 11).value() + "-nfe.xml";
+		sources.add("pdv1", wanted, invoice(1, 10, IN_PERIOD));
+		sources.add("pdv1", other, invoice(1, 11, IN_PERIOD));
+		sources.add("pdv1", "sem-chave.xml", invoice(1, 12, IN_PERIOD));
+
+		CollectionResult result = service.collect(new CollectionRequest(
+				List.of("pdv1"), DocumentCategory.NFCE, JANUARY, OrganizeMode.SINGLE_FOLDER, ARCHIVE,
+				List.of(), CollectionTarget.missing(Map.of(1, List.of(new NumberRange(10, 10))), index -> true, "")));
+
+		assertEquals(wanted, onlyEntry(result).fileName());
+		assertEquals(Set.of(Path.of("pdv1", wanted).toString(), Path.of("pdv1", "sem-chave.xml").toString()), Set.copyOf(sources.reads));
+	}
+
+	@Test
+	void opensOnlyTheFilesWithTheSuffixOfTheModel() {
+		String wanted = key(1, 10).value() + "-nfe.xml";
+		sources.add("pdv1", wanted, invoice(1, 10, IN_PERIOD));
+		sources.add("pdv1", key(1, 10).value() + "-procEventoNFe.xml", cancellation(10, IN_PERIOD));
+		sources.add("pdv1", "outro.xml", invoice(1, 10, IN_PERIOD));
+
+		CollectionResult result = service.collect(new CollectionRequest(
+				List.of("pdv1"), DocumentCategory.NFCE, JANUARY, OrganizeMode.SINGLE_FOLDER, ARCHIVE,
+				List.of(), CollectionTarget.missing(Map.of(1, List.of(new NumberRange(10, 10))), index -> true, "-nfe.xml")));
+
+		assertEquals(wanted, onlyEntry(result).fileName());
+		assertEquals(List.of(Path.of("pdv1", wanted).toString()), sources.reads);
+	}
+
+	@Test
+	void knowsWhichPdvsHoldEachSeries() {
+		sources.add("pdv1", "a.xml", invoice(1, 1, IN_PERIOD));
+		sources.add("pdv2", "b.xml", invoice(2, 1, IN_PERIOD));
+		sources.add("pdv2", "c.xml", invoice(1, 2, IN_PERIOD));
+
+		assertEquals(Map.of(1, Set.of(0, 1), 2, Set.of(1)), collect("pdv1", "pdv2").sourcesBySeries());
 	}
 
 	@Test
@@ -306,6 +361,25 @@ class CollectionServiceTest {
 
 		assertEquals(Map.of(1, List.of(new NumberRange(4, 4))), result.missingBySeries());
 		assertEquals(1, archive.stored.stream().filter(stored -> stored.directory().endsWith("Inutilizadas")).count());
+	}
+
+	@Test
+	void sumsOnlyTheAuthorizedInvoices() {
+		sources.add("pdv1", "a.xml", invoice(1, IN_PERIOD));
+		sources.add("pdv1", "b.xml", invoice(2, IN_PERIOD));
+		sources.add("pdv1", "c.xml", invoice(3, IN_PERIOD));
+		sources.add("pdv2", "evento.xml", cancellation(3, IN_PERIOD));
+		sources.add("pdv2", "fora.xml", invoice(4, AFTER_PERIOD));
+		sources.add("pdv2", "ruim.xml", new XmlDocument.Unreadable("xml invalido"));
+
+		assertEquals(new java.math.BigDecimal("21.00"), CollectedDocuments.from(collect("pdv1", "pdv2")).authorizedTotal());
+	}
+
+	@Test
+	void theTotalIsZeroWithoutInvoices() {
+		sources.add("pdv1", "evento.xml", cancellation(3, IN_PERIOD));
+
+		assertEquals(java.math.BigDecimal.ZERO, CollectedDocuments.from(collect("pdv1")).authorizedTotal());
 	}
 
 	private CollectionResult collect(String... directories) {
@@ -334,6 +408,7 @@ class CollectionServiceTest {
 
 		private final Map<String, List<SourceFile>> directories = new LinkedHashMap<>();
 		private final Map<String, XmlDocument> documents = new HashMap<>();
+		private final List<String> reads = java.util.Collections.synchronizedList(new ArrayList<>());
 		private final Set<Set<DocumentModel>> requestedModels = ConcurrentHashMap.newKeySet();
 
 		void add(String directory, String fileName, XmlDocument document) {
@@ -369,6 +444,7 @@ class CollectionServiceTest {
 
 		@Override
 		public byte[] read(SourceFile file) {
+			reads.add(file.path().toString());
 			return file.path().toString().getBytes(StandardCharsets.UTF_8);
 		}
 

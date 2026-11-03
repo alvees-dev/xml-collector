@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
+<?import javafx.geometry.Insets?>
 <?import javafx.scene.control.Button?>
 <?import javafx.scene.control.Label?>
 <?import javafx.scene.control.Separator?>
@@ -24,18 +25,27 @@
                </children>
             </VBox>
             <Separator orientation="VERTICAL" />
-            <VBox alignment="CENTER" spacing="6.0" HBox.hgrow="ALWAYS">
+            <VBox alignment="CENTER_LEFT" spacing="6.0" HBox.hgrow="ALWAYS">
+               <padding>
+                  <Insets left="15.0" right="10.0" />
+               </padding>
                <children>
                   <Label text="Processo para uma nota específica" />
-                  <HBox alignment="CENTER" spacing="10.0">
+                  <HBox alignment="CENTER_LEFT" spacing="8.0">
                      <children>
-                        <Button fx:id="btnSearchNumber" mnemonicParsing="false" onAction="#onSearchNumber" text="Procurar NFCe" />
+                        <Button fx:id="btnSearchNumber" mnemonicParsing="false" onAction="#onSearchNumber" prefWidth="105.0" text="Procurar NFCe" />
+                        <Label text="Série" />
+                        <TextField fx:id="txtSearchSeries" maxWidth="40.0" />
+                        <Label text="NFCe" />
                         <TextField fx:id="txtSearchNumber" maxWidth="65.0" />
                      </children>
                   </HBox>
-                  <HBox alignment="CENTER" spacing="10.0">
+                  <HBox alignment="CENTER_LEFT" spacing="8.0">
                      <children>
-                        <Button mnemonicParsing="false" text="Inutilizar NFCe" />
+                        <Button mnemonicParsing="false" prefWidth="105.0" text="Inutilizar NFCe" />
+                        <Label text="Série" />
+                        <TextField maxWidth="40.0" />
+                        <Label text="NFCe" />
                         <TextField maxWidth="65.0" />
                         <Label text="à" />
                         <TextField maxWidth="65.0" />

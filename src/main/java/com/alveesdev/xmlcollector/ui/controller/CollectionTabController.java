@@ -6,9 +6,11 @@ import java.util.List;
 import java.util.Optional;
 import java.util.function.BiConsumer;
 
+import com.alveesdev.xmlcollector.application.collection.CollectedDocuments;
 import com.alveesdev.xmlcollector.application.collection.CollectionRequest;
 import com.alveesdev.xmlcollector.application.collection.CollectionResult;
 import com.alveesdev.xmlcollector.application.collection.CollectionService;
+import com.alveesdev.xmlcollector.application.collection.CollectionTarget;
 import com.alveesdev.xmlcollector.application.settings.AppPaths;
 import com.alveesdev.xmlcollector.application.settings.AppSettings;
 import com.alveesdev.xmlcollector.application.settings.SearchModelCatalog;
@@ -37,6 +39,8 @@ public class CollectionTabController {
 	private final SearchModelCatalog searchModels;
 	private final AppPaths paths;
 
+	private CollectedDocuments collected = new CollectedDocuments();
+
 	private BiConsumer<CollectionRequest, CollectionResult> onCollected = (request, result) -> {
 	};
 
@@ -54,6 +58,9 @@ public class CollectionTabController {
 
 	@FXML
 	private Button btnCollect;
+
+	@FXML
+	private TextField txtNfceTotal;
 
 	@FXML
 	private TableView<DocumentRow> documentsTable;
@@ -86,6 +93,11 @@ public class CollectionTabController {
 
 	public void setOnCollected(BiConsumer<CollectionRequest, CollectionResult> onCollected) {
 		this.onCollected = onCollected;
+	}
+
+	public void addFound(CollectionResult result) {
+		collected.addFound(result);
+		showCollected();
 	}
 
 	@FXML
@@ -153,19 +165,26 @@ public class CollectionTabController {
 
 		return Optional.of(new CollectionRequest(
 				directories, DocumentCategory.NFCE, new DateRange(from, to), settings.organizeMode(), paths.xmlArchiveDir(),
-				folderPatterns, invoice -> true));
+				folderPatterns, CollectionTarget.ALL));
 	}
 
 	private void showResult(CollectionRequest request, CollectionResult result, SourceMode sourceMode) {
 
-		List<DocumentRow> rows = result.entries().stream()
-				.map(DocumentRowMapper::toRow)
-				.toList();
-
-		documentsTable.setItems(FXCollections.observableArrayList(rows));
+		collected = CollectedDocuments.from(result);
+		showCollected();
 
 		onCollected.accept(request, result);
 
 		Dialogs.collectionSummary(result, paths.xmlArchiveDir(), sourceMode);
+	}
+
+	private void showCollected() {
+
+		List<DocumentRow> rows = collected.entries().stream()
+				.map(DocumentRowMapper::toRow)
+				.toList();
+
+		documentsTable.setItems(FXCollections.observableArrayList(rows));
+		txtNfceTotal.setText(DocumentRowMapper.currency(collected.authorizedTotal()));
 	}
 }

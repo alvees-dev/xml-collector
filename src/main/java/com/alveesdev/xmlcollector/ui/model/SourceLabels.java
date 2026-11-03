@@ -10,6 +10,6 @@ public final class SourceLabels {
 	}
 
 	public static String header(int sourceIndex) {
-		return String.format("PDV%02d", sourceIndex + 1);
+		return String.format("SERIE%2d ", sourceIndex + 1);
 	}
 }

@@ -42,7 +42,7 @@
                   <RadioButton fx:id="radioSingleDirectory" mnemonicParsing="false" text="Diretório Único" toggleGroup="$sourceGroup" />
                   <HBox alignment="CENTER_LEFT" spacing="20.0">
                      <children>
-                        <TextField fx:id="txtDirectory" prefWidth="200.0" />
+                        <TextField fx:id="txtDirectory" prefWidth="170.0" />
                         <Button fx:id="btnCollect" mnemonicParsing="false" onAction="#onCollect" prefWidth="81.0" text="Coletar XML" />
                      </children>
                   </HBox>
@@ -65,11 +65,11 @@
                </padding>
                <children>
                   <Label text="NFCe" />
-                  <TextField editable="false" prefWidth="80.0" GridPane.columnIndex="1" />
+                  <TextField fx:id="txtNfceTotal" editable="false" prefWidth="110.0" GridPane.columnIndex="1" />
                   <Label text="NFe V" GridPane.rowIndex="1" />
-                  <TextField editable="false" prefWidth="80.0" GridPane.columnIndex="1" GridPane.rowIndex="1" />
+                  <TextField editable="false" prefWidth="110.0" GridPane.columnIndex="1" GridPane.rowIndex="1" />
                   <Label text="NFe C" GridPane.rowIndex="2" />
-                  <TextField editable="false" prefWidth="80.0" GridPane.columnIndex="1" GridPane.rowIndex="2" />
+                  <TextField editable="false" prefWidth="110.0" GridPane.columnIndex="1" GridPane.rowIndex="2" />
                </children>
             </GridPane>
          </children>

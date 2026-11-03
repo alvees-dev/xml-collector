@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.List;
+import java.util.Set;
 import java.util.TreeMap;
 
 import org.junit.jupiter.api.Test;
@@ -43,13 +44,13 @@ class MissingTableModelTest {
 	void showsOneEmptyColumnPerPdvBeforeAnyCollection() {
 		MissingTableModel model = MissingTableModel.forPdvs(2);
 
-		assertEquals(List.of("PDV01", "PDV02"), model.getHeaders());
+		assertEquals(List.of("SERIE 1 ", "SERIE 2 "), model.getHeaders());
 		assertTrue(model.getRows().isEmpty());
 		assertFalse(model.isSeriesBased());
 	}
 
 	private static CollectionResult resultWith(TreeMap<Integer, List<NumberRange>> missing) {
 		CollectionSummary summary = new CollectionSummary(0, 0, 0, 0, 0, 0, 0, 0, List.of());
-		return new CollectionResult(List.of(), missing, summary, List.of(), null);
+		return new CollectionResult(List.of(), missing, summary, List.of(), null, Set.of());
 	}
 }
