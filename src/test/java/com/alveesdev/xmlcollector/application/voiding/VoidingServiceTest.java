@@ -20,6 +20,7 @@ import org.junit.jupiter.api.Test;
 import com.alveesdev.xmlcollector.application.port.DocumentArchive;
 import com.alveesdev.xmlcollector.application.port.VoidingException;
 import com.alveesdev.xmlcollector.domain.model.DocumentModel;
+import com.alveesdev.xmlcollector.domain.model.FiscalEnvironment;
 import com.alveesdev.xmlcollector.domain.model.NumberRange;
 import com.alveesdev.xmlcollector.domain.model.OrganizeMode;
 import com.alveesdev.xmlcollector.domain.model.VoidingReceipt;
@@ -70,14 +71,23 @@ class VoidingServiceTest {
 	void propagatesAGatewayFailure() {
 		VoidingService service = new VoidingService(request -> {
 			throw new VoidingException("sem conexao");
-		}, archive, CLOCK);
+		}, archive, CLOCK, FiscalEnvironment.PRODUCTION);
 
 		assertThrows(VoidingException.class, () -> service.voidRange(REQUEST, OrganizeMode.SINGLE_FOLDER, ROOT));
 		assertTrue(archive.names.isEmpty());
 	}
 
 	private VoidingService service(VoidingReceipt receipt) {
-		return new VoidingService(request -> receipt, archive, CLOCK);
+		return new VoidingService(request -> receipt, archive, CLOCK, FiscalEnvironment.PRODUCTION);
+	}
+
+	@Test
+	void aHomologationApprovalIsNotStoredWithTheRealDocuments() throws Exception {
+		VoidingResult result = new VoidingService(request -> APPROVED, archive, CLOCK, FiscalEnvironment.HOMOLOGATION)
+				.voidRange(REQUEST, OrganizeMode.SINGLE_FOLDER, ROOT);
+
+		assertTrue(result.receipt().approved());
+		assertTrue(archive.names.isEmpty());
 	}
 
 	private static class FakeArchive implements DocumentArchive {

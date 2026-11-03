@@ -11,6 +11,7 @@ import com.alveesdev.xmlcollector.application.port.DocumentArchive;
 import com.alveesdev.xmlcollector.application.port.VoidingException;
 import com.alveesdev.xmlcollector.application.port.VoidingGateway;
 import com.alveesdev.xmlcollector.domain.model.DocumentCategory;
+import com.alveesdev.xmlcollector.domain.model.FiscalEnvironment;
 import com.alveesdev.xmlcollector.domain.model.OrganizeMode;
 import com.alveesdev.xmlcollector.domain.model.VoidingReceipt;
 import com.alveesdev.xmlcollector.domain.model.VoidingRequest;
@@ -21,18 +22,21 @@ public class VoidingService {
 	private final VoidingGateway gateway;
 	private final DocumentArchive archive;
 	private final Clock clock;
+	private final FiscalEnvironment environment;
 
-	public VoidingService(VoidingGateway gateway, DocumentArchive archive, Clock clock) {
+	public VoidingService(VoidingGateway gateway, DocumentArchive archive, Clock clock, FiscalEnvironment environment) {
 		this.gateway = gateway;
 		this.archive = archive;
 		this.clock = clock;
+		this.environment = environment;
 	}
 
 	public VoidingResult voidRange(VoidingRequest request, OrganizeMode organizeMode, Path archiveRoot) throws VoidingException {
 
 		VoidingReceipt receipt = gateway.voidRange(request);
 
-		if (!receipt.approved()) {
+		// A homologation file has no fiscal value, so it must not go out with the real documents.
+		if (!receipt.approved() || environment == FiscalEnvironment.HOMOLOGATION) {
 			return new VoidingResult(receipt, null);
 		}
 
