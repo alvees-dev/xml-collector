@@ -58,6 +58,42 @@ class SearchFolderResolverTest {
 	}
 
 	@Test
+	void findsTheYearAndTheMonthNameOfThePeriod() throws IOException {
+		create("docs/2026/Janeiro_2026");
+		create("docs/2026/Fevereiro_2026");
+		create("docs/2026/Marco_2026");
+		create("docs/2025/Janeiro_2025");
+
+		assertEquals(
+				Set.of(root.resolve("docs/2026/Janeiro_2026"), root.resolve("docs/2026/Fevereiro_2026")),
+				resolve("docs/{AAAA}/{MES_AAAA}"));
+	}
+
+	@Test
+	void aPeriodAcrossTwoYearsTakesOnlyItsMonthsInEachYear() throws IOException {
+		create("docs/2025/Dezembro_2025");
+		create("docs/2025/Novembro_2025");
+		create("docs/2026/Janeiro_2026");
+		create("docs/2026/Dezembro_2026");
+
+		DateRange period = new DateRange(LocalDate.of(2025, 12, 20), LocalDate.of(2026, 1, 10));
+
+		assertEquals(
+				List.of(root.resolve("docs/2025/Dezembro_2025"), root.resolve("docs/2026/Janeiro_2026")),
+				SearchFolderResolver.resolve(root, List.of("docs/{AAAA}/{MES_AAAA}"), period).folders().stream().sorted().toList());
+	}
+
+	@Test
+	void acceptsTheMonthWithOrWithoutItsAccentAndInAnyCase() throws IOException {
+		create("com/2026/Março_2026");
+		create("sem/2026/MARCO_2026");
+
+		DateRange march = new DateRange(LocalDate.of(2026, 3, 1), LocalDate.of(2026, 3, 31));
+
+		assertEquals(2, SearchFolderResolver.resolve(root, List.of("com/{AAAA}/{MES_AAAA}", "sem/{AAAA}/{MES_AAAA}"), march).folders().size());
+	}
+
+	@Test
 	void failsWhenTheRootDoesNotExist() {
 		assertThrows(NotDirectoryException.class, () -> SearchFolderResolver.resolve(
 				root.resolve("ausente"), List.of("a"), JANUARY_TO_FEBRUARY));
