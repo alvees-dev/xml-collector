@@ -321,6 +321,37 @@ class CollectionServiceTest {
 	}
 
 	@Test
+	void warnsAboutEachFolderNotFoundAndKeepsReadingTheOthers() {
+		sources.add(Path.of("pdv1", "enviados").toString(), "a.xml", invoice(1, IN_PERIOD));
+		List<CollectionProgress> events = new ArrayList<>();
+
+		CollectionResult result = service.collect(new CollectionRequest(
+				List.of("pdv1"), DocumentCategory.NFCE, JANUARY, OrganizeMode.SINGLE_FOLDER, ARCHIVE,
+				List.of("enviados", "contingencia"), CollectionTarget.ALL), events::add, () -> false);
+
+		assertEquals(1, result.entries().size());
+		assertEquals(
+				List.of(new SourceFailure(0, SourceFailure.Reason.FOLDER_NOT_FOUND, Path.of("pdv1", "contingencia").toString())),
+				result.failures());
+	}
+
+	@Test
+	void aSourceWithoutAnyFolderOfTheModelFailsWithOneMessage() {
+		sources.add("pdv1", "a.xml", invoice(1, IN_PERIOD));
+		List<CollectionProgress> events = new ArrayList<>();
+
+		CollectionResult result = service.collect(new CollectionRequest(
+				List.of("pdv1"), DocumentCategory.NFCE, JANUARY, OrganizeMode.SINGLE_FOLDER, ARCHIVE,
+				List.of("enviados", "contingencia"), CollectionTarget.ALL), events::add, () -> false);
+
+		assertEquals(
+				List.of(new SourceFailure(0, SourceFailure.Reason.NO_MODEL_FOLDER,
+						Path.of("pdv1", "enviados") + ", " + Path.of("pdv1", "contingencia"))),
+				result.failures());
+		assertEquals(CollectionProgress.Stage.FAILED, lastStageOf(events, 0));
+	}
+
+	@Test
 	void reportsARootWithoutAnyFolderOfTheModel() {
 		CollectionResult result = service.collect(new CollectionRequest(
 				List.of("pdv1"), DocumentCategory.NFCE, JANUARY, OrganizeMode.SINGLE_FOLDER, ARCHIVE,
@@ -484,7 +515,11 @@ class CollectionServiceTest {
 							.filter(folder -> directories.containsKey(folder.toString()))
 							.toList(),
 					List.of(),
-					List.of());
+					patterns.stream()
+							.map(root::resolve)
+							.filter(folder -> !directories.containsKey(folder.toString()))
+							.map(Path::toString)
+							.toList());
 		}
 
 		@Override
