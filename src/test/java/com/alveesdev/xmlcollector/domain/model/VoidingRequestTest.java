@@ -25,6 +25,14 @@ class VoidingRequestTest {
 	}
 
 	@Test
+	void theStandardJustificationIsAccepted() {
+		VoidingRequest request = new VoidingRequest(
+				"35", 2026, "12345678000190", DocumentModel.NFCE, 1, new NumberRange(2, 3), VoidingRequest.STANDARD_JUSTIFICATION);
+
+		assertEquals(VoidingRequest.STANDARD_JUSTIFICATION, request.justification());
+	}
+
+	@Test
 	void rejectsAShortOrLongJustification() {
 		assertInvalid("35", 2026, 1, new NumberRange(1, 1), "curta demais");
 		assertInvalid("35", 2026, 1, new NumberRange(1, 1), "              x              ");
