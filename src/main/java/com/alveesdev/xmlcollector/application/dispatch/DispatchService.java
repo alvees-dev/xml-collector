@@ -5,7 +5,12 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.CancellationException;
+import java.util.function.BooleanSupplier;
+import java.util.function.Consumer;
 
+import com.alveesdev.xmlcollector.application.dispatch.DispatchProgress.Stage;
+import com.alveesdev.xmlcollector.application.dispatch.DispatchProgress.Step;
 import com.alveesdev.xmlcollector.application.port.ArchivedDocuments;
 import com.alveesdev.xmlcollector.application.port.CloudStorage;
 import com.alveesdev.xmlcollector.application.port.DirectoryCompressor;
@@ -37,10 +42,19 @@ public class DispatchService {
 	}
 
 	public DispatchResult dispatch(DispatchRequest request) throws DispatchException {
+		return dispatch(request, progress -> {
+		}, () -> false);
+	}
+
+	public DispatchResult dispatch(DispatchRequest request, Consumer<DispatchProgress> listener, BooleanSupplier cancelled)
+			throws DispatchException {
 
 		validate(request);
 
+		listener.accept(new DispatchProgress(Step.COMPRESSING, Stage.RUNNING));
 		List<CompressedFile> compressed = compressAll(request.monthDirectories());
+		listener.accept(new DispatchProgress(Step.COMPRESSING, Stage.DONE));
+
 		List<Path> zipFiles = compressed.stream().map(CompressedFile::file).toList();
 		long totalBytes = compressed.stream().mapToLong(CompressedFile::bytes).sum();
 
@@ -48,20 +62,41 @@ public class DispatchService {
 		String body = bodyOf(request);
 
 		if (fitsInMessage(compressed)) {
-			emailSender.send(request.account(), new EmailMessage(request.recipient(), subject, body, zipFiles));
+			listener.accept(new DispatchProgress(Step.UPLOADING, Stage.SKIPPED));
+			send(request, new EmailMessage(request.recipient(), subject, body, zipFiles), listener, cancelled);
 			return new DispatchResult(DispatchResult.Method.ATTACHED, zipFiles, totalBytes, null);
 		}
 
+		throwIfCancelled(cancelled);
+
+		listener.accept(new DispatchProgress(Step.UPLOADING, Stage.RUNNING));
 		String link = cloudStorage.uploadToSharedFolder(
 				request.account().username(), folderNameOf(request.monthDirectories()), zipFiles);
+		listener.accept(new DispatchProgress(Step.UPLOADING, Stage.DONE));
 
 		String bodyWithLink = body
 				+ "\n\nOs arquivos são grandes demais para seguir em anexo e foram salvos no Google Drive."
 				+ "\nAcesse pelo link:\n" + link;
 
-		emailSender.send(request.account(), new EmailMessage(request.recipient(), subject, bodyWithLink, List.of()));
+		send(request, new EmailMessage(request.recipient(), subject, bodyWithLink, List.of()), listener, cancelled);
 
 		return new DispatchResult(DispatchResult.Method.DRIVE_LINK, zipFiles, totalBytes, link);
+	}
+
+	private void send(DispatchRequest request, EmailMessage message, Consumer<DispatchProgress> listener, BooleanSupplier cancelled)
+			throws DispatchException {
+
+		throwIfCancelled(cancelled);
+
+		listener.accept(new DispatchProgress(Step.SENDING, Stage.RUNNING));
+		emailSender.send(request.account(), message);
+		listener.accept(new DispatchProgress(Step.SENDING, Stage.DONE));
+	}
+
+	private static void throwIfCancelled(BooleanSupplier cancelled) {
+		if (cancelled.getAsBoolean() || Thread.currentThread().isInterrupted()) {
+			throw new CancellationException("Envio cancelado");
+		}
 	}
 
 	public static long encodedSize(long bytes) {

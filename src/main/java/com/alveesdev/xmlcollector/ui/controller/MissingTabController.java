@@ -175,7 +175,7 @@ public class MissingTabController {
 				paths.xmlArchiveDir(), folders,
 				CollectionTarget.missing(wanted, sourcesOfMissingSeries(wanted), searchModel.missingFileSuffix()));
 
-		CollectionRunner.run(trigger, collectionService, request, SourceMode.PDV_DIRECTORIES, this::showFound);
+		CollectionRunner.run(trigger, "Procurando notas faltantes", collectionService, request, SourceMode.PDV_DIRECTORIES, this::showFound);
 	}
 
 	private void showFound(CollectionResult result) {

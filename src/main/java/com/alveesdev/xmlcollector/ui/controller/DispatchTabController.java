@@ -17,7 +17,9 @@ import com.alveesdev.xmlcollector.application.settings.AppSettings;
 import com.alveesdev.xmlcollector.application.settings.EmailDraft;
 import com.alveesdev.xmlcollector.application.settings.service.SettingsService;
 import com.alveesdev.xmlcollector.domain.service.ArchiveLayout;
+import com.alveesdev.xmlcollector.ui.model.DispatchProgressText;
 import com.alveesdev.xmlcollector.ui.view.Dialogs;
+import com.alveesdev.xmlcollector.ui.view.ProgressWindow;
 
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
@@ -29,14 +31,12 @@ public class DispatchTabController {
 
 	private static final Locale BRAZIL = Locale.forLanguageTag("pt-BR");
 	private static final double BYTES_PER_MEGABYTE = 1024.0 * 1024.0;
-	private static final String SENDING_TEXT = "Enviando...";
+	private static final double STEP_LABEL_WIDTH = 140;
 	private static final int LISTED_YEARS = 6;
 
 	private final DispatchService service;
 	private final SettingsService settingsService;
 	private final AppPaths paths;
-
-	private String sendButtonText;
 
 	@FXML
 	private TextField txtRecipient;
@@ -64,8 +64,6 @@ public class DispatchTabController {
 
 	@FXML
 	public void initialize() {
-		sendButtonText = btnSend.getText();
-
 		EmailDraft draft = settingsService.current().emailDraft();
 		txtRecipient.setText(draft.recipient());
 		txtSubject.setText(draft.subject());
@@ -106,20 +104,40 @@ public class DispatchTabController {
 		DispatchRequest request = new DispatchRequest(
 				List.of(monthDirectory), settings.emailAccount(), draft.recipient().trim(), draft.subject(), draft.body());
 
-		DispatchTask task = new DispatchTask(service, request);
+		ProgressWindow progressWindow;
+
+		try {
+			progressWindow = new ProgressWindow(btnSend.getScene().getWindow(), "Enviando XML de " + monthLabel,
+					DispatchProgressText.stepLabels(), STEP_LABEL_WIDTH);
+		} catch (IOException e) {
+			Dialogs.error("Erro ao abrir a tela de progresso: " + e.getMessage());
+			return;
+		}
+
+		DispatchTask task = new DispatchTask(service, request, progressWindow::update);
+		progressWindow.setCancelAction(task::cancel);
 
 		btnSend.setDisable(true);
-		btnSend.setText(SENDING_TEXT);
 
 		task.setOnSucceeded(event -> {
-			restoreButton();
+			progressWindow.close();
+			btnSend.setDisable(false);
 			Dialogs.info(describeSuccess(monthLabel, request.recipient(), task.getValue()));
 		});
 
 		task.setOnFailed(event -> {
-			restoreButton();
+			progressWindow.close();
+			btnSend.setDisable(false);
 			Dialogs.error(describeFailure(task.getException()));
 		});
+
+		task.setOnCancelled(event -> {
+			progressWindow.close();
+			btnSend.setDisable(false);
+			Dialogs.warning("Envio cancelado. O e-mail não foi enviado.");
+		});
+
+		progressWindow.show();
 
 		Thread thread = new Thread(task, "xml-dispatch");
 		thread.setDaemon(true);
@@ -153,11 +171,6 @@ public class DispatchTabController {
 		} catch (IOException e) {
 			Dialogs.warning("Não foi possível salvar as configurações: " + e.getMessage());
 		}
-	}
-
-	private void restoreButton() {
-		btnSend.setDisable(false);
-		btnSend.setText(sendButtonText);
 	}
 
 	private static String describeSuccess(String monthLabel, String recipient, DispatchResult result) {

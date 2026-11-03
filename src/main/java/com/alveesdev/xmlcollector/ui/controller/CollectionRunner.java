@@ -17,16 +17,18 @@ import javafx.scene.Node;
 
 final class CollectionRunner {
 
+	private static final double SOURCE_LABEL_WIDTH = 60;
+
 	private CollectionRunner() {
 	}
 
-	static void run(Node trigger, CollectionService service, CollectionRequest request, SourceMode sourceMode,
+	static void run(Node trigger, String title, CollectionService service, CollectionRequest request, SourceMode sourceMode,
 			Consumer<CollectionResult> onSuccess) {
 
 		ProgressWindow progressWindow;
 
 		try {
-			progressWindow = new ProgressWindow(trigger.getScene().getWindow(), sourceLabels(request, sourceMode));
+			progressWindow = new ProgressWindow(trigger.getScene().getWindow(), title, sourceLabels(request, sourceMode), SOURCE_LABEL_WIDTH);
 		} catch (IOException e) {
 			Dialogs.error("Erro ao abrir a tela de progresso: " + e.getMessage());
 			return;
@@ -52,7 +54,7 @@ final class CollectionRunner {
 		task.setOnCancelled(event -> {
 			progressWindow.close();
 			trigger.setDisable(false);
-			Dialogs.warning("Coleta cancelada. Os arquivos já copiados foram mantidos.");
+			Dialogs.warning("Operação cancelada. Os arquivos já copiados foram mantidos.");
 		});
 
 		progressWindow.show();
