@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.SortedMap;
 import java.util.TreeMap;
+import java.util.function.Consumer;
 import java.util.function.Predicate;
 
 import com.alveesdev.xmlcollector.application.collection.CollectionRequest;
@@ -44,6 +45,8 @@ public class MissingTabController {
 	private MissingTableModel model;
 	private CollectionRequest lastCollection;
 	private SortedMap<Integer, List<NumberRange>> missingBySeries = new TreeMap<>();
+	private Consumer<CollectionResult> onFound = result -> {
+	};
 
 	@FXML
 	private TableView<List<String>> missingTable;
@@ -63,6 +66,10 @@ public class MissingTabController {
 		this.settingsService = settingsService;
 		this.searchModels = searchModels;
 		this.paths = paths;
+	}
+
+	public void setOnFound(Consumer<CollectionResult> onFound) {
+		this.onFound = onFound;
 	}
 
 	@FXML
@@ -167,6 +174,8 @@ public class MissingTabController {
 		if (model != null && model.isSeriesBased()) {
 			show(MissingTableModel.fromMissing(remaining));
 		}
+
+		onFound.accept(result);
 
 		Dialogs.missingSearchSummary(result, found, paths.xmlArchiveDir());
 	}

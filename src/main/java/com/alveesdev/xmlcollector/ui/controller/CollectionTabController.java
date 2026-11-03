@@ -94,6 +94,11 @@ public class CollectionTabController {
 		this.onCollected = onCollected;
 	}
 
+	public void addFound(CollectionResult result) {
+		collected.addFound(result);
+		showCollected();
+	}
+
 	@FXML
 	public void initialize() {
 		numberColumn.setCellValueFactory(new PropertyValueFactory<>("number"));

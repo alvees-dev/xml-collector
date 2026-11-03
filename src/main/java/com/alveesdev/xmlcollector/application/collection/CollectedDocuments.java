@@ -32,6 +32,16 @@ public final class CollectedDocuments {
 		return collected;
 	}
 
+	public void addFound(CollectionResult result) {
+		cancelledKeys.addAll(result.cancelledKeys());
+
+		for (DocumentEntry entry : result.entries()) {
+			if (entry.invoice() != null) {
+				addInvoice(entry);
+			}
+		}
+	}
+
 	public List<DocumentEntry> entries() {
 		return entries.stream()
 				.map(this::withCurrentStatus)

@@ -25,6 +25,7 @@ public class MainScreenController {
 	@FXML
 	public void initialize() {
 		collectionTabController.setOnCollected((request, result) -> missingTabController.show(request, result));
+		missingTabController.setOnFound(collectionTabController::addFound);
 	}
 
 	@FXML
