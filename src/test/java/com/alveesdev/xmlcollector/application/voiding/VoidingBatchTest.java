@@ -12,6 +12,7 @@ import java.time.Instant;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import org.junit.jupiter.api.Test;
 
@@ -57,7 +58,7 @@ class VoidingBatchTest {
 	@Test
 	void sendsEveryRangeInOrderAndReportsEach() throws Exception {
 		List<VoidingOutcome> outcomes = batch("12345678000190", request -> APPROVED).run(List.of(FIRST, SECOND), SETTINGS,
-				OrganizeMode.SINGLE_FOLDER, ROOT, events::add, () -> false);
+				OrganizeMode.SINGLE_FOLDER, ROOT, Map.of(), events::add, () -> false);
 
 		assertEquals(List.of(FIRST, SECOND), sent);
 		assertEquals(List.of(Stage.APPROVED, Stage.APPROVED), outcomes.stream().map(VoidingOutcome::stage).toList());
@@ -70,7 +71,7 @@ class VoidingBatchTest {
 	@Test
 	void aRejectionDoesNotStopTheNextRangeAndIsNotStored() throws Exception {
 		List<VoidingOutcome> outcomes = batch("12345678000190", request -> request == FIRST ? REJECTED : APPROVED)
-				.run(List.of(FIRST, SECOND), SETTINGS, OrganizeMode.SINGLE_FOLDER, ROOT, events::add, () -> false);
+				.run(List.of(FIRST, SECOND), SETTINGS, OrganizeMode.SINGLE_FOLDER, ROOT, Map.of(), events::add, () -> false);
 
 		assertEquals(List.of(Stage.REJECTED, Stage.APPROVED), outcomes.stream().map(VoidingOutcome::stage).toList());
 		assertTrue(outcomes.get(0).detail().contains("241"));
@@ -84,7 +85,7 @@ class VoidingBatchTest {
 				throw new VoidingException("sem resposta");
 			}
 			return APPROVED;
-		}).run(List.of(FIRST, SECOND, THIRD), SETTINGS, OrganizeMode.SINGLE_FOLDER, ROOT, events::add, () -> false);
+		}).run(List.of(FIRST, SECOND, THIRD), SETTINGS, OrganizeMode.SINGLE_FOLDER, ROOT, Map.of(), events::add, () -> false);
 
 		assertEquals(List.of(FIRST, SECOND), sent);
 		assertEquals(List.of(Stage.APPROVED, Stage.FAILED, Stage.NOT_SENT), outcomes.stream().map(VoidingOutcome::stage).toList());
@@ -93,7 +94,7 @@ class VoidingBatchTest {
 	@Test
 	void stoppingKeepsWhatWasDoneAndSendsNothingElse() throws Exception {
 		List<VoidingOutcome> outcomes = batch("12345678000190", request -> APPROVED).run(List.of(FIRST, SECOND), SETTINGS,
-				OrganizeMode.SINGLE_FOLDER, ROOT, events::add, () -> !sent.isEmpty());
+				OrganizeMode.SINGLE_FOLDER, ROOT, Map.of(), events::add, () -> !sent.isEmpty());
 
 		assertEquals(List.of(FIRST), sent);
 		assertEquals(List.of(Stage.APPROVED, Stage.NOT_SENT), outcomes.stream().map(VoidingOutcome::stage).toList());
@@ -102,7 +103,7 @@ class VoidingBatchTest {
 	@Test
 	void refusesACertificateOfAnotherCompanyBeforeSendingAnything() {
 		VoidingException error = assertThrows(VoidingException.class, () -> batch("98765432000110", request -> APPROVED)
-				.run(List.of(FIRST), SETTINGS, OrganizeMode.SINGLE_FOLDER, ROOT, events::add, () -> false));
+				.run(List.of(FIRST), SETTINGS, OrganizeMode.SINGLE_FOLDER, ROOT, Map.of(), events::add, () -> false));
 
 		assertTrue(error.getMessage().contains("98765432000110"));
 		assertEquals(List.of(), sent);
@@ -110,9 +111,66 @@ class VoidingBatchTest {
 
 	@Test
 	void acceptsTheCertificateOfAnotherBranchOfTheSameCompany() throws Exception {
-		batch("12345678000271", request -> APPROVED).run(List.of(FIRST), SETTINGS, OrganizeMode.SINGLE_FOLDER, ROOT, events::add, () -> false);
+		batch("12345678000271", request -> APPROVED).run(List.of(FIRST), SETTINGS, OrganizeMode.SINGLE_FOLDER, ROOT, Map.of(), events::add, () -> false);
 
 		assertEquals(List.of(FIRST), sent);
+	}
+
+	@Test
+	void sendsNothingWhenThePdvFolderCannotBeWritten() {
+		VoidingBatch batch = new VoidingBatch(
+				settings -> new VoidingGatewayFactory.Connection(request -> {
+					sent.add(request);
+					return APPROVED;
+				}, new VoidingGatewayFactory.CertificateInfo("12345678000190", Instant.MAX)),
+				new DocumentArchive() {
+
+					@Override
+					public Outcome store(byte[] content, FileTime sourceModified, Path directory, String preferredName,
+							String canonicalName, String identity) {
+						return Outcome.COPIED;
+					}
+
+					@Override
+					public void requireWritable(Path directory) throws IOException {
+						throw new IOException("sem permissao");
+					}
+				},
+				CLOCK);
+
+		VoidingException error = assertThrows(VoidingException.class, () -> batch.run(List.of(FIRST), SETTINGS,
+				OrganizeMode.SINGLE_FOLDER, ROOT, Map.of(1, List.of(Path.of("pdv1", "saida"))), events::add, () -> false));
+
+		assertTrue(error.getMessage().contains("Nada foi enviado"));
+		assertEquals(List.of(), sent);
+	}
+
+	@Test
+	void stopsTheOtherRangesWhenAnXmlCouldNotBeSavedInThePdv() throws Exception {
+		VoidingBatch batch = new VoidingBatch(
+				settings -> new VoidingGatewayFactory.Connection(request -> {
+					sent.add(request);
+					return APPROVED;
+				}, new VoidingGatewayFactory.CertificateInfo("12345678000190", Instant.MAX)),
+				new DocumentArchive() {
+
+					@Override
+					public Outcome store(byte[] content, FileTime sourceModified, Path directory, String preferredName,
+							String canonicalName, String identity) throws IOException {
+						if (directory.startsWith("pdv1")) {
+							throw new IOException("rede caiu");
+						}
+						return Outcome.COPIED;
+					}
+				},
+				CLOCK);
+
+		List<VoidingOutcome> outcomes = batch.run(List.of(FIRST, SECOND), SETTINGS, OrganizeMode.SINGLE_FOLDER, ROOT,
+				Map.of(1, List.of(Path.of("pdv1", "saida"))), events::add, () -> false);
+
+		assertEquals(List.of(FIRST), sent);
+		assertEquals(List.of(Stage.APPROVED, Stage.NOT_SENT), outcomes.stream().map(VoidingOutcome::stage).toList());
+		assertEquals(1, outcomes.get(0).pdvFailures().size());
 	}
 
 	private VoidingBatch batch(String certificateCnpj, VoidingGateway gateway) {

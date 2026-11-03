@@ -15,4 +15,7 @@ public interface DocumentArchive {
 
 	Outcome store(byte[] content, FileTime sourceModified, Path directory, String preferredName,
 			String canonicalName, String identity) throws IOException;
+
+	default void requireWritable(Path directory) throws IOException {
+	}
 }

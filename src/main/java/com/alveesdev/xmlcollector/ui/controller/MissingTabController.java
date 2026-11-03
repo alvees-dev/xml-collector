@@ -1,6 +1,8 @@
 package com.alveesdev.xmlcollector.ui.controller;
 
 import java.io.IOException;
+import java.nio.file.Path;
+import java.time.YearMonth;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -247,10 +249,16 @@ public class MissingTabController {
 		AppSettings settings = settingsService.current();
 		CertificateSettings certificate = settings.certificate();
 		List<VoidingRequest> requests;
+		Map<Integer, List<Path>> pdvFolders;
 
 		try {
 			requests = voidingPlanner.plan(wanted, missingBySeries, ownersBySeries);
 			voidingBatch.checkCertificate(certificate, requests);
+
+			// The month of the collection, so collecting that period again reads the file back.
+			pdvFolders = VoidingPlanner.pdvFolders(requests, settings.pdvDirectories(), sourcesBySeries,
+					searchModels.pdvModel(settings.pdvModelId()).voidingFolder(), YearMonth.from(lastCollection.period().to()));
+			voidingBatch.checkPdvFolders(pdvFolders);
 		} catch (VoidingException e) {
 			Dialogs.warning(e.getMessage());
 			return;
@@ -271,7 +279,7 @@ public class MissingTabController {
 			return;
 		}
 
-		VoidingTask task = new VoidingTask(voidingBatch, requests, certificate, settings.organizeMode(), paths.xmlArchiveDir(), progressWindow::update);
+		VoidingTask task = new VoidingTask(voidingBatch, requests, certificate, settings.organizeMode(), paths.xmlArchiveDir(), pdvFolders, progressWindow::update);
 		progressWindow.setCancelAction(task::requestStop);
 
 		trigger.setDisable(true);

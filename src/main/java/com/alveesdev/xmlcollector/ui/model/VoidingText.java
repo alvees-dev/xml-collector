@@ -64,7 +64,7 @@ public final class VoidingText {
 			text.append("\n\nEsta operação NÃO pode ser desfeita. Confira se nenhuma dessas notas está em contingência.");
 			text.append("\nPara continuar, digite ").append(CONFIRMATION_WORD).append(':');
 		} else {
-			text.append("\n\nHomologação é só um teste: não tem efeito fiscal, e os números continuam na lista de faltantes.");
+			text.append("\n\nHomologação é só um teste: não tem efeito fiscal, o XML não é guardado, e os números continuam na lista de faltantes.");
 		}
 
 		return text.toString();
@@ -83,6 +83,10 @@ public final class VoidingText {
 
 			if (outcome.detail() != null) {
 				text.append(" (").append(outcome.detail()).append(')');
+			}
+
+			for (String failure : outcome.pdvFailures()) {
+				text.append("\n  ATENÇÃO: o XML NÃO foi salvo na pasta do PDV. Copie-o de Inutilizadas: ").append(failure);
 			}
 
 			if (outcome.archiveFailure() != null) {

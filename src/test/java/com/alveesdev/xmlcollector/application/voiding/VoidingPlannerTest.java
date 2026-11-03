@@ -113,6 +113,36 @@ class VoidingPlannerTest {
 	}
 
 	@Test
+	void buildsThePdvFolderOfEachSeriesWithTheCnpjAndTheMonth() throws Exception {
+		VoidingRequest request = planner.plan(Map.of(1, List.of(new NumberRange(10, 10))), MISSING, OWNERS).get(0);
+
+		Map<Integer, List<java.nio.file.Path>> folders = VoidingPlanner.pdvFolders(List.of(request), List.of("raiz0", "raiz1"),
+				Map.of(1, Set.of(1)), "docs/{CNPJ}/{AAAAMM}/saida", java.time.YearMonth.of(2026, 10));
+
+		assertEquals(List.of(java.nio.file.Path.of("raiz1", "docs", "12345678000190", "202610", "saida")), folders.get(1));
+	}
+
+	@Test
+	void savesInEveryPdvOfTheSeries() throws Exception {
+		VoidingRequest request = planner.plan(Map.of(1, List.of(new NumberRange(10, 10))), MISSING, OWNERS).get(0);
+
+		assertEquals(2, VoidingPlanner.pdvFolders(List.of(request), List.of("raiz0", "raiz1"),
+				Map.of(1, Set.of(0, 1)), "saida", java.time.YearMonth.of(2026, 10)).get(1).size());
+	}
+
+	@Test
+	void refusesWithoutAPdvFolderToSaveTheXml() throws Exception {
+		VoidingRequest request = planner.plan(Map.of(1, List.of(new NumberRange(10, 10))), MISSING, OWNERS).get(0);
+
+		assertThrows(VoidingException.class, () -> VoidingPlanner.pdvFolders(List.of(request), List.of("raiz0"),
+				Map.of(1, Set.of(0)), "", java.time.YearMonth.of(2026, 10)));
+		assertThrows(VoidingException.class, () -> VoidingPlanner.pdvFolders(List.of(request), List.of("raiz0"),
+				Map.of(), "saida", java.time.YearMonth.of(2026, 10)));
+		assertThrows(VoidingException.class, () -> VoidingPlanner.pdvFolders(List.of(request), List.of(""),
+				Map.of(1, Set.of(0)), "saida", java.time.YearMonth.of(2026, 10)));
+	}
+
+	@Test
 	void anyFailureOrReadErrorCountsAsAProblem() {
 		assertEquals(List.of(), VoidingPlanner.problemsOf(result(List.of(), 0)));
 		assertEquals(1, VoidingPlanner.problemsOf(result(List.of(new SourceFailure(0, SourceFailure.Reason.INACCESSIBLE, "pdv")), 0)).size());

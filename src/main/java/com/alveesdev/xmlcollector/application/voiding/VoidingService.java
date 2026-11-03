@@ -6,6 +6,8 @@ import java.nio.file.Path;
 import java.nio.file.attribute.FileTime;
 import java.time.Clock;
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
 
 import com.alveesdev.xmlcollector.application.port.DocumentArchive;
 import com.alveesdev.xmlcollector.application.port.VoidingException;
@@ -31,21 +33,33 @@ public class VoidingService {
 		this.environment = environment;
 	}
 
-	public VoidingResult voidRange(VoidingRequest request, OrganizeMode organizeMode, Path archiveRoot) throws VoidingException {
+	public VoidingResult voidRange(VoidingRequest request, OrganizeMode organizeMode, Path archiveRoot, List<Path> pdvFolders)
+			throws VoidingException {
 
 		VoidingReceipt receipt = gateway.voidRange(request);
 
 		// A homologation file has no fiscal value, so it must not go out with the real documents.
 		if (!receipt.approved() || environment == FiscalEnvironment.HOMOLOGATION) {
-			return new VoidingResult(receipt, null);
+			return new VoidingResult(receipt, null, List.of());
 		}
 
-		return new VoidingResult(receipt, store(request, receipt, organizeMode, archiveRoot));
+		List<String> pdvFailures = new ArrayList<>();
+
+		for (Path folder : pdvFolders) {
+			String failure = store(request, receipt, folder);
+
+			if (failure != null) {
+				pdvFailures.add(folder + ": " + failure);
+			}
+		}
+
+		Path archived = ArchiveLayout.directoryFor(archiveRoot, LocalDate.now(clock), organizeMode, DocumentCategory.VOIDED);
+
+		return new VoidingResult(receipt, store(request, receipt, archived), pdvFailures);
 	}
 
-	private String store(VoidingRequest request, VoidingReceipt receipt, OrganizeMode organizeMode, Path archiveRoot) {
+	private String store(VoidingRequest request, VoidingReceipt receipt, Path directory) {
 
-		Path directory = ArchiveLayout.directoryFor(archiveRoot, LocalDate.now(clock), organizeMode, DocumentCategory.VOIDED);
 		String name = ArchiveLayout.voidingFileName(request.id());
 
 		try {
