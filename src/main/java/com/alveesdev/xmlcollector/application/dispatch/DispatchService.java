@@ -5,6 +5,8 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.CancellationException;
+import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 
 import com.alveesdev.xmlcollector.application.dispatch.DispatchProgress.Stage;
@@ -41,10 +43,10 @@ public class DispatchService {
 
 	public DispatchResult dispatch(DispatchRequest request) throws DispatchException {
 		return dispatch(request, progress -> {
-		});
+		}, () -> false);
 	}
 
-	public DispatchResult dispatch(DispatchRequest request, Consumer<DispatchProgress> listener)
+	public DispatchResult dispatch(DispatchRequest request, Consumer<DispatchProgress> listener, BooleanSupplier cancelled)
 			throws DispatchException {
 
 		validate(request);
@@ -61,9 +63,11 @@ public class DispatchService {
 
 		if (fitsInMessage(compressed)) {
 			listener.accept(new DispatchProgress(Step.UPLOADING, Stage.SKIPPED));
-			send(request, new EmailMessage(request.recipient(), subject, body, zipFiles), listener);
+			send(request, new EmailMessage(request.recipient(), subject, body, zipFiles), listener, cancelled);
 			return new DispatchResult(DispatchResult.Method.ATTACHED, zipFiles, totalBytes, null);
 		}
+
+		throwIfCancelled(cancelled);
 
 		listener.accept(new DispatchProgress(Step.UPLOADING, Stage.RUNNING));
 		String link = cloudStorage.uploadToSharedFolder(
@@ -74,17 +78,25 @@ public class DispatchService {
 				+ "\n\nOs arquivos são grandes demais para seguir em anexo e foram salvos no Google Drive."
 				+ "\nAcesse pelo link:\n" + link;
 
-		send(request, new EmailMessage(request.recipient(), subject, bodyWithLink, List.of()), listener);
+		send(request, new EmailMessage(request.recipient(), subject, bodyWithLink, List.of()), listener, cancelled);
 
 		return new DispatchResult(DispatchResult.Method.DRIVE_LINK, zipFiles, totalBytes, link);
 	}
 
-	private void send(DispatchRequest request, EmailMessage message, Consumer<DispatchProgress> listener)
+	private void send(DispatchRequest request, EmailMessage message, Consumer<DispatchProgress> listener, BooleanSupplier cancelled)
 			throws DispatchException {
+
+		throwIfCancelled(cancelled);
 
 		listener.accept(new DispatchProgress(Step.SENDING, Stage.RUNNING));
 		emailSender.send(request.account(), message);
 		listener.accept(new DispatchProgress(Step.SENDING, Stage.DONE));
+	}
+
+	private static void throwIfCancelled(BooleanSupplier cancelled) {
+		if (cancelled.getAsBoolean() || Thread.currentThread().isInterrupted()) {
+			throw new CancellationException("Envio cancelado");
+		}
 	}
 
 	public static long encodedSize(long bytes) {

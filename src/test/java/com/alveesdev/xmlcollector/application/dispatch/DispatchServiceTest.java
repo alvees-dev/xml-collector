@@ -1,12 +1,14 @@
 package com.alveesdev.xmlcollector.application.dispatch;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.CancellationException;
 
 import org.junit.jupiter.api.Test;
 
@@ -60,7 +62,7 @@ class DispatchServiceTest {
 	void reportsTheStepsAndSkipsTheDriveWhenTheFileFitsInTheMessage() throws Exception {
 		List<DispatchProgress> events = new ArrayList<>();
 
-		service(compressor).dispatch(REQUEST, events::add);
+		service(compressor).dispatch(REQUEST, events::add, () -> false);
 
 		assertEquals(List.of(
 				new DispatchProgress(Step.COMPRESSING, Stage.RUNNING),
@@ -74,7 +76,7 @@ class DispatchServiceTest {
 	void reportsTheDriveWhenTheFileDoesNotFitInTheMessage() throws Exception {
 		List<DispatchProgress> events = new ArrayList<>();
 
-		service(largeCompressor()).dispatch(REQUEST, events::add);
+		service(largeCompressor()).dispatch(REQUEST, events::add, () -> false);
 
 		assertEquals(List.of(
 				new DispatchProgress(Step.COMPRESSING, Stage.RUNNING),
@@ -83,6 +85,41 @@ class DispatchServiceTest {
 				new DispatchProgress(Step.UPLOADING, Stage.DONE),
 				new DispatchProgress(Step.SENDING, Stage.RUNNING),
 				new DispatchProgress(Step.SENDING, Stage.DONE)), events);
+	}
+
+	@Test
+	void doesNotSendTheEmailWhenCancelledAfterCompressing() {
+		assertThrows(CancellationException.class, () -> service(compressor).dispatch(REQUEST, progress -> {
+		}, () -> true));
+
+		assertEquals(List.of(), sent);
+	}
+
+	@Test
+	void doesNotUploadOrSendWhenCancelledBeforeTheDrive() {
+		assertThrows(CancellationException.class, () -> service(largeCompressor()).dispatch(REQUEST, progress -> {
+		}, () -> true));
+
+		assertEquals(0, uploads);
+		assertEquals(List.of(), sent);
+	}
+
+	@Test
+	void doesNotSendTheEmailWhenCancelledDuringTheDrive() {
+		boolean[] cancelled = {false};
+
+		DispatchService service = new DispatchService(
+				directory -> Set.of(),
+				largeCompressor(),
+				(account, message) -> sent.add(message),
+				(accountEmail, folderName, files) -> {
+					cancelled[0] = true;
+					return "link";
+				});
+
+		assertThrows(CancellationException.class, () -> service.dispatch(REQUEST, progress -> {
+		}, () -> cancelled[0]));
+		assertEquals(List.of(), sent);
 	}
 
 	private DirectoryCompressor largeCompressor() {
