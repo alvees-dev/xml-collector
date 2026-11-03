@@ -6,6 +6,7 @@ import java.util.Map;
 
 import com.alveesdev.xmlcollector.application.collection.CollectionProgress;
 import com.alveesdev.xmlcollector.application.dispatch.DispatchProgress;
+import com.alveesdev.xmlcollector.application.voiding.VoidingProgress;
 import com.alveesdev.xmlcollector.ui.controller.ProgressController;
 
 import javafx.fxml.FXMLLoader;
@@ -53,6 +54,10 @@ public final class ProgressWindow {
 	}
 
 	public void update(DispatchProgress progress) {
+		controller.update(progress);
+	}
+
+	public void update(VoidingProgress progress) {
 		controller.update(progress);
 	}
 

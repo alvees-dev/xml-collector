@@ -11,6 +11,7 @@ import com.alveesdev.xmlcollector.application.settings.AppPaths;
 import com.alveesdev.xmlcollector.application.settings.SearchModelCatalog;
 import com.alveesdev.xmlcollector.application.settings.service.SettingsService;
 import com.alveesdev.xmlcollector.application.voiding.VoidingBatch;
+import com.alveesdev.xmlcollector.application.voiding.VoidingPlanner;
 import com.alveesdev.xmlcollector.infra.archive.MonthZipArchiver;
 import com.alveesdev.xmlcollector.infra.archive.XmlArchive;
 import com.alveesdev.xmlcollector.infra.archive.XmlArchivedDocuments;
@@ -36,6 +37,7 @@ public final class AppContext {
 	private final IssuedNumberRepository issuedNumbers;
 	private final CollectionService collectionService;
 	private final VoidingBatch voidingBatch;
+	private final VoidingPlanner voidingPlanner;
 	private final DispatchService dispatchService;
 	private final SettingsService settingsService;
 	private final SearchModelCatalog searchModels;
@@ -52,6 +54,7 @@ public final class AppContext {
 
 		this.collectionService = new CollectionService(new XmlFileScanner(), reader, archive, issuedNumbers);
 		this.voidingBatch = new VoidingBatch(new SefazVoidingGatewayFactory(clock), archive, clock);
+		this.voidingPlanner = new VoidingPlanner(issuedNumbers);
 		this.dispatchService = new DispatchService(
 				new XmlArchivedDocuments(reader),
 				new MonthZipArchiver(),
@@ -85,7 +88,7 @@ public final class AppContext {
 		}
 
 		if (type == MissingTabController.class) {
-			return new MissingTabController(collectionService, settingsService, searchModels, paths);
+			return new MissingTabController(collectionService, settingsService, searchModels, paths, voidingBatch, voidingPlanner);
 		}
 
 		if (type == DispatchTabController.class) {
