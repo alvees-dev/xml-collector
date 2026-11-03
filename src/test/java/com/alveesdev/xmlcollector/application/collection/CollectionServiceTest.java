@@ -342,6 +342,15 @@ class CollectionServiceTest {
 	}
 
 	@Test
+	void knowsWhichPdvsHoldEachSeries() {
+		sources.add("pdv1", "a.xml", invoice(1, 1, IN_PERIOD));
+		sources.add("pdv2", "b.xml", invoice(2, 1, IN_PERIOD));
+		sources.add("pdv2", "c.xml", invoice(1, 2, IN_PERIOD));
+
+		assertEquals(Map.of(1, Set.of(0, 1), 2, Set.of(1)), collect("pdv1", "pdv2").sourcesBySeries());
+	}
+
+	@Test
 	void aVoidedRangeIsNotMissingAndGoesToItsOwnFolder() {
 		sources.add("pdv1", "a.xml", invoice(1, 1, IN_PERIOD));
 		sources.add("pdv1", "b.xml", invoice(1, 5, IN_PERIOD));

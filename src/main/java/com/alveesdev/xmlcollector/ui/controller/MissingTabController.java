@@ -1,12 +1,14 @@
 package com.alveesdev.xmlcollector.ui.controller;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.function.Consumer;
-import java.util.function.Predicate;
+import java.util.function.IntPredicate;
 
 import com.alveesdev.xmlcollector.application.collection.CollectionRequest;
 import com.alveesdev.xmlcollector.application.collection.CollectionResult;
@@ -19,6 +21,7 @@ import com.alveesdev.xmlcollector.application.settings.service.SettingsService;
 import com.alveesdev.xmlcollector.domain.model.DocumentCategory;
 import com.alveesdev.xmlcollector.domain.model.DocumentEntry;
 import com.alveesdev.xmlcollector.domain.model.NumberRange;
+import com.alveesdev.xmlcollector.domain.model.PdvSearchModel;
 import com.alveesdev.xmlcollector.domain.model.XmlDocument;
 import com.alveesdev.xmlcollector.domain.service.MissingNumberFinder;
 import com.alveesdev.xmlcollector.ui.model.MissingTableModel;
@@ -46,6 +49,7 @@ public class MissingTabController {
 	private MissingTableModel model;
 	private CollectionRequest lastCollection;
 	private SortedMap<Integer, List<NumberRange>> missingBySeries = new TreeMap<>();
+	private Map<Integer, Set<Integer>> sourcesBySeries = Map.of();
 	private Consumer<CollectionResult> onFound = result -> {
 	};
 
@@ -81,6 +85,7 @@ public class MissingTabController {
 	public void show(CollectionRequest request, CollectionResult result) {
 		lastCollection = request;
 		missingBySeries = result.missingBySeries();
+		sourcesBySeries = result.sourcesBySeries();
 		show(MissingTableModel.fromResult(result));
 	}
 
@@ -108,8 +113,25 @@ public class MissingTabController {
 			return;
 		}
 
-		search(btnSearchAll, invoice -> wanted.getOrDefault(invoice.series(), List.of()).stream()
-				.anyMatch(range -> range.start() <= invoice.number() && invoice.number() <= range.end()));
+		search(btnSearchAll, wanted);
+	}
+
+	private IntPredicate sourcesOfMissingSeries(Map<Integer, List<NumberRange>> wanted) {
+
+		// The series of each PDV come from the last collection, which only applies if it read these same PDVs.
+		if (!lastCollection.directories().equals(settingsService.current().pdvDirectories())) {
+			return index -> true;
+		}
+
+		Set<Integer> sources = new HashSet<>();
+
+		wanted.forEach((series, ranges) -> {
+			if (!ranges.isEmpty()) {
+				sources.addAll(sourcesBySeries.getOrDefault(series, Set.of()));
+			}
+		});
+
+		return sources.isEmpty() ? index -> true : sources::contains;
 	}
 
 	@FXML
@@ -124,10 +146,13 @@ public class MissingTabController {
 			return;
 		}
 
-		search(btnSearchNumber, invoice -> invoice.number() == number);
+		Map<Integer, List<NumberRange>> wanted = new TreeMap<>();
+		missingBySeries.keySet().forEach(series -> wanted.put(series, List.of(new NumberRange(number, number))));
+
+		search(btnSearchNumber, wanted);
 	}
 
-	private void search(Node trigger, Predicate<XmlDocument.Invoice> wanted) {
+	private void search(Node trigger, Map<Integer, List<NumberRange>> wanted) {
 
 		if (lastCollection == null) {
 			Dialogs.warning("Faça a coleta primeiro para definir o período da busca.");
@@ -135,7 +160,8 @@ public class MissingTabController {
 		}
 
 		AppSettings settings = settingsService.current();
-		List<String> folders = searchModels.pdvModel(settings.pdvModelId()).missingFolders();
+		PdvSearchModel searchModel = searchModels.pdvModel(settings.pdvModelId());
+		List<String> folders = searchModel.missingFolders();
 
 		if (folders.isEmpty()) {
 			Dialogs.warning("O modelo de busca selecionado não tem pasta para procurar notas faltantes.");
@@ -144,7 +170,8 @@ public class MissingTabController {
 
 		CollectionRequest request = new CollectionRequest(
 				settings.pdvDirectories(), DocumentCategory.NFCE, lastCollection.period(), settings.organizeMode(),
-				paths.xmlArchiveDir(), folders, new CollectionTarget(index -> true, name -> true, wanted));
+				paths.xmlArchiveDir(), folders,
+				CollectionTarget.missing(wanted, sourcesOfMissingSeries(wanted), searchModel.missingFileSuffix()));
 
 		CollectionRunner.run(trigger, collectionService, request, SourceMode.PDV_DIRECTORIES, this::showFound);
 	}
