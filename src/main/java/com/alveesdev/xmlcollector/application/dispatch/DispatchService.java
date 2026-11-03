@@ -99,7 +99,7 @@ public class DispatchService {
 
 		for (Path directory : monthDirectories) {
 			try {
-				Optional<CompressedFile> file = compressor.compress(directory);
+				Optional<CompressedFile> file = compressor.compress(directory, directory.getFileName().toString());
 
 				if (file.isEmpty()) {
 					throw new DispatchException("A pasta " + directory.getFileName() + " não tem arquivos para enviar.");

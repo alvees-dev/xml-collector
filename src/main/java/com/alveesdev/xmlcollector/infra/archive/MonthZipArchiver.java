@@ -20,11 +20,11 @@ public class MonthZipArchiver implements DirectoryCompressor {
 	private static final String TEMP_SUFFIX = ".part";
 
 	@Override
-	public Optional<CompressedFile> compress(Path monthDirectory) throws IOException {
+	public Optional<CompressedFile> compress(Path monthDirectory, String zipName) throws IOException {
 
 		String rootName = monthDirectory.getFileName().toString();
-		Path zipFile = monthDirectory.resolveSibling(rootName + ZIP_SUFFIX);
-		Path temp = monthDirectory.resolveSibling(rootName + ZIP_SUFFIX + TEMP_SUFFIX);
+		Path zipFile = monthDirectory.resolveSibling(zipName + ZIP_SUFFIX);
+		Path temp = monthDirectory.resolveSibling(zipName + ZIP_SUFFIX + TEMP_SUFFIX);
 		int[] entries = {0};
 
 		try (ZipOutputStream output = new ZipOutputStream(Files.newOutputStream(temp))) {
