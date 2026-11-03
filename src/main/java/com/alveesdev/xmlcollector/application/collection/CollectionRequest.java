@@ -12,6 +12,12 @@ public record CollectionRequest(
 		DocumentCategory category,
 		DateRange period,
 		OrganizeMode organizeMode,
-		Path archiveRoot
+		Path archiveRoot,
+		List<String> folderPatterns
 ) {
+
+	public CollectionRequest(List<String> directories, DocumentCategory category, DateRange period,
+			OrganizeMode organizeMode, Path archiveRoot) {
+		this(directories, category, period, organizeMode, archiveRoot, List.of());
+	}
 }

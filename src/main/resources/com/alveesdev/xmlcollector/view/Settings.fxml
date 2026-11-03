@@ -32,75 +32,129 @@
                           <Insets bottom="30.0" left="20.0" top="30.0" />
                        </padding>
                        <children>
-                          <VBox alignment="CENTER">
-                             <children>
-                                <Label text="Busca de Arquivos" />
-                                <Label text="XML" />
-                             </children>
-                          </VBox>
-                          <ChoiceBox fx:id="choiceNfeType" prefWidth="150.0" />
+                          <Label text="Tipo PDV">
+                                 <HBox.margin>
+                                    <Insets left="25.0" />
+                                 </HBox.margin>
+                              </Label>
+                          <ChoiceBox fx:id="choicePdvType" prefWidth="100.0">
+                                 <HBox.margin>
+                                    <Insets />
+                                 </HBox.margin>
+                              </ChoiceBox>
                        </children>
                     </HBox>
                     <Separator />
+                        <HBox prefHeight="100.0" prefWidth="200.0">
+                           <children>
+                          <Label text="Modelo de Busca PDV">
+                                 <HBox.margin>
+                                    <Insets left="20.0" top="40.0" />
+                                 </HBox.margin>
+                              </Label>
+                              <ChoiceBox fx:id="choicePdvModel" prefWidth="150.0">
+                                 <HBox.margin>
+                                    <Insets left="20.0" top="35.0" />
+                                 </HBox.margin>
+                              </ChoiceBox>
+                           </children>
+                        </HBox>
+                        <Separator />
                     <HBox alignment="CENTER_LEFT" spacing="10.0">
                        <padding>
                           <Insets bottom="15.0" left="20.0" top="10.0" />
                        </padding>
-                       <children>
-                          <VBox alignment="CENTER">
-                             <HBox.margin>
-                                <Insets right="10.0" />
-                             </HBox.margin>
-                             <children>
-                                <Label text="Diretórios de Busca" />
-                                <Label text="De NFe" />
-                             </children>
-                          </VBox>
-                          <Button maxHeight="24.0" maxWidth="24.0" minHeight="24.0" minWidth="24.0" mnemonicParsing="false" onAction="#onAddNfe" prefHeight="24.0" prefWidth="24.0" style="-fx-background-radius: 50; -fx-border-radius: 50; -fx-border-width: 0; -fx-padding: -8 1 0 0; -fx-font-size: 25; -fx-font-weight: bold; -fx-cursor: hand; -fx-alignment: center; -fx-content-display: center;" text="+" />
-                          <Button maxHeight="24.0" maxWidth="24.0" minHeight="24.0" minWidth="24.0" mnemonicParsing="false" onAction="#onRemoveNfe" prefHeight="24.0" prefWidth="24.0" style="-fx-background-radius: 50; -fx-border-radius: 50; -fx-border-width: 0; -fx-padding: -8 0 0 0; -fx-font-size: 25; -fx-font-weight: bold; -fx-cursor: hand; -fx-alignment: center; -fx-content-display: center;" text="-" />
-                       </children>
+                           <children>
+                              <Label text="Modelo de Busca NFe">
+                                 <HBox.margin>
+                                    <Insets top="25.0" />
+                                 </HBox.margin>
+                              </Label>
+                              <ChoiceBox fx:id="choiceNfeModel" prefWidth="150.0">
+                                 <HBox.margin>
+                                    <Insets left="15.0" top="25.0" />
+                                 </HBox.margin>
+                              </ChoiceBox>
+                           </children>
                     </HBox>
-                    <ScrollPane fx:id="nfeScrollPane" VBox.vgrow="ALWAYS">
-                       <content>
-                          <VBox />
-                       </content>
-                    </ScrollPane>
                  </children>
               </VBox>
             </content>
           </Tab>
-          <Tab text="Diretórios PDV">
+          <Tab text="Diretórios">
             <content>
               <VBox>
                  <children>
-                    <HBox alignment="CENTER_LEFT" minHeight="80.0" spacing="10.0">
-                       <padding>
-                          <Insets left="15.0" />
-                       </padding>
-                       <children>
-                          <Label text="Adicionar PDV">
-                             <HBox.margin>
-                                <Insets right="10.0" />
-                             </HBox.margin>
-                          </Label>
-                          <Button maxHeight="24.0" maxWidth="24.0" minHeight="24.0" minWidth="24.0" mnemonicParsing="false" onAction="#onAddPdv" prefHeight="24.0" prefWidth="24.0" style="-fx-background-radius: 50; -fx-border-radius: 50; -fx-border-width: 0; -fx-padding: -8 1 0 0; -fx-font-size: 25; -fx-font-weight: bold; -fx-cursor: hand; -fx-alignment: center; -fx-content-display: center;" text="+" />
-                          <Button maxHeight="24.0" maxWidth="24.0" minHeight="24.0" minWidth="24.0" mnemonicParsing="false" onAction="#onRemovePdv" prefHeight="24.0" prefWidth="24.0" style="-fx-background-radius: 50; -fx-border-radius: 50; -fx-border-width: 0; -fx-padding: -8 0 0 0; -fx-font-size: 25; -fx-font-weight: bold; -fx-cursor: hand; -fx-alignment: center; -fx-content-display: center;" text="-" />
-                       </children>
-                    </HBox>
-                    <Separator />
-                    <ScrollPane fx:id="pdvScrollPane" fitToWidth="true" hbarPolicy="NEVER" style="-fx-background-color: transparent; -fx-padding: 0;" VBox.vgrow="ALWAYS">
-                       <content>
-                          <VBox fx:id="pdvListBox" />
-                       </content>
-                    </ScrollPane>
-                    <HBox alignment="CENTER_LEFT" minHeight="60.0">
-                       <padding>
-                          <Insets left="30.0" />
-                       </padding>
-                       <children>
-                          <Button mnemonicParsing="false" text="Testar Todos" />
-                       </children>
-                    </HBox>
+                        <TabPane tabClosingPolicy="UNAVAILABLE" VBox.vgrow="ALWAYS">
+                          <tabs>
+                            <Tab text="NFCe (PDV)">
+                                 <content>
+                                    <VBox prefHeight="200.0" prefWidth="100.0">
+                                       <children>
+                                      <HBox alignment="CENTER_LEFT" maxHeight="80.0" minHeight="80.0" prefHeight="83.0" prefWidth="383.0" spacing="10.0">
+                                         <padding>
+                                            <Insets left="15.0" />
+                                         </padding>
+                                         <children>
+                                            <Label text="Diretório PDV">
+                                               <HBox.margin>
+                                                  <Insets right="10.0" />
+                                               </HBox.margin>
+                                            </Label>
+                                            <Button maxHeight="24.0" maxWidth="24.0" minHeight="24.0" minWidth="24.0" mnemonicParsing="false" onAction="#onAddPdv" prefHeight="24.0" prefWidth="24.0" style="-fx-background-radius: 50; -fx-border-radius: 50; -fx-border-width: 0; -fx-padding: -8 1 0 0; -fx-font-size: 25; -fx-font-weight: bold; -fx-cursor: hand; -fx-alignment: center; -fx-content-display: center;" text="+" />
+                                            <Button maxHeight="24.0" maxWidth="24.0" minHeight="24.0" minWidth="24.0" mnemonicParsing="false" onAction="#onRemovePdv" prefHeight="24.0" prefWidth="24.0" style="-fx-background-radius: 50; -fx-border-radius: 50; -fx-border-width: 0; -fx-padding: -8 0 0 0; -fx-font-size: 25; -fx-font-weight: bold; -fx-cursor: hand; -fx-alignment: center; -fx-content-display: center;" text="-" />
+                                            <Button mnemonicParsing="false" text="Testar Todos">
+                                                   <HBox.margin>
+                                                      <Insets left="50.0" />
+                                                   </HBox.margin>
+                                                </Button>
+                                         </children>
+                                      </HBox>
+                                      <Separator prefWidth="383.0" />
+                                      <ScrollPane fx:id="pdvScrollPane" fitToWidth="true" hbarPolicy="NEVER" style="-fx-background-color: transparent; -fx-padding: 0;" VBox.vgrow="ALWAYS">
+                                         <content>
+                                            <VBox fx:id="pdvListBox" />
+                                         </content>
+                                      </ScrollPane>
+                                       </children>
+                                    </VBox>
+                                 </content>
+                            </Tab>
+                            <Tab text="NFe (Retaguarda)">
+                                 <content>
+                                    <VBox prefHeight="200.0" prefWidth="100.0">
+                                       <children>
+                                          <HBox alignment="CENTER_LEFT" maxHeight="80.0" minHeight="80.0" prefHeight="83.0" prefWidth="383.0" spacing="10.0">
+                                             <padding>
+                                                <Insets left="15.0" />
+                                             </padding>
+                                             <children>
+                                                <Label text="Diretório NFe">
+                                                   <HBox.margin>
+                                                      <Insets right="10.0" />
+                                                   </HBox.margin>
+                                                </Label>
+                                                <Button maxHeight="24.0" maxWidth="24.0" minHeight="24.0" minWidth="24.0" mnemonicParsing="false" onAction="#onAddNfe" prefHeight="24.0" prefWidth="24.0" style="-fx-background-radius: 50; -fx-border-radius: 50; -fx-border-width: 0; -fx-padding: -8 1 0 0; -fx-font-size: 25; -fx-font-weight: bold; -fx-cursor: hand; -fx-alignment: center; -fx-content-display: center;" text="+" />
+                                                <Button maxHeight="24.0" maxWidth="24.0" minHeight="24.0" minWidth="24.0" mnemonicParsing="false" onAction="#onRemoveNfe" prefHeight="24.0" prefWidth="24.0" style="-fx-background-radius: 50; -fx-border-radius: 50; -fx-border-width: 0; -fx-padding: -8 0 0 0; -fx-font-size: 25; -fx-font-weight: bold; -fx-cursor: hand; -fx-alignment: center; -fx-content-display: center;" text="-" />
+                                                <Button mnemonicParsing="false" text="Testar Todos">
+                                                   <HBox.margin>
+                                                      <Insets left="50.0" />
+                                                   </HBox.margin>
+                                                </Button>
+                                             </children>
+                                          </HBox>
+                                          <Separator prefWidth="383.0" />
+                                          <ScrollPane fx:id="nfeScrollPane" fitToWidth="true" hbarPolicy="NEVER" style="-fx-background-color: transparent; -fx-padding: 0;" VBox.vgrow="ALWAYS">
+                                             <content>
+                                                <VBox fx:id="nfeListBox" />
+                                             </content>
+                                          </ScrollPane>
+                                       </children>
+                                    </VBox>
+                                 </content>
+                            </Tab>
+                          </tabs>
+                        </TabPane>
                  </children>
               </VBox>
             </content>
@@ -125,7 +179,7 @@
                     </HBox>
                     <RadioButton fx:id="radioByDay" mnemonicParsing="false" text="Separado Por Dia" toggleGroup="$organizeGroup">
                        <VBox.margin>
-                          <Insets top="10.0" />
+                          <Insets top="25.0" />
                        </VBox.margin>
                     </RadioButton>
                     <RadioButton fx:id="radioSingleFolder" mnemonicParsing="false" text="Diretório Único" toggleGroup="$organizeGroup" />
@@ -152,6 +206,34 @@
               </VBox>
             </content>
           </Tab>
+            <Tab text="Certificado">
+               <content>
+                  <VBox prefHeight="200.0" prefWidth="100.0">
+                     <children>
+                        <Label text="Certificado">
+                           <VBox.margin>
+                              <Insets left="25.0" top="40.0" />
+                           </VBox.margin>
+                        </Label>
+                        <TextField fx:id="txtEmailUser1" maxWidth="200.0">
+                           <VBox.margin>
+                              <Insets left="25.0" />
+                           </VBox.margin>
+                        </TextField>
+                        <Label text="Senha">
+                           <VBox.margin>
+                              <Insets left="25.0" top="10.0" />
+                           </VBox.margin>
+                        </Label>
+                        <PasswordField fx:id="txtEmailPassword1" maxWidth="200.0">
+                           <VBox.margin>
+                              <Insets left="25.0" />
+                           </VBox.margin>
+                        </PasswordField>
+                     </children>
+                  </VBox>
+               </content>
+            </Tab>
         </tabs>
       </TabPane>
       <Separator />

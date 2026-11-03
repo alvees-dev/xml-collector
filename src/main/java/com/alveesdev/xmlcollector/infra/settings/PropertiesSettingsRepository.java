@@ -18,12 +18,16 @@ import com.alveesdev.xmlcollector.application.settings.EmailAccount;
 import com.alveesdev.xmlcollector.application.settings.EmailDraft;
 import com.alveesdev.xmlcollector.application.settings.EmailSecurity;
 import com.alveesdev.xmlcollector.domain.model.OrganizeMode;
+import com.alveesdev.xmlcollector.domain.model.PdvType;
 
 public final class PropertiesSettingsRepository implements SettingsRepository {
 
 	private static final String PDV_DIRECTORIES_PREFIX = "directories.pdv.";
-	private static final String NFE_SALES_DIRECTORIES_PREFIX = "directories.nfe.sales.";
-	private static final String NFE_PURCHASE_DIRECTORIES_PREFIX = "directories.nfe.purchase.";
+	private static final String NFE_DIRECTORIES_PREFIX = "directories.nfe.";
+	private static final String LEGACY_NFE_SALES_DIRECTORIES_PREFIX = "directories.nfe.sales.";
+	private static final String PDV_TYPE_KEY = "search.pdvType";
+	private static final String PDV_MODEL_KEY = "search.pdvModel";
+	private static final String NFE_MODEL_KEY = "search.nfeModel";
 	private static final String ORGANIZE_MODE_KEY = "archive.organizeMode";
 	private static final String HOST_KEY = "smtp.host";
 	private static final String PORT_KEY = "smtp.port";
@@ -57,8 +61,11 @@ public final class PropertiesSettingsRepository implements SettingsRepository {
 
 		return new AppSettings(
 				readDirectories(properties, PDV_DIRECTORIES_PREFIX, defaults.pdvDirectories()),
-				readDirectories(properties, NFE_SALES_DIRECTORIES_PREFIX, defaults.nfeSalesDirectories()),
-				readDirectories(properties, NFE_PURCHASE_DIRECTORIES_PREFIX, defaults.nfePurchaseDirectories()),
+				readDirectories(properties, NFE_DIRECTORIES_PREFIX,
+						readDirectories(properties, LEGACY_NFE_SALES_DIRECTORIES_PREFIX, defaults.nfeDirectories())),
+				parsePdvType(properties.getProperty(PDV_TYPE_KEY), defaults.pdvType()),
+				properties.getProperty(PDV_MODEL_KEY, defaults.pdvModelId()),
+				properties.getProperty(NFE_MODEL_KEY, defaults.nfeModelId()),
 				parseOrganizeMode(properties.getProperty(ORGANIZE_MODE_KEY), defaults.organizeMode()),
 				readEmailAccount(properties),
 				new EmailDraft(
@@ -74,8 +81,10 @@ public final class PropertiesSettingsRepository implements SettingsRepository {
 
 		Properties properties = new Properties();
 		writeDirectories(properties, PDV_DIRECTORIES_PREFIX, settings.pdvDirectories());
-		writeDirectories(properties, NFE_SALES_DIRECTORIES_PREFIX, settings.nfeSalesDirectories());
-		writeDirectories(properties, NFE_PURCHASE_DIRECTORIES_PREFIX, settings.nfePurchaseDirectories());
+		writeDirectories(properties, NFE_DIRECTORIES_PREFIX, settings.nfeDirectories());
+		properties.setProperty(PDV_TYPE_KEY, settings.pdvType().name());
+		properties.setProperty(PDV_MODEL_KEY, settings.pdvModelId());
+		properties.setProperty(NFE_MODEL_KEY, settings.nfeModelId());
 		properties.setProperty(ORGANIZE_MODE_KEY, settings.organizeMode().name());
 
 		if (!account.equals(defaultAccount)) {
@@ -153,6 +162,14 @@ public final class PropertiesSettingsRepository implements SettingsRepository {
 	private static OrganizeMode parseOrganizeMode(String text, OrganizeMode fallback) {
 		try {
 			return text == null ? fallback : OrganizeMode.valueOf(text.trim());
+		} catch (IllegalArgumentException e) {
+			return fallback;
+		}
+	}
+
+	private static PdvType parsePdvType(String text, PdvType fallback) {
+		try {
+			return text == null ? fallback : PdvType.valueOf(text.trim());
 		} catch (IllegalArgumentException e) {
 			return fallback;
 		}

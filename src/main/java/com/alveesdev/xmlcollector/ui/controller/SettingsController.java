@@ -1,11 +1,17 @@
 package com.alveesdev.xmlcollector.ui.controller;
 
 import java.io.IOException;
+import java.util.List;
+import java.util.function.Function;
 
 import com.alveesdev.xmlcollector.application.settings.AppSettings;
 import com.alveesdev.xmlcollector.application.settings.EmailAccount;
+import com.alveesdev.xmlcollector.application.settings.SearchModelCatalog;
 import com.alveesdev.xmlcollector.application.settings.service.SettingsService;
+import com.alveesdev.xmlcollector.domain.model.NfeSearchModel;
 import com.alveesdev.xmlcollector.domain.model.OrganizeMode;
+import com.alveesdev.xmlcollector.domain.model.PdvSearchModel;
+import com.alveesdev.xmlcollector.domain.model.PdvType;
 import com.alveesdev.xmlcollector.ui.view.Dialogs;
 import com.alveesdev.xmlcollector.ui.view.DirectoryListEditor;
 
@@ -20,13 +26,12 @@ import javafx.scene.control.TextField;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
+import javafx.util.StringConverter;
 
 public class SettingsController {
 
-	private static final int NFE_SALES_INDEX = 0;
-	private static final int NFE_PURCHASES_INDEX = 1;
-
 	private final SettingsService settingsService;
+	private final SearchModelCatalog searchModels;
 
 	@FXML
 	private Label lblTitle;
@@ -38,16 +43,25 @@ public class SettingsController {
 	private Button btnCancel;
 
 	@FXML
+	private ChoiceBox<PdvType> choicePdvType;
+
+	@FXML
+	private ChoiceBox<PdvSearchModel> choicePdvModel;
+
+	@FXML
+	private ChoiceBox<NfeSearchModel> choiceNfeModel;
+
+	@FXML
 	private ScrollPane pdvScrollPane;
 
 	@FXML
 	private VBox pdvListBox;
 
 	@FXML
-	private ChoiceBox<String> choiceNfeType;
+	private ScrollPane nfeScrollPane;
 
 	@FXML
-	private ScrollPane nfeScrollPane;
+	private VBox nfeListBox;
 
 	@FXML
 	private RadioButton radioSingleFolder;
@@ -62,17 +76,14 @@ public class SettingsController {
 	private PasswordField txtEmailPassword;
 
 	private DirectoryListEditor pdvEditor;
-	private DirectoryListEditor nfeSalesEditor;
-	private DirectoryListEditor nfePurchaseEditor;
-
-	private final VBox nfeSalesListBox = new VBox();
-	private final VBox nfePurchaseListBox = new VBox();
+	private DirectoryListEditor nfeEditor;
 
 	private double dragOffsetX;
 	private double dragOffsetY;
 
-	public SettingsController(SettingsService settingsService) {
+	public SettingsController(SettingsService settingsService, SearchModelCatalog searchModels) {
 		this.settingsService = settingsService;
+		this.searchModels = searchModels;
 	}
 
 	@FXML
@@ -80,18 +91,12 @@ public class SettingsController {
 		AppSettings settings = settingsService.current();
 
 		pdvEditor = new DirectoryListEditor(pdvListBox, pdvScrollPane, "PDV", 45, 219);
-		nfeSalesEditor = new DirectoryListEditor(nfeSalesListBox, nfeScrollPane, "NFe", 45, 219);
-		nfePurchaseEditor = new DirectoryListEditor(nfePurchaseListBox, nfeScrollPane, "NFe", 45, 219);
+		nfeEditor = new DirectoryListEditor(nfeListBox, nfeScrollPane, "NFe", 45, 219);
 
 		pdvEditor.load(settings.pdvDirectories());
-		nfeSalesEditor.load(settings.nfeSalesDirectories());
-		nfePurchaseEditor.load(settings.nfePurchaseDirectories());
+		nfeEditor.load(settings.nfeDirectories());
 
-		choiceNfeType.getItems().setAll("NFe Vendas", "NFe Compras");
-		choiceNfeType.getSelectionModel().selectedIndexProperty()
-				.addListener((observable, oldIndex, newIndex) -> showNfeList(newIndex.intValue()));
-		choiceNfeType.getSelectionModel().select(NFE_SALES_INDEX);
-		showNfeList(NFE_SALES_INDEX);
+		loadSearchModels(settings);
 
 		if (settings.organizeMode() == OrganizeMode.BY_DAY) {
 			radioByDay.setSelected(true);
@@ -114,12 +119,12 @@ public class SettingsController {
 
 	@FXML
 	private void onAddNfe() {
-		selectedNfeEditor().addRow("");
+		nfeEditor.addRow("");
 	}
 
 	@FXML
 	private void onRemoveNfe() {
-		selectedNfeEditor().removeLastRow();
+		nfeEditor.removeLastRow();
 	}
 
 	@FXML
@@ -133,8 +138,10 @@ public class SettingsController {
 
 		AppSettings settings = new AppSettings(
 				pdvEditor.values(),
-				nfeSalesEditor.values(),
-				nfePurchaseEditor.values(),
+				nfeEditor.values(),
+				choicePdvType.getValue(),
+				choicePdvModel.getValue().id(),
+				choiceNfeModel.getValue().id(),
 				radioByDay.isSelected() ? OrganizeMode.BY_DAY : OrganizeMode.SINGLE_FOLDER,
 				readEmailAccount(email),
 				settingsService.current().emailDraft());
@@ -166,6 +173,51 @@ public class SettingsController {
 		stage.setY(event.getScreenY() - dragOffsetY);
 	}
 
+	private void loadSearchModels(AppSettings settings) {
+		choicePdvType.setConverter(labelled(PdvType::label));
+		choicePdvModel.setConverter(labelled(PdvSearchModel::name));
+		choiceNfeModel.setConverter(labelled(NfeSearchModel::name));
+
+		choicePdvType.getItems().setAll(PdvType.values());
+		choicePdvType.setValue(settings.pdvType());
+		showPdvModels(settings.pdvType(), settings.pdvModelId());
+
+		choicePdvType.getSelectionModel().selectedItemProperty()
+				.addListener((observable, oldType, newType) -> showPdvModels(newType, PdvSearchModel.NONE.id()));
+
+		List<NfeSearchModel> nfeModels = searchModels.nfeModels();
+		choiceNfeModel.getItems().setAll(nfeModels);
+		choiceNfeModel.setValue(nfeModels.stream()
+				.filter(model -> model.id().equals(settings.nfeModelId()))
+				.findFirst()
+				.orElse(NfeSearchModel.NONE));
+	}
+
+	private void showPdvModels(PdvType type, String selectedId) {
+		List<PdvSearchModel> models = searchModels.pdvModels(type);
+
+		choicePdvModel.getItems().setAll(models);
+		choicePdvModel.setValue(models.stream()
+				.filter(model -> model.id().equals(selectedId))
+				.findFirst()
+				.orElse(PdvSearchModel.NONE));
+	}
+
+	private static <T> StringConverter<T> labelled(Function<T, String> label) {
+		return new StringConverter<>() {
+
+			@Override
+			public String toString(T item) {
+				return item == null ? "" : label.apply(item);
+			}
+
+			@Override
+			public T fromString(String text) {
+				throw new UnsupportedOperationException();
+			}
+		};
+	}
+
 	private void loadEmailAccount(EmailAccount account) {
 		txtEmailUser.setText(account.username());
 		txtEmailPassword.setText(account.password());
@@ -176,16 +228,6 @@ public class SettingsController {
 
 		return new EmailAccount(
 				current.host(), current.port(), current.security(), email, txtEmailPassword.getText().trim());
-	}
-
-	private void showNfeList(int selectedIndex) {
-		nfeScrollPane.setContent(selectedIndex == NFE_PURCHASES_INDEX ? nfePurchaseListBox : nfeSalesListBox);
-	}
-
-	private DirectoryListEditor selectedNfeEditor() {
-		return choiceNfeType.getSelectionModel().getSelectedIndex() == NFE_PURCHASES_INDEX
-				? nfePurchaseEditor
-				: nfeSalesEditor;
 	}
 
 	private void closeWindow() {

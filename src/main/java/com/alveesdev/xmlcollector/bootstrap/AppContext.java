@@ -4,12 +4,14 @@ import com.alveesdev.xmlcollector.application.collection.CollectionService;
 import com.alveesdev.xmlcollector.application.dispatch.DispatchService;
 import com.alveesdev.xmlcollector.application.port.DocumentReader;
 import com.alveesdev.xmlcollector.application.settings.AppPaths;
+import com.alveesdev.xmlcollector.application.settings.SearchModelCatalog;
 import com.alveesdev.xmlcollector.application.settings.service.SettingsService;
 import com.alveesdev.xmlcollector.infra.archive.MonthZipArchiver;
 import com.alveesdev.xmlcollector.infra.archive.XmlArchive;
 import com.alveesdev.xmlcollector.infra.drive.GoogleDriveStorage;
 import com.alveesdev.xmlcollector.infra.email.SmtpEmailSender;
 import com.alveesdev.xmlcollector.infra.persistence.SqliteIssuedNumberRepository;
+import com.alveesdev.xmlcollector.infra.search.SearchModelLoader;
 import com.alveesdev.xmlcollector.infra.settings.BundledEmailAccount;
 import com.alveesdev.xmlcollector.infra.settings.PropertiesSettingsRepository;
 import com.alveesdev.xmlcollector.infra.xml.FiscalXmlReader;
@@ -27,6 +29,7 @@ public final class AppContext {
 	private final CollectionService collectionService;
 	private final DispatchService dispatchService;
 	private final SettingsService settingsService;
+	private final SearchModelCatalog searchModels;
 	private final SettingsWindow settingsWindow;
 
 	public AppContext(AppPaths paths) {
@@ -42,6 +45,7 @@ public final class AppContext {
 				new GoogleDriveStorage(paths.googleCredentialsFile(), paths.googleTokensDir()));
 		this.settingsService = new SettingsService(
 				new PropertiesSettingsRepository(paths.settingsFile(), paths.legacyEmailSettingsFile(), BundledEmailAccount.load()));
+		this.searchModels = new SearchModelCatalog(SearchModelLoader.load());
 		this.settingsWindow = new SettingsWindow(this::createController);
 	}
 
@@ -59,7 +63,7 @@ public final class AppContext {
 		}
 
 		if (type == CollectionTabController.class) {
-			return new CollectionTabController(collectionService, settingsService, paths);
+			return new CollectionTabController(collectionService, settingsService, searchModels, paths);
 		}
 
 		if (type == MissingTabController.class) {
@@ -71,7 +75,7 @@ public final class AppContext {
 		}
 
 		if (type == SettingsController.class) {
-			return new SettingsController(settingsService);
+			return new SettingsController(settingsService, searchModels);
 		}
 
 		throw new IllegalArgumentException("Unknown controller: " + type.getName());

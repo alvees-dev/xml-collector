@@ -12,6 +12,7 @@ import com.alveesdev.xmlcollector.application.collection.CollectionResult;
 import com.alveesdev.xmlcollector.application.collection.CollectionService;
 import com.alveesdev.xmlcollector.application.settings.AppPaths;
 import com.alveesdev.xmlcollector.application.settings.AppSettings;
+import com.alveesdev.xmlcollector.application.settings.SearchModelCatalog;
 import com.alveesdev.xmlcollector.application.settings.service.SettingsService;
 import com.alveesdev.xmlcollector.domain.model.DateRange;
 import com.alveesdev.xmlcollector.domain.model.DocumentCategory;
@@ -35,6 +36,7 @@ public class CollectionTabController {
 
 	private final CollectionService collectionService;
 	private final SettingsService settingsService;
+	private final SearchModelCatalog searchModels;
 	private final AppPaths paths;
 
 	private Consumer<CollectionResult> onCollected = result -> {
@@ -76,9 +78,11 @@ public class CollectionTabController {
 	@FXML
 	private TableColumn<DocumentRow, String> statusColumn;
 
-	public CollectionTabController(CollectionService collectionService, SettingsService settingsService, AppPaths paths) {
+	public CollectionTabController(CollectionService collectionService, SettingsService settingsService,
+			SearchModelCatalog searchModels, AppPaths paths) {
 		this.collectionService = collectionService;
 		this.settingsService = settingsService;
+		this.searchModels = searchModels;
 		this.paths = paths;
 	}
 
@@ -178,12 +182,19 @@ public class CollectionTabController {
 
 		AppSettings settings = settingsService.current();
 
-		List<String> directories = sourceMode == SourceMode.PDV_DIRECTORIES
+		boolean usesModel = sourceMode == SourceMode.PDV_DIRECTORIES;
+
+		List<String> directories = usesModel
 				? settings.pdvDirectories()
 				: List.of(txtDirectory.getText().trim());
 
+		List<String> folderPatterns = usesModel
+				? searchModels.pdvModel(settings.pdvModelId()).collectionFolders()
+				: List.of();
+
 		return Optional.of(new CollectionRequest(
-				directories, DocumentCategory.NFCE, new DateRange(from, to), settings.organizeMode(), paths.xmlArchiveDir()));
+				directories, DocumentCategory.NFCE, new DateRange(from, to), settings.organizeMode(), paths.xmlArchiveDir(),
+				folderPatterns));
 	}
 
 	private void showResult(CollectionResult result, SourceMode sourceMode) {

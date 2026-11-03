@@ -21,6 +21,7 @@ import com.alveesdev.xmlcollector.application.settings.EmailAccount;
 import com.alveesdev.xmlcollector.application.settings.EmailDraft;
 import com.alveesdev.xmlcollector.application.settings.EmailSecurity;
 import com.alveesdev.xmlcollector.domain.model.OrganizeMode;
+import com.alveesdev.xmlcollector.domain.model.PdvType;
 
 class PropertiesSettingsRepositoryTest {
 
@@ -148,6 +149,13 @@ class PropertiesSettingsRepositoryTest {
 	}
 
 	@Test
+	void readsTheOldSalesDirectoriesAsNfeDirectories() throws IOException {
+		Files.writeString(file, "directories.nfe.sales.0=E\\:\\\\vendas\n", StandardCharsets.UTF_8);
+
+		assertEquals(List.of("E:\\vendas"), repository.load().nfeDirectories());
+	}
+
+	@Test
 	void reportsAMalformedFile() throws IOException {
 		Files.writeString(file, "ruim=\\uZZZZ\n", StandardCharsets.UTF_8);
 
@@ -157,8 +165,10 @@ class PropertiesSettingsRepositoryTest {
 	private static AppSettings sampleSettings() {
 		return new AppSettings(
 				List.of("\\\\PDV01\\c$\\XML Notas", "D:\\Pasta com acentuação\\ç", ""),
-				List.of("E:\\vendas"),
-				List.of("F:\\compras", "G:\\compras2"),
+				List.of("E:\\retaguarda", "F:\\retaguarda2"),
+				PdvType.FOOD,
+				"modelo-pdv",
+				"modelo-nfe",
 				OrganizeMode.BY_DAY,
 				new EmailAccount("smtp.gmail.com", 587, EmailSecurity.STARTTLS, "usuario@exemplo.com", PASSWORD),
 				new EmailDraft("dest@exemplo.com", "Assunto = ç", "linha 1\nlinha 2"));

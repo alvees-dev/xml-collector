@@ -3,11 +3,14 @@ package com.alveesdev.xmlcollector.application.settings;
 import java.util.List;
 
 import com.alveesdev.xmlcollector.domain.model.OrganizeMode;
+import com.alveesdev.xmlcollector.domain.model.PdvType;
 
 public record AppSettings(
 		List<String> pdvDirectories,
-		List<String> nfeSalesDirectories,
-		List<String> nfePurchaseDirectories,
+		List<String> nfeDirectories,
+		PdvType pdvType,
+		String pdvModelId,
+		String nfeModelId,
 		OrganizeMode organizeMode,
 		EmailAccount emailAccount,
 		EmailDraft emailDraft
@@ -17,15 +20,16 @@ public record AppSettings(
 
 	public AppSettings {
 		pdvDirectories = List.copyOf(pdvDirectories);
-		nfeSalesDirectories = List.copyOf(nfeSalesDirectories);
-		nfePurchaseDirectories = List.copyOf(nfePurchaseDirectories);
+		nfeDirectories = List.copyOf(nfeDirectories);
 	}
 
 	public static AppSettings defaults() {
 		return new AppSettings(
 				ONE_EMPTY_DIRECTORY,
 				ONE_EMPTY_DIRECTORY,
-				ONE_EMPTY_DIRECTORY,
+				PdvType.PDV,
+				"",
+				"",
 				OrganizeMode.SINGLE_FOLDER,
 				DefaultEmailAccount.get(),
 				EmailDraft.empty());
@@ -36,10 +40,10 @@ public record AppSettings(
 	}
 
 	public AppSettings withEmailAccount(EmailAccount account) {
-		return new AppSettings(pdvDirectories, nfeSalesDirectories, nfePurchaseDirectories, organizeMode, account, emailDraft);
+		return new AppSettings(pdvDirectories, nfeDirectories, pdvType, pdvModelId, nfeModelId, organizeMode, account, emailDraft);
 	}
 
 	public AppSettings withEmailDraft(EmailDraft draft) {
-		return new AppSettings(pdvDirectories, nfeSalesDirectories, nfePurchaseDirectories, organizeMode, emailAccount, draft);
+		return new AppSettings(pdvDirectories, nfeDirectories, pdvType, pdvModelId, nfeModelId, organizeMode, emailAccount, draft);
 	}
 }

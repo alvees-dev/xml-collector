@@ -17,6 +17,7 @@ import com.alveesdev.xmlcollector.application.port.DocumentArchive;
 import com.alveesdev.xmlcollector.application.port.DocumentReader;
 import com.alveesdev.xmlcollector.application.port.IssuedNumberRepository;
 import com.alveesdev.xmlcollector.application.port.SourceFiles;
+import com.alveesdev.xmlcollector.application.port.SourceFiles.ResolvedFolders;
 import com.alveesdev.xmlcollector.application.port.SourceFiles.ScanResult;
 import com.alveesdev.xmlcollector.application.port.SourceFiles.SourceFile;
 
@@ -120,13 +121,19 @@ public class CollectionService {
 			}
 
 			try {
-				ScanResult result = sourceFiles.scan(Path.of(directory), request.archiveRoot());
+				List<SourceFile> files = new ArrayList<>();
 
-				for (Path inaccessible : result.inaccessible()) {
-					failures.add(new SourceFailure(index, Reason.SUBFOLDER_INACCESSIBLE, inaccessible.toString()));
+				for (Path folder : foldersOf(index, Path.of(directory), request, failures)) {
+					ScanResult result = sourceFiles.scan(folder, request.archiveRoot());
+
+					for (Path inaccessible : result.inaccessible()) {
+						failures.add(new SourceFailure(index, Reason.SUBFOLDER_INACCESSIBLE, inaccessible.toString()));
+					}
+
+					files.addAll(result.files());
 				}
 
-				scanned.add(new ScannedSource(index, result.files()));
+				scanned.add(new ScannedSource(index, files));
 
 			} catch (IOException | InvalidPathException e) {
 				failures.add(new SourceFailure(index, Reason.INACCESSIBLE, directory));
@@ -135,6 +142,25 @@ public class CollectionService {
 		}
 
 		return scanned;
+	}
+
+	private List<Path> foldersOf(int index, Path root, CollectionRequest request, List<SourceFailure> failures) throws IOException {
+
+		if (request.folderPatterns().isEmpty()) {
+			return List.of(root);
+		}
+
+		ResolvedFolders resolved = sourceFiles.resolveFolders(root, request.folderPatterns(), request.period());
+
+		for (Path inaccessible : resolved.inaccessible()) {
+			failures.add(new SourceFailure(index, Reason.SUBFOLDER_INACCESSIBLE, inaccessible.toString()));
+		}
+
+		if (resolved.folders().isEmpty()) {
+			failures.add(new SourceFailure(index, Reason.NO_MODEL_FOLDER, root.toString()));
+		}
+
+		return resolved.folders();
 	}
 
 	private static class WorkerThreadFactory implements ThreadFactory {

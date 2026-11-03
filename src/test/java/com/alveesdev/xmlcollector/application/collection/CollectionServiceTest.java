@@ -253,6 +253,36 @@ class CollectionServiceTest {
 	}
 
 	@Test
+	void readsOnlyTheFoldersOfTheModelInsideEachRoot() {
+		sources.add(Path.of("pdv1", "enviados").toString(), "a.xml", invoice(1, IN_PERIOD));
+		sources.add(Path.of("pdv1", "outros").toString(), "b.xml", invoice(2, IN_PERIOD));
+
+		CollectionResult result = service.collect(new CollectionRequest(
+				List.of("pdv1"), DocumentCategory.NFCE, JANUARY, OrganizeMode.SINGLE_FOLDER, ARCHIVE,
+				List.of("enviados")));
+
+		assertEquals("a.xml", onlyEntry(result).fileName());
+	}
+
+	@Test
+	void reportsARootWithoutAnyFolderOfTheModel() {
+		CollectionResult result = service.collect(new CollectionRequest(
+				List.of("pdv1"), DocumentCategory.NFCE, JANUARY, OrganizeMode.SINGLE_FOLDER, ARCHIVE,
+				List.of("enviados")));
+
+		assertEquals(SourceFailure.Reason.NO_MODEL_FOLDER, result.failures().get(0).reason());
+	}
+
+	@Test
+	void reportsAnInaccessibleRootOfAModel() {
+		CollectionResult result = service.collect(new CollectionRequest(
+				List.of("sem-acesso"), DocumentCategory.NFCE, JANUARY, OrganizeMode.SINGLE_FOLDER, ARCHIVE,
+				List.of("enviados")));
+
+		assertEquals(SourceFailure.Reason.INACCESSIBLE, result.failures().get(0).reason());
+	}
+
+	@Test
 	void aVoidedRangeIsNotMissingAndGoesToItsOwnFolder() {
 		sources.add("pdv1", "a.xml", invoice(1, 1, IN_PERIOD));
 		sources.add("pdv1", "b.xml", invoice(1, 5, IN_PERIOD));
@@ -297,6 +327,20 @@ class CollectionServiceTest {
 			Path path = Path.of(directory, fileName);
 			documents.put(path.toString(), document);
 			directories.computeIfAbsent(directory, name -> new ArrayList<>()).add(new SourceFile(path, MODIFIED));
+		}
+
+		@Override
+		public ResolvedFolders resolveFolders(Path root, List<String> patterns, DateRange period) throws IOException {
+			if (!root.toString().equals("pdv1") && !root.toString().equals("pdv2")) {
+				throw new NotDirectoryException(root.toString());
+			}
+
+			return new ResolvedFolders(
+					patterns.stream()
+							.map(root::resolve)
+							.filter(folder -> directories.containsKey(folder.toString()))
+							.toList(),
+					List.of());
 		}
 
 		@Override
