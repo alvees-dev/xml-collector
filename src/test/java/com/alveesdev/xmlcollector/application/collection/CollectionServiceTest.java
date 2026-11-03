@@ -308,6 +308,25 @@ class CollectionServiceTest {
 		assertEquals(1, archive.stored.stream().filter(stored -> stored.directory().endsWith("Inutilizadas")).count());
 	}
 
+	@Test
+	void sumsOnlyTheAuthorizedInvoices() {
+		sources.add("pdv1", "a.xml", invoice(1, IN_PERIOD));
+		sources.add("pdv1", "b.xml", invoice(2, IN_PERIOD));
+		sources.add("pdv1", "c.xml", invoice(3, IN_PERIOD));
+		sources.add("pdv2", "evento.xml", cancellation(3, IN_PERIOD));
+		sources.add("pdv2", "fora.xml", invoice(4, AFTER_PERIOD));
+		sources.add("pdv2", "ruim.xml", new XmlDocument.Unreadable("xml invalido"));
+
+		assertEquals(new java.math.BigDecimal("21.00"), CollectedDocuments.from(collect("pdv1", "pdv2")).authorizedTotal());
+	}
+
+	@Test
+	void theTotalIsZeroWithoutInvoices() {
+		sources.add("pdv1", "evento.xml", cancellation(3, IN_PERIOD));
+
+		assertEquals(java.math.BigDecimal.ZERO, CollectedDocuments.from(collect("pdv1")).authorizedTotal());
+	}
+
 	private CollectionResult collect(String... directories) {
 		return service.collect(request(directories));
 	}

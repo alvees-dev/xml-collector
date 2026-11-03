@@ -1,5 +1,6 @@
 package com.alveesdev.xmlcollector.ui.model;
 
+import java.math.BigDecimal;
 import java.text.NumberFormat;
 import java.time.format.DateTimeFormatter;
 import java.util.Locale;
@@ -29,10 +30,14 @@ public final class DocumentRowMapper {
 		return new DocumentRow(
 				String.valueOf(invoice.number()),
 				String.valueOf(invoice.series()),
-				NumberFormat.getCurrencyInstance(BRAZIL).format(invoice.totalValue()),
+				currency(invoice.totalValue()),
 				DATE_FORMAT.format(invoice.issuedAt()),
 				invoice.key().value(),
 				status);
+	}
+
+	public static String currency(BigDecimal value) {
+		return NumberFormat.getCurrencyInstance(BRAZIL).format(value);
 	}
 
 	private static String statusLabel(DocumentStatus status) {
