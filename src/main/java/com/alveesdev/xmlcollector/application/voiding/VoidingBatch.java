@@ -64,7 +64,7 @@ public class VoidingBatch {
 			listener.accept(new VoidingProgress(index, Stage.SENDING));
 
 			try {
-				VoidingResult result = service.voidRange(request, organizeMode, archiveRoot);
+				VoidingResult result = service.voidRange(request, organizeMode, archiveRoot, List.of());
 				Stage stage = result.receipt().approved() ? Stage.APPROVED : Stage.REJECTED;
 
 				outcomes.add(new VoidingOutcome(request, stage, result.receipt().status() + " - " + result.receipt().reason(), result.archiveFailure()));

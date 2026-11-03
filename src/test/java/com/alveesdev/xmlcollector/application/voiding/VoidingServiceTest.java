@@ -39,7 +39,7 @@ class VoidingServiceTest {
 
 	@Test
 	void storesTheProcessedXmlWhenApproved() throws Exception {
-		VoidingResult result = service(APPROVED).voidRange(REQUEST, OrganizeMode.SINGLE_FOLDER, ROOT);
+		VoidingResult result = service(APPROVED).voidRange(REQUEST, OrganizeMode.SINGLE_FOLDER, ROOT, List.of());
 
 		assertEquals(APPROVED, result.receipt());
 		assertNull(result.archiveFailure());
@@ -51,7 +51,7 @@ class VoidingServiceTest {
 
 	@Test
 	void storesNothingWhenRejected() throws Exception {
-		VoidingResult result = service(REJECTED).voidRange(REQUEST, OrganizeMode.SINGLE_FOLDER, ROOT);
+		VoidingResult result = service(REJECTED).voidRange(REQUEST, OrganizeMode.SINGLE_FOLDER, ROOT, List.of());
 
 		assertEquals("241", result.receipt().status());
 		assertTrue(archive.names.isEmpty());
@@ -61,7 +61,7 @@ class VoidingServiceTest {
 	void keepsTheApprovalWhenStoringFails() throws Exception {
 		archive.failure = new IOException("disco cheio");
 
-		VoidingResult result = service(APPROVED).voidRange(REQUEST, OrganizeMode.SINGLE_FOLDER, ROOT);
+		VoidingResult result = service(APPROVED).voidRange(REQUEST, OrganizeMode.SINGLE_FOLDER, ROOT, List.of());
 
 		assertEquals("135", result.receipt().protocol());
 		assertEquals("disco cheio", result.archiveFailure());
@@ -73,7 +73,7 @@ class VoidingServiceTest {
 			throw new VoidingException("sem conexao");
 		}, archive, CLOCK, FiscalEnvironment.PRODUCTION);
 
-		assertThrows(VoidingException.class, () -> service.voidRange(REQUEST, OrganizeMode.SINGLE_FOLDER, ROOT));
+		assertThrows(VoidingException.class, () -> service.voidRange(REQUEST, OrganizeMode.SINGLE_FOLDER, ROOT, List.of()));
 		assertTrue(archive.names.isEmpty());
 	}
 
@@ -82,9 +82,41 @@ class VoidingServiceTest {
 	}
 
 	@Test
+	void storesTheApprovedXmlInThePdvFolderAndInTheArchive() throws Exception {
+		Path pdv = Path.of("pdv1", "inutilizadas");
+
+		VoidingResult result = service(APPROVED).voidRange(REQUEST, OrganizeMode.SINGLE_FOLDER, ROOT, List.of(pdv));
+
+		assertEquals(List.of(), result.pdvFailures());
+		assertEquals(List.of(pdv, ROOT.resolve("2026").resolve("Fevereiro").resolve("Inutilizadas")), archive.directories);
+	}
+
+	@Test
+	void reportsAPdvFolderThatFailsAndStillKeepsTheArchiveCopy() throws Exception {
+		Path pdv = Path.of("pdv1", "inutilizadas");
+		archive.failingDirectory = pdv;
+
+		VoidingResult result = service(APPROVED).voidRange(REQUEST, OrganizeMode.SINGLE_FOLDER, ROOT, List.of(pdv));
+
+		assertEquals(1, result.pdvFailures().size());
+		assertTrue(result.pdvFailures().get(0).contains("sem acesso"));
+		assertNull(result.archiveFailure());
+		assertEquals(1, archive.names.size());
+	}
+
+	@Test
+	void aRejectedOrHomologationVoidingDoesNotGoToThePdv() throws Exception {
+		service(REJECTED).voidRange(REQUEST, OrganizeMode.SINGLE_FOLDER, ROOT, List.of(Path.of("pdv1")));
+		new VoidingService(request -> APPROVED, archive, CLOCK, FiscalEnvironment.HOMOLOGATION)
+				.voidRange(REQUEST, OrganizeMode.SINGLE_FOLDER, ROOT, List.of(Path.of("pdv1")));
+
+		assertTrue(archive.names.isEmpty());
+	}
+
+	@Test
 	void aHomologationApprovalIsNotStoredWithTheRealDocuments() throws Exception {
 		VoidingResult result = new VoidingService(request -> APPROVED, archive, CLOCK, FiscalEnvironment.HOMOLOGATION)
-				.voidRange(REQUEST, OrganizeMode.SINGLE_FOLDER, ROOT);
+				.voidRange(REQUEST, OrganizeMode.SINGLE_FOLDER, ROOT, List.of());
 
 		assertTrue(result.receipt().approved());
 		assertTrue(archive.names.isEmpty());
@@ -96,6 +128,7 @@ class VoidingServiceTest {
 		private final List<Path> directories = new ArrayList<>();
 		private final List<String> contents = new ArrayList<>();
 		private IOException failure;
+		private Path failingDirectory;
 
 		@Override
 		public Outcome store(byte[] content, FileTime sourceModified, Path directory, String preferredName,
@@ -103,6 +136,10 @@ class VoidingServiceTest {
 
 			if (failure != null) {
 				throw failure;
+			}
+
+			if (directory.equals(failingDirectory)) {
+				throw new IOException("sem acesso");
 			}
 
 			names.add(preferredName);
