@@ -102,7 +102,7 @@ class SefazVoidingGatewayTest {
 
 		Document processed = parse(receipt.xml());
 
-		assertEquals("procInutNFe", processed.getDocumentElement().getLocalName());
+		assertEquals("ProcInutNFe", processed.getDocumentElement().getLocalName());
 		assertEquals(1, processed.getElementsByTagNameNS(VoidingXml.NFE_NAMESPACE, "inutNFe").getLength());
 		assertEquals(1, processed.getElementsByTagNameNS(VoidingXml.NFE_NAMESPACE, "retInutNFe").getLength());
 		assertEquals(1, processed.getElementsByTagNameNS(DIGITAL_SIGNATURE_NAMESPACE, "Signature").getLength());
