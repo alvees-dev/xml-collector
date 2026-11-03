@@ -25,6 +25,7 @@ import com.alveesdev.xmlcollector.application.port.DocumentArchive;
 import com.alveesdev.xmlcollector.application.port.DocumentReader;
 import com.alveesdev.xmlcollector.application.port.SourceFiles;
 import com.alveesdev.xmlcollector.application.port.SourceFiles.SourceFile;
+import com.alveesdev.xmlcollector.domain.model.AccessKey;
 import com.alveesdev.xmlcollector.domain.model.DocumentCategory;
 import com.alveesdev.xmlcollector.domain.model.IssuedNumber;
 import com.alveesdev.xmlcollector.domain.model.NumberRange;
@@ -114,6 +115,10 @@ class SourceProcessor {
 
 	Set<IssuedNumber> issuedNumbers() {
 		return rules.issuedNumbers();
+	}
+
+	Set<AccessKey> cancelledKeys() {
+		return rules.cancelledKeys();
 	}
 
 	SortedMap<Integer, List<NumberRange>> missingNumbers() {

@@ -86,7 +86,8 @@ public class CollectionService {
 
 			String historyFailure = saveIssuedNumbers(processor);
 
-			return new CollectionResult(results, processor.missingNumbers(), processor.summary(), failures, historyFailure);
+			return new CollectionResult(
+					results, processor.missingNumbers(), processor.summary(), failures, historyFailure, processor.cancelledKeys());
 
 		} finally {
 			executor.shutdownNow();

@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.List;
+import java.util.Set;
 import java.util.TreeMap;
 
 import org.junit.jupiter.api.Test;
@@ -50,6 +51,6 @@ class MissingTableModelTest {
 
 	private static CollectionResult resultWith(TreeMap<Integer, List<NumberRange>> missing) {
 		CollectionSummary summary = new CollectionSummary(0, 0, 0, 0, 0, 0, 0, 0, List.of());
-		return new CollectionResult(List.of(), missing, summary, List.of(), null);
+		return new CollectionResult(List.of(), missing, summary, List.of(), null, Set.of());
 	}
 }

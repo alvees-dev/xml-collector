@@ -98,6 +98,10 @@ public final class CollectionRules {
 		return MissingNumberFinder.findBySeries(acceptedInvoices(), voidedBySeries);
 	}
 
+	public Set<AccessKey> cancelledKeys() {
+		return Set.copyOf(cancelledKeys);
+	}
+
 	public Set<IssuedNumber> issuedNumbers() {
 		return acceptedInvoices().stream()
 				.map(IssuedNumber::of)
