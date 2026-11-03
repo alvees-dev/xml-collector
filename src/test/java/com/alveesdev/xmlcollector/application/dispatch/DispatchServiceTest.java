@@ -21,7 +21,7 @@ import com.alveesdev.xmlcollector.application.settings.EmailSecurity;
 
 class DispatchServiceTest {
 
-	private static final Path MONTH = Path.of("arquivos", "Janeiro_2026");
+	private static final Path MONTH = Path.of("arquivos", "2026", "Janeiro");
 	private static final EmailAccount ACCOUNT = new EmailAccount(
 			"smtp.gmail.com", 587, EmailSecurity.STARTTLS, "envio@exemplo.com", "senha-de-teste");
 

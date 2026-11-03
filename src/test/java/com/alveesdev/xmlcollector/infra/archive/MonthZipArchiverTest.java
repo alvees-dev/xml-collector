@@ -30,7 +30,7 @@ class MonthZipArchiverTest {
 
 	@BeforeEach
 	void setUp() throws IOException {
-		month = root.resolve("Janeiro_2026");
+		month = root.resolve("2026").resolve("Janeiro");
 		Files.createDirectories(month.resolve("NFCe"));
 	}
 
@@ -40,9 +40,9 @@ class MonthZipArchiverTest {
 
 		CompressedFile zip = archiver.compress(month, ZIP_NAME).orElseThrow();
 
-		assertEquals(root.resolve(ZIP_NAME + ".zip"), zip.file());
+		assertEquals(root.resolve("2026").resolve(ZIP_NAME + ".zip"), zip.file());
 		assertEquals(Files.size(zip.file()), zip.bytes());
-		assertEquals(List.of(ZIP_NAME + ".zip", "Janeiro_2026"), namesIn(root));
+		assertEquals(List.of(ZIP_NAME + ".zip", "Janeiro"), namesIn(root.resolve("2026")));
 	}
 
 	@Test
@@ -75,7 +75,7 @@ class MonthZipArchiverTest {
 		Optional<CompressedFile> zip = archiver.compress(month, ZIP_NAME);
 
 		assertTrue(zip.isEmpty());
-		assertFalse(Files.exists(root.resolve(ZIP_NAME + ".zip")));
+		assertFalse(Files.exists(root.resolve("2026").resolve(ZIP_NAME + ".zip")));
 	}
 
 	private static List<String> namesIn(Path directory) throws IOException {

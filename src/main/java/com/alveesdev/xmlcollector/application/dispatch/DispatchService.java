@@ -143,13 +143,13 @@ public class DispatchService {
 				Optional<CompressedFile> file = compressor.compress(directory, zipName);
 
 				if (file.isEmpty()) {
-					throw new DispatchException("A pasta " + directory.getFileName() + " não tem arquivos para enviar.");
+					throw new DispatchException("A pasta " + ArchiveLayout.monthLabel(directory) + " não tem arquivos para enviar.");
 				}
 
 				compressed.add(file.get());
 
 			} catch (IOException e) {
-				throw new DispatchException("Falha ao compactar a pasta " + directory.getFileName() + ": " + e.getMessage(), e);
+				throw new DispatchException("Falha ao compactar a pasta " + ArchiveLayout.monthLabel(directory) + ": " + e.getMessage(), e);
 			}
 		}
 
@@ -157,7 +157,7 @@ public class DispatchService {
 	}
 
 	private static String folderNameOf(List<Path> monthDirectories) {
-		return String.join(" e ", monthDirectories.stream().map(directory -> directory.getFileName().toString()).toList());
+		return String.join(" e ", monthDirectories.stream().map(ArchiveLayout::monthLabel).toList());
 	}
 
 	private static String subjectOf(DispatchRequest request) {

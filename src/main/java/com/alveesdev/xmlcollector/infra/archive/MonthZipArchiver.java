@@ -13,6 +13,7 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
 import com.alveesdev.xmlcollector.application.port.DirectoryCompressor;
+import com.alveesdev.xmlcollector.domain.service.ArchiveLayout;
 
 public class MonthZipArchiver implements DirectoryCompressor {
 
@@ -22,7 +23,7 @@ public class MonthZipArchiver implements DirectoryCompressor {
 	@Override
 	public Optional<CompressedFile> compress(Path monthDirectory, String zipName) throws IOException {
 
-		String rootName = monthDirectory.getFileName().toString();
+		String rootName = ArchiveLayout.monthLabel(monthDirectory);
 		Path zipFile = monthDirectory.resolveSibling(zipName + ZIP_SUFFIX);
 		Path temp = monthDirectory.resolveSibling(zipName + ZIP_SUFFIX + TEMP_SUFFIX);
 		int[] entries = {0};

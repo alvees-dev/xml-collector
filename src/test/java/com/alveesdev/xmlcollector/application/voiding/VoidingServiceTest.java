@@ -44,7 +44,7 @@ class VoidingServiceTest {
 		assertNull(result.archiveFailure());
 		assertEquals(1, archive.names.size());
 		assertEquals(REQUEST.id() + "-procInutNFe.xml", archive.names.get(0));
-		assertEquals(ROOT.resolve("Fevereiro_2026").resolve("Inutilizadas"), archive.directories.get(0));
+		assertEquals(ROOT.resolve("2026").resolve("Fevereiro").resolve("Inutilizadas"), archive.directories.get(0));
 		assertEquals("<procInutNFe/>", archive.contents.get(0));
 	}
 

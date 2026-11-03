@@ -157,7 +157,7 @@ final class SearchFolderResolver {
 		return Map.of(
 				SearchFolderPattern.YEAR_MONTH, YEAR_MONTH_FORMAT.format(month),
 				SearchFolderPattern.YEAR, String.valueOf(month.getYear()),
-				SearchFolderPattern.MONTH_NAME_YEAR, ArchiveLayout.monthDirectory(Path.of(""), month.atDay(1)).getFileName().toString());
+				SearchFolderPattern.MONTH_NAME_YEAR, ArchiveLayout.monthYearName(month.atDay(1)));
 	}
 
 	// A folder can be written with or without the accent of its month.
