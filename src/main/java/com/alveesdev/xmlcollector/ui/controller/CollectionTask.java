@@ -33,7 +33,7 @@ public class CollectionTask extends Task<CollectionResult> {
 	private void publishProgress(CollectionProgress progress) {
 		updateTitle(SourceLabels.label(progress.sourceIndex(), sourceMode));
 
-		if (progress.isCounting()) {
+		if (progress.stage() == CollectionProgress.Stage.COUNTING) {
 			updateProgress(-1, -1);
 			updateMessage("Contando arquivos...");
 			return;
