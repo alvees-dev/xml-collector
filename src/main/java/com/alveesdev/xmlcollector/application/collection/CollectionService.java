@@ -113,10 +113,23 @@ public class CollectionService {
 			listener.onProgress(CollectionProgress.reading(index, processed[0], total));
 		}, cancelled);
 
-		boolean failed = failures.stream()
-				.anyMatch(failure -> failure.sourceIndex() == index && failure.reason() != Reason.SUBFOLDER_INACCESSIBLE);
+		listener.onProgress(finalProgress(index, total, failures));
+	}
 
-		listener.onProgress(failed ? CollectionProgress.failed(index) : CollectionProgress.done(index, total));
+	private static CollectionProgress finalProgress(int index, int total, List<SourceFailure> failures) {
+
+		List<SourceFailure> ofSource = failures.stream()
+				.filter(failure -> failure.sourceIndex() == index)
+				.toList();
+
+		boolean failed = ofSource.stream()
+				.anyMatch(failure -> failure.reason() != Reason.SUBFOLDER_INACCESSIBLE && failure.reason() != Reason.FOLDER_NOT_FOUND);
+
+		if (failed) {
+			return CollectionProgress.failed(index);
+		}
+
+		return ofSource.isEmpty() ? CollectionProgress.done(index, total) : CollectionProgress.doneWithWarning(index, total);
 	}
 
 	private List<SourceFile> scan(int index, CollectionRequest request, List<SourceFailure> failures) {
@@ -164,7 +177,14 @@ public class CollectionService {
 		}
 
 		if (resolved.folders().isEmpty()) {
-			failures.add(new SourceFailure(index, Reason.NO_MODEL_FOLDER, root.toString()));
+			String expected = resolved.missing().isEmpty() ? root.toString() : String.join(", ", resolved.missing());
+
+			failures.add(new SourceFailure(index, Reason.NO_MODEL_FOLDER, expected));
+			return resolved.folders();
+		}
+
+		for (String missing : resolved.missing()) {
+			failures.add(new SourceFailure(index, Reason.FOLDER_NOT_FOUND, missing));
 		}
 
 		return resolved.folders();

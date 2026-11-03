@@ -18,6 +18,11 @@ class SourceProgressTextTest {
 	}
 
 	@Test
+	void describesAFinishWithWarning() {
+		assertEquals("Aviso - 3.500 arquivos", SourceProgressText.of(new CollectionProgress(0, Stage.DONE_WITH_WARNING, 3500, 3500)));
+	}
+
+	@Test
 	void usesTheSingularForOneFile() {
 		assertEquals("OK - 1 arquivo", SourceProgressText.of(new CollectionProgress(0, Stage.DONE, 1, 1)));
 	}

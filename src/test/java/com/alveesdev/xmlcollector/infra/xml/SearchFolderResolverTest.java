@@ -15,6 +15,7 @@ import java.util.stream.Collectors;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
+import com.alveesdev.xmlcollector.application.port.SourceFiles.ResolvedFolders;
 import com.alveesdev.xmlcollector.domain.model.DateRange;
 
 class SearchFolderResolverTest {
@@ -55,6 +56,88 @@ class SearchFolderResolverTest {
 		create("arq/202603/202601/docs");
 
 		assertEquals(Set.of(), resolve("arq/**/{AAAAMM}/docs"));
+	}
+
+	@Test
+	void findsTheYearAndTheMonthNameOfThePeriod() throws IOException {
+		create("docs/2026/Janeiro_2026");
+		create("docs/2026/Fevereiro_2026");
+		create("docs/2026/Marco_2026");
+		create("docs/2025/Janeiro_2025");
+
+		assertEquals(
+				Set.of(root.resolve("docs/2026/Janeiro_2026"), root.resolve("docs/2026/Fevereiro_2026")),
+				resolve("docs/{AAAA}/{MES_AAAA}"));
+	}
+
+	@Test
+	void aPeriodAcrossTwoYearsTakesOnlyItsMonthsInEachYear() throws IOException {
+		create("docs/2025/Dezembro_2025");
+		create("docs/2025/Novembro_2025");
+		create("docs/2026/Janeiro_2026");
+		create("docs/2026/Dezembro_2026");
+
+		DateRange period = new DateRange(LocalDate.of(2025, 12, 20), LocalDate.of(2026, 1, 10));
+
+		assertEquals(
+				List.of(root.resolve("docs/2025/Dezembro_2025"), root.resolve("docs/2026/Janeiro_2026")),
+				SearchFolderResolver.resolve(root, List.of("docs/{AAAA}/{MES_AAAA}"), period).folders().stream().sorted().toList());
+	}
+
+	@Test
+	void acceptsTheMonthWithOrWithoutItsAccentAndInAnyCase() throws IOException {
+		create("com/2026/Março_2026");
+		create("sem/2026/MARCO_2026");
+
+		DateRange march = new DateRange(LocalDate.of(2026, 3, 1), LocalDate.of(2026, 3, 31));
+
+		assertEquals(2, SearchFolderResolver.resolve(root, List.of("com/{AAAA}/{MES_AAAA}", "sem/{AAAA}/{MES_AAAA}"), march).folders().size());
+	}
+
+	@Test
+	void reportsTheFolderNotFoundWithItsRealDate() throws IOException {
+		create("docs/2026/Janeiro_2026");
+
+		assertEquals(
+				List.of(root.resolve("docs/2026/Fevereiro_2026").toString()),
+				SearchFolderResolver.resolve(root, List.of("docs/{AAAA}/{MES_AAAA}"), JANUARY_TO_FEBRUARY).missing());
+	}
+
+	@Test
+	void reportsAFolderWithoutDateOnlyOnce() throws IOException {
+		assertEquals(
+				List.of(root.resolve("inutilizadas").toString()),
+				SearchFolderResolver.resolve(root, List.of("inutilizadas"), JANUARY_TO_FEBRUARY).missing());
+	}
+
+	@Test
+	void doesNotReportAnOptionalFolderButStillReadsIt() throws IOException {
+		create("opcional/2026/Janeiro_2026");
+
+		ResolvedFolders resolved = SearchFolderResolver.resolve(root, List.of("?opcional/{AAAA}/{MES_AAAA}", "?ausente"), JANUARY_TO_FEBRUARY);
+
+		assertEquals(List.of(root.resolve("opcional/2026/Janeiro_2026")), resolved.folders());
+		assertEquals(List.of(), resolved.missing());
+	}
+
+	@Test
+	void showsAnyDepthInAReadableWay() throws IOException {
+		create("arq/202601/docs");
+
+		assertEquals(
+				List.of(root.resolve("arq") + "\\...\\202602\\docs"),
+				SearchFolderResolver.resolve(root, List.of("arq/**/{AAAAMM}/docs"), JANUARY_TO_FEBRUARY).missing());
+	}
+
+	@Test
+	void reportsNothingWhenEveryFolderExists() throws IOException {
+		create("docs/2026/Janeiro_2026");
+		create("docs/2026/Fevereiro_2026");
+		create("inutilizadas");
+
+		assertEquals(
+				List.of(),
+				SearchFolderResolver.resolve(root, List.of("docs/{AAAA}/{MES_AAAA}", "inutilizadas"), JANUARY_TO_FEBRUARY).missing());
 	}
 
 	@Test

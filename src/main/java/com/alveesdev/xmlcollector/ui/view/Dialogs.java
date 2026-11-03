@@ -109,7 +109,8 @@ public final class Dialogs {
 			lines.add(switch (failure.reason()) {
 				case NOT_INFORMED -> label + ": diretório não informado";
 				case INACCESSIBLE -> label + ": diretório inacessível (" + failure.path() + ")";
-				case NO_MODEL_FOLDER -> label + ": nenhuma pasta do modelo de busca encontrada em " + failure.path();
+				case NO_MODEL_FOLDER -> label + ": nenhuma pasta do modelo de busca encontrada (" + failure.path() + ")";
+				case FOLDER_NOT_FOUND -> label + ": pasta não encontrada (" + failure.path() + ")";
 				case SUBFOLDER_INACCESSIBLE -> label + ": subpasta inacessível (" + failure.path() + ")";
 			});
 		}

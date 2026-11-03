@@ -20,6 +20,7 @@ public class ProgressController {
 	private static final double SOURCE_LABEL_WIDTH = 60;
 	private static final double STATUS_LABEL_WIDTH = 130;
 	private static final String DONE_STYLE = "-fx-text-fill: #2e7d32; -fx-font-weight: bold;";
+	private static final String WARNING_STYLE = "-fx-text-fill: #b26a00; -fx-font-weight: bold;";
 	private static final String FAILED_STYLE = "-fx-text-fill: #c62828; -fx-font-weight: bold;";
 
 	private record SourceRow(ProgressBar bar, Label status) {
@@ -60,6 +61,10 @@ public class ProgressController {
 			case DONE -> {
 				row.bar().setProgress(1);
 				row.status().setStyle(DONE_STYLE);
+			}
+			case DONE_WITH_WARNING -> {
+				row.bar().setProgress(1);
+				row.status().setStyle(WARNING_STYLE);
 			}
 			case FAILED -> {
 				row.bar().setProgress(0);
