@@ -164,6 +164,11 @@ public class CollectionTabController {
 				? searchModels.pdvModel(settings.pdvModelId()).collectionFolders()
 				: List.of();
 
+		if (usesModel && folderPatterns.isEmpty()) {
+			Dialogs.warning("Selecione o Modelo de Busca PDV em Configurações antes de coletar.");
+			return Optional.empty();
+		}
+
 		return Optional.of(new CollectionRequest(
 				directories, DocumentCategory.NFCE, new DateRange(from, to), settings.organizeMode(), paths.xmlArchiveDir(),
 				folderPatterns, CollectionTarget.ALL, usesModel ? settings.separationMode() : SeparationMode.ALL_TOGETHER));
