@@ -333,6 +333,7 @@ class CollectionServiceTest {
 		assertEquals(
 				List.of(new SourceFailure(0, SourceFailure.Reason.FOLDER_NOT_FOUND, Path.of("pdv1", "contingencia").toString())),
 				result.failures());
+		assertEquals(CollectionProgress.Stage.DONE_WITH_WARNING, lastStageOf(events, 0));
 	}
 
 	@Test

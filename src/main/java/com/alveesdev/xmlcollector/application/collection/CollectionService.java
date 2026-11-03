@@ -129,7 +129,7 @@ public class CollectionService {
 			return CollectionProgress.failed(index);
 		}
 
-		return CollectionProgress.done(index, total);
+		return ofSource.isEmpty() ? CollectionProgress.done(index, total) : CollectionProgress.doneWithWarning(index, total);
 	}
 
 	private List<SourceFile> scan(int index, CollectionRequest request, List<SourceFailure> failures) {

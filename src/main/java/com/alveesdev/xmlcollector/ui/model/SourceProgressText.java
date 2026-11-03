@@ -17,8 +17,13 @@ public final class SourceProgressText {
 		return switch (progress.stage()) {
 			case COUNTING -> "Contando arquivos...";
 			case READING -> String.format(BRAZIL, "%,d de %,d", progress.processed(), progress.total());
-			case DONE -> String.format(BRAZIL, "OK - %,d %s", progress.total(), progress.total() == 1 ? "arquivo" : "arquivos");
+			case DONE -> String.format(BRAZIL, "OK - %,d %s", progress.total(), filesWord(progress));
+			case DONE_WITH_WARNING -> String.format(BRAZIL, "Aviso - %,d %s", progress.total(), filesWord(progress));
 			case FAILED -> "Falhou";
 		};
+	}
+
+	private static String filesWord(CollectionProgress progress) {
+		return progress.total() == 1 ? "arquivo" : "arquivos";
 	}
 }

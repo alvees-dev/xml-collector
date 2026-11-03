@@ -6,6 +6,7 @@ public record CollectionProgress(int sourceIndex, Stage stage, int processed, in
 		COUNTING,
 		READING,
 		DONE,
+		DONE_WITH_WARNING,
 		FAILED
 	}
 
@@ -19,6 +20,10 @@ public record CollectionProgress(int sourceIndex, Stage stage, int processed, in
 
 	static CollectionProgress done(int sourceIndex, int total) {
 		return new CollectionProgress(sourceIndex, Stage.DONE, total, total);
+	}
+
+	static CollectionProgress doneWithWarning(int sourceIndex, int total) {
+		return new CollectionProgress(sourceIndex, Stage.DONE_WITH_WARNING, total, total);
 	}
 
 	static CollectionProgress failed(int sourceIndex) {
