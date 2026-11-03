@@ -39,8 +39,6 @@ public final class CollectionRules {
 	private record Accepted(String fileName, XmlDocument.Invoice invoice) {
 	}
 
-	private static final String VOIDING_FILE_SUFFIX = "-procInutNFe.xml";
-
 	private final DateRange period;
 	private final Predicate<XmlDocument.Invoice> invoiceFilter;
 	private final Set<AccessKey> seenKeys = new HashSet<>();
@@ -149,7 +147,7 @@ public final class CollectionRules {
 			return new Skip(SkipReason.OUT_OF_PERIOD);
 		}
 
-		String name = voiding.id() + VOIDING_FILE_SUFFIX;
+		String name = ArchiveLayout.voidingFileName(voiding.id());
 		return new Store(voiding.date(), name, name, voiding.id(), true);
 	}
 

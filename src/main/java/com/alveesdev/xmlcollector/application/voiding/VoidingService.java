@@ -18,8 +18,6 @@ import com.alveesdev.xmlcollector.domain.service.ArchiveLayout;
 
 public class VoidingService {
 
-	private static final String FILE_SUFFIX = "-procInutNFe.xml";
-
 	private final VoidingGateway gateway;
 	private final DocumentArchive archive;
 	private final Clock clock;
@@ -44,7 +42,7 @@ public class VoidingService {
 	private String store(VoidingRequest request, VoidingReceipt receipt, OrganizeMode organizeMode, Path archiveRoot) {
 
 		Path directory = ArchiveLayout.directoryFor(archiveRoot, LocalDate.now(clock), organizeMode, DocumentCategory.VOIDED);
-		String name = request.id() + FILE_SUFFIX;
+		String name = ArchiveLayout.voidingFileName(request.id());
 
 		try {
 			archive.store(receipt.xml().getBytes(StandardCharsets.UTF_8), FileTime.from(clock.instant()), directory, name, name, request.id());

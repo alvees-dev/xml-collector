@@ -22,6 +22,7 @@ public final class ArchiveLayout {
 
 	private static final DateTimeFormatter DAY_FOLDER_FORMAT = DateTimeFormatter.ofPattern("dd-MM-yyyy");
 	private static final String ZIP_PREFIX = "ArquivoXML";
+	private static final String VOIDING_FILE_SUFFIX = "-procInutNFe.xml";
 	private static final String PDV_FOLDER_PREFIX = "PDV";
 
 	private ArchiveLayout() {
@@ -60,6 +61,10 @@ public final class ArchiveLayout {
 		parts.add(monthLabel(monthDirectory));
 
 		return String.join("_", parts);
+	}
+
+	public static String voidingFileName(String voidingId) {
+		return voidingId.replaceFirst("^ID", "") + VOIDING_FILE_SUFFIX;
 	}
 
 	public static Path directoryFor(Path archiveRoot, LocalDate date, OrganizeMode mode, DocumentCategory category) {
