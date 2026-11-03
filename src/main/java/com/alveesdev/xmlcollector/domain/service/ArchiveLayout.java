@@ -35,7 +35,11 @@ public final class ArchiveLayout {
 	}
 
 	public static Path monthDirectory(Path archiveRoot, LocalDate date) {
-		return archiveRoot.resolve(monthYearName(date));
+		return archiveRoot.resolve(String.valueOf(date.getYear())).resolve(MONTH_NAMES[date.getMonthValue() - 1]);
+	}
+
+	public static String monthLabel(Path monthDirectory) {
+		return monthDirectory.getFileName() + "_" + monthDirectory.getParent().getFileName();
 	}
 
 	public static List<Path> monthDirectories(Path archiveRoot, DateRange period) {
@@ -52,7 +56,7 @@ public final class ArchiveLayout {
 		List<String> parts = new ArrayList<>();
 		parts.add(ZIP_PREFIX);
 		parts.addAll(new TreeSet<>(cnpjs));
-		parts.add(monthDirectory.getFileName().toString());
+		parts.add(monthLabel(monthDirectory));
 
 		return String.join("_", parts);
 	}

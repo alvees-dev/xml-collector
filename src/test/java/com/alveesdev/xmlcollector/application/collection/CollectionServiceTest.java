@@ -149,7 +149,7 @@ class CollectionServiceTest {
 		assertEquals("a.xml", stored.preferredName());
 		assertEquals(key + ".xml", stored.canonicalName());
 		assertEquals(key, stored.identity());
-		assertEquals(ARCHIVE.resolve("Janeiro_2026").resolve("NFCe"), stored.directory());
+		assertEquals(ARCHIVE.resolve("2026").resolve("Janeiro").resolve("NFCe"), stored.directory());
 	}
 
 	@Test
@@ -206,7 +206,7 @@ class CollectionServiceTest {
 		service.collect(request(DocumentCategory.NFE_SALES, "nfe"));
 
 		assertEquals(Set.of(Set.of(DocumentModel.NFE)), sources.requestedModels);
-		assertEquals(ARCHIVE.resolve("Janeiro_2026").resolve("NFe_Vendas"), archive.stored.get(0).directory());
+		assertEquals(ARCHIVE.resolve("2026").resolve("Janeiro").resolve("NFe_Vendas"), archive.stored.get(0).directory());
 	}
 
 	@Test
