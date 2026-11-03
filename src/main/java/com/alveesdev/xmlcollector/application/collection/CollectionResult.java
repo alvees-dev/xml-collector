@@ -10,6 +10,7 @@ import java.util.SortedMap;
 import com.alveesdev.xmlcollector.domain.model.AccessKey;
 import com.alveesdev.xmlcollector.domain.model.DocumentEntry;
 import com.alveesdev.xmlcollector.domain.model.NumberRange;
+import com.alveesdev.xmlcollector.domain.model.SeriesOwner;
 
 public record CollectionResult(
 		List<SourceResult> sources,
@@ -35,6 +36,18 @@ public record CollectionResult(
 		}
 
 		return sourcesBySeries;
+	}
+
+	public Map<Integer, Set<SeriesOwner>> ownersBySeries() {
+		Map<Integer, Set<SeriesOwner>> owners = new HashMap<>();
+
+		for (DocumentEntry entry : entries()) {
+			if (entry.invoice() != null) {
+				owners.computeIfAbsent(entry.invoice().series(), series -> new HashSet<>()).add(SeriesOwner.of(entry.invoice().key()));
+			}
+		}
+
+		return owners;
 	}
 
 	public List<DocumentEntry> entries() {
