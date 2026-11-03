@@ -29,6 +29,7 @@ import com.alveesdev.xmlcollector.domain.model.AccessKey;
 import com.alveesdev.xmlcollector.domain.model.DocumentCategory;
 import com.alveesdev.xmlcollector.domain.model.IssuedNumber;
 import com.alveesdev.xmlcollector.domain.model.NumberRange;
+import com.alveesdev.xmlcollector.domain.model.SeparationMode;
 import com.alveesdev.xmlcollector.domain.model.XmlDocument;
 import com.alveesdev.xmlcollector.domain.service.ArchiveLayout;
 import com.alveesdev.xmlcollector.domain.service.CollectionRules;
@@ -187,7 +188,7 @@ class SourceProcessor {
 			CollectionRules.Decision decision = rules.decide(sourceIndex, file.fileName(), file.document());
 
 			if (decision instanceof CollectionRules.Store store) {
-				jobs.add(job(file, store));
+				jobs.add(job(sourceIndex, file, store));
 			} else if (decision instanceof CollectionRules.Skip skip) {
 				count(skip.reason());
 			}
@@ -205,12 +206,21 @@ class SourceProcessor {
 		}
 	}
 
-	private StoreJob job(ReadFile file, CollectionRules.Store store) {
-		DocumentCategory category = store.voiding() ? DocumentCategory.VOIDED : request.category();
-		Path directory = ArchiveLayout.directoryFor(request.archiveRoot(), store.date(), request.organizeMode(), category);
+	private StoreJob job(int sourceIndex, ReadFile file, CollectionRules.Store store) {
+		Path directory = directoryOf(sourceIndex, store);
 
 		return new StoreJob(file.content(), file.source().lastModified(), file.fileName(), directory,
 				store.preferredName(), store.canonicalName(), store.identity());
+	}
+
+	private Path directoryOf(int sourceIndex, CollectionRules.Store store) {
+
+		if (request.separationMode() == SeparationMode.BY_PDV) {
+			return ArchiveLayout.pdvDirectoryFor(request.archiveRoot(), store.date(), request.organizeMode(), sourceIndex);
+		}
+
+		DocumentCategory category = store.voiding() ? DocumentCategory.VOIDED : request.category();
+		return ArchiveLayout.directoryFor(request.archiveRoot(), store.date(), request.organizeMode(), category);
 	}
 
 	private void storeInParallel(List<StoreJob> jobs, BooleanSupplier cancelled) {

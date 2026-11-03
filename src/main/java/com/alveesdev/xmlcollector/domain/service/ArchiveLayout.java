@@ -22,6 +22,7 @@ public final class ArchiveLayout {
 
 	private static final DateTimeFormatter DAY_FOLDER_FORMAT = DateTimeFormatter.ofPattern("dd-MM-yyyy");
 	private static final String ZIP_PREFIX = "ArquivoXML";
+	private static final String PDV_FOLDER_PREFIX = "PDV";
 
 	private ArchiveLayout() {
 	}
@@ -62,10 +63,14 @@ public final class ArchiveLayout {
 	}
 
 	public static Path directoryFor(Path archiveRoot, LocalDate date, OrganizeMode mode, DocumentCategory category) {
-		Path categoryDirectory = monthDirectory(archiveRoot, date).resolve(category.folderName());
+		return withDay(monthDirectory(archiveRoot, date).resolve(category.folderName()), date, mode);
+	}
 
-		return mode == OrganizeMode.BY_DAY
-				? categoryDirectory.resolve(DAY_FOLDER_FORMAT.format(date))
-				: categoryDirectory;
+	public static Path pdvDirectoryFor(Path archiveRoot, LocalDate date, OrganizeMode mode, int sourceIndex) {
+		return withDay(monthDirectory(archiveRoot, date).resolve(PDV_FOLDER_PREFIX + (sourceIndex + 1)), date, mode);
+	}
+
+	private static Path withDay(Path directory, LocalDate date, OrganizeMode mode) {
+		return mode == OrganizeMode.BY_DAY ? directory.resolve(DAY_FOLDER_FORMAT.format(date)) : directory;
 	}
 }
