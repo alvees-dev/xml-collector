@@ -5,7 +5,6 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.List;
-import java.util.Map;
 
 import org.junit.jupiter.api.Test;
 
@@ -20,11 +19,6 @@ class VoidingTextTest {
 
 	private static final VoidingRequest SINGLE = request(1, 7, 7);
 	private static final VoidingRequest RANGE = request(2, 10, 12);
-
-	@Test
-	void labelsARowByItsSeriesAndNumbers() {
-		assertEquals(Map.of(0, "Série 1: 7", 1, "Série 2: 10 a 12"), VoidingText.rowLabels(List.of(SINGLE, RANGE)));
-	}
 
 	@Test
 	void theConfirmationShowsTheTotalAndAsksForTheWordInProduction() {

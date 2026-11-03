@@ -1,8 +1,6 @@
 package com.alveesdev.xmlcollector.ui.model;
 
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 
 import com.alveesdev.xmlcollector.application.voiding.VoidingOutcome;
 import com.alveesdev.xmlcollector.application.voiding.VoidingProgress.Stage;
@@ -17,16 +15,6 @@ public final class VoidingText {
 	private static final int MAX_LISTED = 15;
 
 	private VoidingText() {
-	}
-
-	public static Map<Integer, String> rowLabels(List<VoidingRequest> requests) {
-		Map<Integer, String> labels = new LinkedHashMap<>();
-
-		for (int index = 0; index < requests.size(); index++) {
-			labels.put(index, rangeLabel(requests.get(index)));
-		}
-
-		return labels;
 	}
 
 	public static String environment(FiscalEnvironment environment) {
