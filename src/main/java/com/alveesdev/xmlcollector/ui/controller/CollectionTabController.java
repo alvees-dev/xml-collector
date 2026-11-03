@@ -128,7 +128,7 @@ public class CollectionTabController {
 			return;
 		}
 
-		CollectionRunner.run(btnCollect, collectionService, request.get(), sourceMode,
+		CollectionRunner.run(btnCollect, "Coletando XML", collectionService, request.get(), sourceMode,
 				result -> showResult(request.get(), result, sourceMode));
 	}
 

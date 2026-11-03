@@ -17,7 +17,6 @@ import javafx.scene.layout.VBox;
 
 public class ProgressController {
 
-	private static final double SOURCE_LABEL_WIDTH = 60;
 	private static final double STATUS_LABEL_WIDTH = 130;
 	private static final String DONE_STYLE = "-fx-text-fill: #2e7d32; -fx-font-weight: bold;";
 	private static final String WARNING_STYLE = "-fx-text-fill: #b26a00; -fx-font-weight: bold;";
@@ -25,6 +24,9 @@ public class ProgressController {
 
 	private record SourceRow(ProgressBar bar, Label status) {
 	}
+
+	@FXML
+	private Label lblTitle;
 
 	@FXML
 	private VBox sourcesBox;
@@ -37,8 +39,9 @@ public class ProgressController {
 	private Runnable cancelAction = () -> {
 	};
 
-	public void showSources(Map<Integer, String> labels) {
-		labels.forEach((sourceIndex, label) -> addRow(sourceIndex, label));
+	public void show(String title, Map<Integer, String> labels, double labelWidth) {
+		lblTitle.setText(title);
+		labels.forEach((index, label) -> addRow(index, label, labelWidth));
 	}
 
 	public void setCancelAction(Runnable cancelAction) {
@@ -73,10 +76,10 @@ public class ProgressController {
 		}
 	}
 
-	private void addRow(int sourceIndex, String text) {
+	private void addRow(int index, String text, double labelWidth) {
 
 		Label label = new Label(text);
-		label.setMinWidth(SOURCE_LABEL_WIDTH);
+		label.setMinWidth(labelWidth);
 
 		ProgressBar bar = new ProgressBar(0);
 		bar.setMaxWidth(Double.MAX_VALUE);
@@ -88,7 +91,7 @@ public class ProgressController {
 		HBox row = new HBox(8, label, bar, status);
 		row.setAlignment(Pos.CENTER_LEFT);
 
-		rows.put(sourceIndex, new SourceRow(bar, status));
+		rows.put(index, new SourceRow(bar, status));
 		sourcesBox.getChildren().add(row);
 	}
 

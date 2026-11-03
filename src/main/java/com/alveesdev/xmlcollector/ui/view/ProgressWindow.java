@@ -22,7 +22,7 @@ public final class ProgressWindow {
 	private final Stage stage = new Stage();
 	private final ProgressController controller;
 
-	public ProgressWindow(Window owner, Map<Integer, String> sourceLabels) throws IOException {
+	public ProgressWindow(Window owner, String title, Map<Integer, String> labels, double labelWidth) throws IOException {
 
 		URL location = ProgressWindow.class.getResource(PROGRESS_FXML);
 
@@ -34,7 +34,7 @@ public final class ProgressWindow {
 		Parent root = loader.load();
 
 		controller = loader.getController();
-		controller.showSources(sourceLabels);
+		controller.show(title, labels, labelWidth);
 
 		stage.initStyle(StageStyle.UNDECORATED);
 		stage.initModality(Modality.APPLICATION_MODAL);
