@@ -41,6 +41,22 @@ public sealed interface XmlDocument {
 		}
 	}
 
+	record Voiding(
+			String id,
+			int series,
+			NumberRange range,
+			OffsetDateTime receivedAt) implements XmlDocument {
+
+		public LocalDate date() {
+			return receivedAt.toLocalDate();
+		}
+
+		@Override
+		public Optional<String> identity() {
+			return Optional.of(id);
+		}
+	}
+
 	record Ignored(String reason) implements XmlDocument {
 
 		@Override

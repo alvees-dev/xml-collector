@@ -13,6 +13,7 @@ import java.util.Set;
 import org.junit.jupiter.api.Test;
 
 import com.alveesdev.xmlcollector.domain.model.DocumentModel;
+import com.alveesdev.xmlcollector.domain.model.NumberRange;
 import com.alveesdev.xmlcollector.domain.model.XmlDocument;
 
 class FiscalXmlReaderTest {
@@ -46,6 +47,31 @@ class FiscalXmlReaderTest {
 		assertEquals(KEY, event.cancelledKey().value());
 		assertEquals("110111" + KEY + "01", event.eventId());
 		assertEquals(LocalDate.of(2026, 1, 16), event.date());
+	}
+
+	@Test
+	void readsAnApprovedVoiding() {
+		XmlDocument.Voiding voiding = assertInstanceOf(XmlDocument.Voiding.class, read(voidingXml("102", "65")));
+
+		assertEquals(1, voiding.series());
+		assertEquals(new NumberRange(2, 3), voiding.range());
+		assertEquals(LocalDate.of(2026, 2, 5), voiding.date());
+	}
+
+	@Test
+	void ignoresARejectedVoiding() {
+		assertInstanceOf(XmlDocument.Ignored.class, read(voidingXml("241", "65")));
+	}
+
+	@Test
+	void ignoresAVoidingOfAnotherModel() {
+		assertInstanceOf(XmlDocument.Ignored.class, read(voidingXml("102", "55")));
+	}
+
+	private static String voidingXml(String status, String model) {
+		return "<procInutNFe><retInutNFe><infInut><cStat>" + status + "</cStat><cUF>35</cUF><ano>26</ano>"
+				+ "<CNPJ>12345678000190</CNPJ><mod>" + model + "</mod><serie>1</serie><nNFIni>2</nNFIni><nNFFin>3</nNFFin>"
+				+ "<dhRecbto>2026-02-05T10:00:00-03:00</dhRecbto></infInut></retInutNFe></procInutNFe>";
 	}
 
 	@Test

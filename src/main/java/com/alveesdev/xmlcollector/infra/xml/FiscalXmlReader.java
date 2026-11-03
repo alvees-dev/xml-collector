@@ -15,11 +15,13 @@ import org.xml.sax.SAXException;
 import com.alveesdev.xmlcollector.application.port.DocumentReader;
 import com.alveesdev.xmlcollector.domain.model.AccessKey;
 import com.alveesdev.xmlcollector.domain.model.DocumentModel;
+import com.alveesdev.xmlcollector.domain.model.NumberRange;
 import com.alveesdev.xmlcollector.domain.model.XmlDocument;
 
 public class FiscalXmlReader implements DocumentReader {
 
 	private static final String CANCEL_EVENT_TYPE = "110111";
+	private static final String VOIDING_APPROVED = "102";
 	private static final String NFE_ID_PREFIX = "NFe";
 	private static final String EVENT_ID_PREFIX = "ID";
 	private static final int EVENT_ID_DIGITS = 52;
@@ -50,7 +52,13 @@ public class FiscalXmlReader implements DocumentReader {
 				return readEvent(event, acceptedModels);
 			}
 
-			return new XmlDocument.Ignored("not an invoice or a cancellation event");
+			Element voiding = firstElement(document, "retInutNFe");
+
+			if (voiding != null) {
+				return readVoiding(voiding, acceptedModels);
+			}
+
+			return new XmlDocument.Ignored("not an invoice, a cancellation event or a voiding");
 
 		} catch (XmlFormatException e) {
 			return new XmlDocument.Unreadable(e.getMessage());
@@ -100,6 +108,35 @@ public class FiscalXmlReader implements DocumentReader {
 		OffsetDateTime eventAt = requiredDateTime(info, "dhEvento");
 
 		return new XmlDocument.CancelEvent(eventId, cancelledKey, eventAt);
+	}
+
+	private static XmlDocument readVoiding(Element voiding, Set<DocumentModel> acceptedModels) throws XmlFormatException {
+
+		Element info = requiredChild(voiding, "infInut");
+		String status = requiredText(info, "cStat");
+
+		if (!VOIDING_APPROVED.equals(status)) {
+			return new XmlDocument.Ignored("voiding was not approved, status " + status);
+		}
+
+		String modelCode = requiredText(info, "mod");
+
+		if (DocumentModel.fromCode(modelCode).filter(acceptedModels::contains).isEmpty()) {
+			return new XmlDocument.Ignored("document model " + modelCode + " is not accepted");
+		}
+
+		int series = requiredInt(info, "serie");
+		int start = requiredInt(info, "nNFIni");
+		int end = requiredInt(info, "nNFFin");
+
+		if (start > end) {
+			throw new XmlFormatException("voiding range starts after it ends");
+		}
+
+		String id = String.format("ID%s%s%s%s%03d%09d%09d",
+				requiredText(info, "cUF"), requiredText(info, "ano"), requiredText(info, "CNPJ"), modelCode, series, start, end);
+
+		return new XmlDocument.Voiding(id, series, new NumberRange(start, end), requiredDateTime(info, "dhRecbto"));
 	}
 
 	private static boolean isAccepted(AccessKey key, Set<DocumentModel> acceptedModels) {

@@ -252,6 +252,19 @@ class CollectionServiceTest {
 				() -> service.collect(request("pdv1"), ProgressListener.NONE, () -> true));
 	}
 
+	@Test
+	void aVoidedRangeIsNotMissingAndGoesToItsOwnFolder() {
+		sources.add("pdv1", "a.xml", invoice(1, 1, IN_PERIOD));
+		sources.add("pdv1", "b.xml", invoice(1, 5, IN_PERIOD));
+		sources.add("pdv1", "inut.xml", new XmlDocument.Voiding(
+				"ID1", 1, new NumberRange(2, 3), IN_PERIOD.atTime(12, 0).atOffset(java.time.ZoneOffset.ofHours(-3))));
+
+		CollectionResult result = collect("pdv1");
+
+		assertEquals(Map.of(1, List.of(new NumberRange(4, 4))), result.missingBySeries());
+		assertEquals(1, archive.stored.stream().filter(stored -> stored.directory().endsWith("Inutilizadas")).count());
+	}
+
 	private CollectionResult collect(String... directories) {
 		return service.collect(request(directories));
 	}
