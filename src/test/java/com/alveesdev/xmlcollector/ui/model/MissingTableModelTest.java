@@ -44,7 +44,7 @@ class MissingTableModelTest {
 	void showsOneEmptyColumnPerPdvBeforeAnyCollection() {
 		MissingTableModel model = MissingTableModel.forPdvs(2);
 
-		assertEquals(List.of("PDV01", "PDV02"), model.getHeaders());
+		assertEquals(List.of("SERIE 1 ", "SERIE 2 "), model.getHeaders());
 		assertTrue(model.getRows().isEmpty());
 		assertFalse(model.isSeriesBased());
 	}
