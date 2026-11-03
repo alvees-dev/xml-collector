@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.SortedMap;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import com.alveesdev.xmlcollector.domain.model.AccessKey;
@@ -41,6 +42,7 @@ public final class CollectionRules {
 	private static final String VOIDING_FILE_SUFFIX = "-procInutNFe.xml";
 
 	private final DateRange period;
+	private final Predicate<XmlDocument.Invoice> invoiceFilter;
 	private final Set<AccessKey> seenKeys = new HashSet<>();
 	private final Set<String> seenEventIds = new HashSet<>();
 	private final Set<AccessKey> cancelledKeys = new HashSet<>();
@@ -49,7 +51,12 @@ public final class CollectionRules {
 	private final Map<Integer, List<Accepted>> acceptedBySource = new HashMap<>();
 
 	public CollectionRules(DateRange period) {
+		this(period, invoice -> true);
+	}
+
+	public CollectionRules(DateRange period, Predicate<XmlDocument.Invoice> invoiceFilter) {
 		this.period = period;
+		this.invoiceFilter = invoiceFilter;
 	}
 
 	public Decision decide(int sourceIndex, String fileName, XmlDocument document) {
@@ -113,6 +120,10 @@ public final class CollectionRules {
 
 		if (!period.contains(invoice.date())) {
 			return new Skip(SkipReason.OUT_OF_PERIOD);
+		}
+
+		if (!invoiceFilter.test(invoice)) {
+			return new Skip(SkipReason.IGNORED);
 		}
 
 		accepted(sourceIndex).add(new Accepted(fileName, invoice));

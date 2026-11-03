@@ -259,7 +259,7 @@ class CollectionServiceTest {
 
 		CollectionResult result = service.collect(new CollectionRequest(
 				List.of("pdv1"), DocumentCategory.NFCE, JANUARY, OrganizeMode.SINGLE_FOLDER, ARCHIVE,
-				List.of("enviados")));
+				List.of("enviados"), invoice -> true));
 
 		assertEquals("a.xml", onlyEntry(result).fileName());
 	}
@@ -268,7 +268,7 @@ class CollectionServiceTest {
 	void reportsARootWithoutAnyFolderOfTheModel() {
 		CollectionResult result = service.collect(new CollectionRequest(
 				List.of("pdv1"), DocumentCategory.NFCE, JANUARY, OrganizeMode.SINGLE_FOLDER, ARCHIVE,
-				List.of("enviados")));
+				List.of("enviados"), invoice -> true));
 
 		assertEquals(SourceFailure.Reason.NO_MODEL_FOLDER, result.failures().get(0).reason());
 	}
@@ -277,9 +277,22 @@ class CollectionServiceTest {
 	void reportsAnInaccessibleRootOfAModel() {
 		CollectionResult result = service.collect(new CollectionRequest(
 				List.of("sem-acesso"), DocumentCategory.NFCE, JANUARY, OrganizeMode.SINGLE_FOLDER, ARCHIVE,
-				List.of("enviados")));
+				List.of("enviados"), invoice -> true));
 
 		assertEquals(SourceFailure.Reason.INACCESSIBLE, result.failures().get(0).reason());
+	}
+
+	@Test
+	void keepsOnlyTheInvoicesAcceptedByTheFilter() {
+		sources.add("pdv1", "a.xml", invoice(1, IN_PERIOD));
+		sources.add("pdv1", "b.xml", invoice(2, IN_PERIOD));
+
+		CollectionResult result = service.collect(new CollectionRequest(
+				List.of("pdv1"), DocumentCategory.NFCE, JANUARY, OrganizeMode.SINGLE_FOLDER, ARCHIVE,
+				List.of(), invoice -> invoice.number() == 2));
+
+		assertEquals("b.xml", onlyEntry(result).fileName());
+		assertEquals(1, archive.stored.size());
 	}
 
 	@Test

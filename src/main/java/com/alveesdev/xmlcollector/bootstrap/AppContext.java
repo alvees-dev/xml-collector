@@ -67,7 +67,7 @@ public final class AppContext {
 		}
 
 		if (type == MissingTabController.class) {
-			return new MissingTabController(settingsService);
+			return new MissingTabController(collectionService, settingsService, searchModels, paths);
 		}
 
 		if (type == DispatchTabController.class) {

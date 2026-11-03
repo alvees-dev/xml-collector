@@ -2,6 +2,7 @@ package com.alveesdev.xmlcollector.ui.model;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.SortedMap;
 import java.util.stream.IntStream;
 
 import com.alveesdev.xmlcollector.application.collection.CollectionResult;
@@ -32,11 +33,15 @@ public class MissingTableModel {
 	}
 
 	public static MissingTableModel fromResult(CollectionResult result) {
+		return fromMissing(result.missingBySeries());
+	}
+
+	public static MissingTableModel fromMissing(SortedMap<Integer, List<NumberRange>> missingBySeries) {
 
 		List<String> headers = new ArrayList<>();
 		List<List<String>> columns = new ArrayList<>();
 
-		result.missingBySeries().forEach((series, ranges) -> {
+		missingBySeries.forEach((series, ranges) -> {
 			headers.add("SERIE " + series);
 			columns.add(ranges.stream().map(MissingTableModel::formatRange).toList());
 		});
