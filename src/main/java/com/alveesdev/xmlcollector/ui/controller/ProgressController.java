@@ -4,6 +4,8 @@ import java.util.HashMap;
 import java.util.Map;
 
 import com.alveesdev.xmlcollector.application.collection.CollectionProgress;
+import com.alveesdev.xmlcollector.application.dispatch.DispatchProgress;
+import com.alveesdev.xmlcollector.ui.model.DispatchProgressText;
 import com.alveesdev.xmlcollector.ui.model.SourceProgressText;
 
 import javafx.fxml.FXML;
@@ -73,6 +75,27 @@ public class ProgressController {
 				row.bar().setProgress(0);
 				row.status().setStyle(FAILED_STYLE);
 			}
+		}
+	}
+
+	public void update(DispatchProgress progress) {
+
+		SourceRow row = rows.get(progress.step().ordinal());
+
+		row.status().setText(DispatchProgressText.of(progress.stage()));
+
+		switch (progress.stage()) {
+			case RUNNING -> row.bar().setProgress(ProgressBar.INDETERMINATE_PROGRESS);
+			case DONE -> {
+				row.bar().setProgress(1);
+				row.status().setStyle(DONE_STYLE);
+			}
+			case SKIPPED -> row.bar().setProgress(0);
+		}
+
+		// The e-mail cannot be taken back, so it cannot be cancelled once it is on its way.
+		if (progress.step() == DispatchProgress.Step.SENDING) {
+			btnCancel.setDisable(true);
 		}
 	}
 
