@@ -32,7 +32,7 @@ class SearchModelLoaderTest {
 
 	@Test
 	void listsNoModelFirstAndOnlyTheModelsOfTheType() {
-		PdvSearchModel food = new PdvSearchModel("f", "F", PdvType.FOOD, List.of("a"), List.of());
+		PdvSearchModel food = new PdvSearchModel("f", "F", PdvType.FOOD, List.of("a"), List.of(), "");
 
 		SearchModelCatalog catalog = new SearchModelCatalog(new SearchModelProvider() {
 
