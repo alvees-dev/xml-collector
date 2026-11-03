@@ -5,7 +5,6 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.List;
-import java.util.Map;
 
 import org.junit.jupiter.api.Test;
 
@@ -20,11 +19,6 @@ class VoidingTextTest {
 
 	private static final VoidingRequest SINGLE = request(1, 7, 7);
 	private static final VoidingRequest RANGE = request(2, 10, 12);
-
-	@Test
-	void labelsARowByItsSeriesAndNumbers() {
-		assertEquals(Map.of(0, "Série 1: 7", 1, "Série 2: 10 a 12"), VoidingText.rowLabels(List.of(SINGLE, RANGE)));
-	}
 
 	@Test
 	void theConfirmationShowsTheTotalAndAsksForTheWordInProduction() {
@@ -47,17 +41,42 @@ class VoidingTextTest {
 	}
 
 	@Test
-	void theSummaryNamesEachResultAndAnArchiveFailure() {
+	void theReportListsOnlyTheRefusedNumbers() {
+		String text = VoidingText.summary(List.of(
+				new VoidingOutcome(SINGLE, Stage.APPROVED, "102 - Homologado", null, List.of()),
+				new VoidingOutcome(RANGE, Stage.REJECTED, "241 - Numero ja utilizado", null, List.of())), FiscalEnvironment.PRODUCTION);
+
+		assertEquals("Numerações recusadas:\nSérie 2: 10 a 12", text);
+	}
+
+	@Test
+	void theReportSaysWhenNothingWasRefused() {
+		String text = VoidingText.summary(List.of(
+				new VoidingOutcome(SINGLE, Stage.APPROVED, "102 - Homologado", null, List.of())), FiscalEnvironment.PRODUCTION);
+
+		assertEquals("Nenhuma numeração recusada.", text);
+	}
+
+	@Test
+	void theReportDoesNotHideWhatStillNeedsAttention() {
 		String text = VoidingText.summary(List.of(
 				new VoidingOutcome(SINGLE, Stage.APPROVED, "102 - Homologado", "disco cheio", List.of("pdv1: sem acesso")),
-				new VoidingOutcome(RANGE, Stage.NOT_SENT, null)), FiscalEnvironment.PRODUCTION);
+				new VoidingOutcome(RANGE, Stage.FAILED, "sem resposta"),
+				new VoidingOutcome(request(3, 5, 5), Stage.NOT_SENT, null)), FiscalEnvironment.PRODUCTION);
 
-		assertTrue(text.contains("Série 1: 7: OK (102 - Homologado)"));
 		assertTrue(text.contains("não foi salvo: disco cheio"));
 		assertTrue(text.contains("NÃO foi salvo na pasta do PDV"));
 		assertTrue(text.contains("pdv1: sem acesso"));
-		assertTrue(text.contains("Série 2: 10 a 12: Não enviada"));
-		assertFalse(text.contains("homologação"));
+		assertTrue(text.contains("Série 2: 10 a 12 (sem resposta)"));
+		assertTrue(text.contains("Não enviadas:\nSérie 3: 5"));
+	}
+
+	@Test
+	void theReportWarnsThatHomologationIsATest() {
+		String text = VoidingText.summary(List.of(
+				new VoidingOutcome(SINGLE, Stage.APPROVED, "102 - Homologado", null, List.of())), FiscalEnvironment.HOMOLOGATION);
+
+		assertTrue(text.startsWith("Teste em homologação"));
 	}
 
 	private static VoidingRequest request(int series, int start, int end) {

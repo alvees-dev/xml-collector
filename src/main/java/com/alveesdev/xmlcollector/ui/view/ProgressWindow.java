@@ -6,7 +6,6 @@ import java.util.Map;
 
 import com.alveesdev.xmlcollector.application.collection.CollectionProgress;
 import com.alveesdev.xmlcollector.application.dispatch.DispatchProgress;
-import com.alveesdev.xmlcollector.application.voiding.VoidingProgress;
 import com.alveesdev.xmlcollector.ui.controller.ProgressController;
 
 import javafx.fxml.FXMLLoader;
@@ -23,6 +22,11 @@ public final class ProgressWindow {
 
 	private final Stage stage = new Stage();
 	private final ProgressController controller;
+
+	public ProgressWindow(Window owner, String title) throws IOException {
+		this(owner, title, Map.of(), 0);
+		controller.showRunning();
+	}
 
 	public ProgressWindow(Window owner, String title, Map<Integer, String> labels, double labelWidth) throws IOException {
 
@@ -54,10 +58,6 @@ public final class ProgressWindow {
 	}
 
 	public void update(DispatchProgress progress) {
-		controller.update(progress);
-	}
-
-	public void update(VoidingProgress progress) {
 		controller.update(progress);
 	}
 

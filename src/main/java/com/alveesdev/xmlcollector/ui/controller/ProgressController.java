@@ -5,10 +5,8 @@ import java.util.Map;
 
 import com.alveesdev.xmlcollector.application.collection.CollectionProgress;
 import com.alveesdev.xmlcollector.application.dispatch.DispatchProgress;
-import com.alveesdev.xmlcollector.application.voiding.VoidingProgress;
 import com.alveesdev.xmlcollector.ui.model.DispatchProgressText;
 import com.alveesdev.xmlcollector.ui.model.SourceProgressText;
-import com.alveesdev.xmlcollector.ui.model.VoidingText;
 
 import javafx.fxml.FXML;
 import javafx.geometry.Pos;
@@ -101,27 +99,10 @@ public class ProgressController {
 		}
 	}
 
-	public void update(VoidingProgress progress) {
-
-		SourceRow row = rows.get(progress.index());
-
-		row.status().setText(VoidingText.stage(progress.stage()));
-
-		switch (progress.stage()) {
-			case SENDING -> row.bar().setProgress(ProgressBar.INDETERMINATE_PROGRESS);
-			case APPROVED -> {
-				row.bar().setProgress(1);
-				row.status().setStyle(DONE_STYLE);
-			}
-			case REJECTED, NOT_SENT -> {
-				row.bar().setProgress(0);
-				row.status().setStyle(WARNING_STYLE);
-			}
-			case FAILED -> {
-				row.bar().setProgress(0);
-				row.status().setStyle(FAILED_STYLE);
-			}
-		}
+	public void showRunning() {
+		ProgressBar bar = new ProgressBar(ProgressBar.INDETERMINATE_PROGRESS);
+		bar.setMaxWidth(Double.MAX_VALUE);
+		sourcesBox.getChildren().add(bar);
 	}
 
 	private void addRow(int index, String text, double labelWidth) {
