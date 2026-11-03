@@ -39,7 +39,6 @@ import com.alveesdev.xmlcollector.domain.model.XmlDocument;
 import com.alveesdev.xmlcollector.domain.service.MissingNumberFinder;
 import com.alveesdev.xmlcollector.ui.model.MissingTableModel;
 import com.alveesdev.xmlcollector.ui.model.SourceMode;
-import com.alveesdev.xmlcollector.ui.model.VoidingText;
 import com.alveesdev.xmlcollector.ui.view.Dialogs;
 import com.alveesdev.xmlcollector.ui.view.ProgressWindow;
 
@@ -55,7 +54,6 @@ import javafx.scene.control.TextField;
 public class MissingTabController {
 
 	private static final double COLUMN_WIDTH = 110;
-	private static final double VOIDING_LABEL_WIDTH = 130;
 	private static final int MAX_LISTED_PROBLEMS = 15;
 
 	private final CollectionService collectionService;
@@ -271,15 +269,13 @@ public class MissingTabController {
 		ProgressWindow progressWindow;
 
 		try {
-			progressWindow = new ProgressWindow(trigger.getScene().getWindow(),
-					"Inutilizando em " + VoidingText.environment(certificate.environment()),
-					VoidingText.rowLabels(requests), VOIDING_LABEL_WIDTH);
+			progressWindow = new ProgressWindow(trigger.getScene().getWindow(), "Inutilização em andamento...");
 		} catch (IOException e) {
 			Dialogs.error("Erro ao abrir a tela de progresso: " + e.getMessage());
 			return;
 		}
 
-		VoidingTask task = new VoidingTask(voidingBatch, requests, certificate, settings.organizeMode(), paths.xmlArchiveDir(), pdvFolders, progressWindow::update);
+		VoidingTask task = new VoidingTask(voidingBatch, requests, certificate, settings.organizeMode(), paths.xmlArchiveDir(), pdvFolders);
 		progressWindow.setCancelAction(task::requestStop);
 
 		trigger.setDisable(true);
