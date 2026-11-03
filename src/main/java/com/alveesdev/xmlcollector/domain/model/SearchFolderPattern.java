@@ -8,6 +8,7 @@ public final class SearchFolderPattern {
 	public static final String YEAR = "{AAAA}";
 	public static final String MONTH_NAME_YEAR = "{MES_AAAA}";
 	public static final String OPTIONAL_PREFIX = "?";
+	public static final String CNPJ = "{CNPJ}";
 
 	private SearchFolderPattern() {
 	}

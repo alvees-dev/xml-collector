@@ -8,11 +8,12 @@ public record PdvSearchModel(
 		PdvType type,
 		List<String> collectionFolders,
 		List<String> missingFolders,
-		String missingFileSuffix
+		String missingFileSuffix,
+		String voidingFolder
 ) {
 
 	public static final PdvSearchModel NONE = new PdvSearchModel(
-			"", "Sem modelo (diretório completo)", PdvType.PDV, List.of(), List.of(), "");
+			"", "Sem modelo (diretório completo)", PdvType.PDV, List.of(), List.of(), "", "");
 
 	public PdvSearchModel {
 		collectionFolders = List.copyOf(collectionFolders);
