@@ -30,8 +30,12 @@ public final class ArchiveLayout {
 		return List.of(MONTH_NAMES);
 	}
 
+	public static String monthYearName(LocalDate date) {
+		return MONTH_NAMES[date.getMonthValue() - 1] + "_" + date.getYear();
+	}
+
 	public static Path monthDirectory(Path archiveRoot, LocalDate date) {
-		return archiveRoot.resolve(MONTH_NAMES[date.getMonthValue() - 1] + "_" + date.getYear());
+		return archiveRoot.resolve(monthYearName(date));
 	}
 
 	public static List<Path> monthDirectories(Path archiveRoot, DateRange period) {
