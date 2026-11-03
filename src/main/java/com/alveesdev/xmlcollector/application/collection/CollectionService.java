@@ -25,9 +25,6 @@ public class CollectionService {
 
 	public static final int DEFAULT_THREADS = 4;
 
-	private record ScannedSource(int index, List<SourceFile> files) {
-	}
-
 	private final SourceFiles sourceFiles;
 	private final DocumentReader reader;
 	private final DocumentArchive archive;
@@ -59,29 +56,26 @@ public class CollectionService {
 	public CollectionResult collect(CollectionRequest request, ProgressListener listener, BooleanSupplier cancelled) {
 
 		List<SourceFailure> failures = new ArrayList<>();
-		List<ScannedSource> scanned = scan(request, failures, listener, cancelled);
-
-		int total = scanned.stream().mapToInt(source -> source.files().size()).sum();
-		int[] processed = {0};
-
-		listener.onProgress(new CollectionProgress(0, 0, total));
+		int sources = request.directories().size();
 
 		ExecutorService executor = Executors.newFixedThreadPool(threads, new WorkerThreadFactory());
 
 		try {
 			SourceProcessor processor = new SourceProcessor(request, sourceFiles, reader, archive, executor);
 
-			for (ScannedSource source : scanned) {
-				processor.process(source.index(), source.files(), () -> {
-					processed[0]++;
-					listener.onProgress(new CollectionProgress(source.index(), processed[0], total));
-				}, cancelled);
+			for (int index = 0; index < sources; index++) {
+				SourceProcessor.throwIfCancelled(cancelled);
+
+				if (request.target().source().test(index)) {
+					collectSource(index, request, processor, failures, listener, cancelled);
+				}
 			}
 
+			// Only now, because an event of a later source can cancel an invoice of an earlier one.
 			List<SourceResult> results = new ArrayList<>();
 
-			for (ScannedSource source : scanned) {
-				results.add(processor.result(source.index()));
+			for (int index = 0; index < sources; index++) {
+				results.add(processor.result(index));
 			}
 
 			String historyFailure = saveIssuedNumbers(processor);
@@ -103,54 +97,58 @@ public class CollectionService {
 		}
 	}
 
-	private List<ScannedSource> scan(CollectionRequest request, List<SourceFailure> failures,
+	private void collectSource(int index, CollectionRequest request, SourceProcessor processor, List<SourceFailure> failures,
 			ProgressListener listener, BooleanSupplier cancelled) {
 
-		List<ScannedSource> scanned = new ArrayList<>();
-		List<String> directories = request.directories();
+		listener.onProgress(CollectionProgress.counting(index));
 
-		for (int index = 0; index < directories.size(); index++) {
-			SourceProcessor.throwIfCancelled(cancelled);
+		List<SourceFile> files = scan(index, request, failures);
+		int total = files.size();
+		int[] processed = {0};
 
-			if (!request.target().source().test(index)) {
-				scanned.add(new ScannedSource(index, List.of()));
-				continue;
-			}
+		listener.onProgress(CollectionProgress.reading(index, 0, total));
 
-			listener.onProgress(new CollectionProgress(index, 0, -1));
+		processor.process(index, files, () -> {
+			processed[0]++;
+			listener.onProgress(CollectionProgress.reading(index, processed[0], total));
+		}, cancelled);
 
-			String directory = directories.get(index) == null ? "" : directories.get(index).trim();
+		boolean failed = failures.stream()
+				.anyMatch(failure -> failure.sourceIndex() == index && failure.reason() != Reason.SUBFOLDER_INACCESSIBLE);
 
-			if (directory.isEmpty()) {
-				failures.add(new SourceFailure(index, Reason.NOT_INFORMED, directory));
-				scanned.add(new ScannedSource(index, List.of()));
-				continue;
-			}
+		listener.onProgress(failed ? CollectionProgress.failed(index) : CollectionProgress.done(index, total));
+	}
 
-			try {
-				List<SourceFile> files = new ArrayList<>();
+	private List<SourceFile> scan(int index, CollectionRequest request, List<SourceFailure> failures) {
 
-				for (Path folder : foldersOf(index, Path.of(directory), request, failures)) {
-					ScanResult result = sourceFiles.scan(folder, request.archiveRoot());
+		String directory = request.directories().get(index) == null ? "" : request.directories().get(index).trim();
 
-					for (Path inaccessible : result.inaccessible()) {
-						failures.add(new SourceFailure(index, Reason.SUBFOLDER_INACCESSIBLE, inaccessible.toString()));
-					}
-
-					result.files().stream()
-							.filter(file -> request.target().fileName().test(file.path().getFileName().toString()))
-							.forEach(files::add);
-				}
-
-				scanned.add(new ScannedSource(index, files));
-
-			} catch (IOException | InvalidPathException e) {
-				failures.add(new SourceFailure(index, Reason.INACCESSIBLE, directory));
-				scanned.add(new ScannedSource(index, List.of()));
-			}
+		if (directory.isEmpty()) {
+			failures.add(new SourceFailure(index, Reason.NOT_INFORMED, directory));
+			return List.of();
 		}
 
-		return scanned;
+		try {
+			List<SourceFile> files = new ArrayList<>();
+
+			for (Path folder : foldersOf(index, Path.of(directory), request, failures)) {
+				ScanResult result = sourceFiles.scan(folder, request.archiveRoot());
+
+				for (Path inaccessible : result.inaccessible()) {
+					failures.add(new SourceFailure(index, Reason.SUBFOLDER_INACCESSIBLE, inaccessible.toString()));
+				}
+
+				result.files().stream()
+						.filter(file -> request.target().fileName().test(file.path().getFileName().toString()))
+						.forEach(files::add);
+			}
+
+			return files;
+
+		} catch (IOException | InvalidPathException e) {
+			failures.add(new SourceFailure(index, Reason.INACCESSIBLE, directory));
+			return List.of();
+		}
 	}
 
 	private List<Path> foldersOf(int index, Path root, CollectionRequest request, List<SourceFailure> failures) throws IOException {

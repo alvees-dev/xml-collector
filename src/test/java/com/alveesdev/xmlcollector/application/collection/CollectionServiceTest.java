@@ -246,6 +246,61 @@ class CollectionServiceTest {
 	}
 
 	@Test
+	void reportsOneSourceAtATimeAndFinishesItBeforeTheNext() {
+		sources.add("pdv1", "a.xml", invoice(1, IN_PERIOD));
+		sources.add("pdv1", "b.xml", invoice(2, IN_PERIOD));
+		sources.add("pdv2", "c.xml", invoice(3, IN_PERIOD));
+		List<CollectionProgress> events = new ArrayList<>();
+
+		service.collect(request("pdv1", "pdv2"), events::add, () -> false);
+
+		assertEquals(List.of(
+				CollectionProgress.counting(0),
+				CollectionProgress.reading(0, 0, 2),
+				CollectionProgress.reading(0, 1, 2),
+				CollectionProgress.reading(0, 2, 2),
+				CollectionProgress.done(0, 2),
+				CollectionProgress.counting(1),
+				CollectionProgress.reading(1, 0, 1),
+				CollectionProgress.reading(1, 1, 1),
+				CollectionProgress.done(1, 1)), events);
+	}
+
+	@Test
+	void aFailedSourceIsReportedAndTheNextOneStillRuns() {
+		sources.add("pdv2", "a.xml", invoice(1, IN_PERIOD));
+		List<CollectionProgress> events = new ArrayList<>();
+
+		CollectionResult result = service.collect(request("sem-acesso", "", "pdv2"), events::add, () -> false);
+
+		assertEquals(CollectionProgress.Stage.FAILED, lastStageOf(events, 0));
+		assertEquals(CollectionProgress.Stage.FAILED, lastStageOf(events, 1));
+		assertEquals(CollectionProgress.Stage.DONE, lastStageOf(events, 2));
+		assertEquals(1, result.entries().size());
+	}
+
+	@Test
+	void doesNotReportASourceOutOfTheTarget() {
+		sources.add("pdv1", "a.xml", invoice(1, IN_PERIOD));
+		sources.add("pdv2", "b.xml", invoice(2, IN_PERIOD));
+		List<CollectionProgress> events = new ArrayList<>();
+
+		service.collect(new CollectionRequest(
+				List.of("pdv1", "pdv2"), DocumentCategory.NFCE, JANUARY, OrganizeMode.SINGLE_FOLDER, ARCHIVE, List.of(),
+				new CollectionTarget(index -> index == 1, name -> true, invoice -> true)), events::add, () -> false);
+
+		assertEquals(Set.of(1), events.stream().map(CollectionProgress::sourceIndex).collect(java.util.stream.Collectors.toSet()));
+	}
+
+	private static CollectionProgress.Stage lastStageOf(List<CollectionProgress> events, int sourceIndex) {
+		return events.stream()
+				.filter(event -> event.sourceIndex() == sourceIndex)
+				.reduce((first, second) -> second)
+				.orElseThrow()
+				.stage();
+	}
+
+	@Test
 	void stopsWhenCancelled() {
 		sources.add("pdv1", "a.xml", invoice(1, IN_PERIOD));
 
