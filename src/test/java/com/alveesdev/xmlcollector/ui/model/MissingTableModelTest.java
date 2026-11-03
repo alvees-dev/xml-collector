@@ -50,6 +50,6 @@ class MissingTableModelTest {
 
 	private static CollectionResult resultWith(TreeMap<Integer, List<NumberRange>> missing) {
 		CollectionSummary summary = new CollectionSummary(0, 0, 0, 0, 0, 0, 0, 0, List.of());
-		return new CollectionResult(List.of(), missing, summary, List.of());
+		return new CollectionResult(List.of(), missing, summary, List.of(), null);
 	}
 }

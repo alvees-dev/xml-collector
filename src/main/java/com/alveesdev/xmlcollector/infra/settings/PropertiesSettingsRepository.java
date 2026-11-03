@@ -36,15 +36,17 @@ public final class PropertiesSettingsRepository implements SettingsRepository {
 
 	private final Path file;
 	private final Path legacyEmailFile;
+	private final EmailAccount defaultAccount;
 
-	public PropertiesSettingsRepository(Path file, Path legacyEmailFile) {
+	public PropertiesSettingsRepository(Path file, Path legacyEmailFile, EmailAccount defaultAccount) {
 		this.file = file;
 		this.legacyEmailFile = legacyEmailFile;
+		this.defaultAccount = defaultAccount;
 	}
 
 	@Override
 	public AppSettings load() throws IOException {
-		AppSettings defaults = AppSettings.defaults();
+		AppSettings defaults = AppSettings.defaults().withEmailAccount(defaultAccount);
 		Path source = Files.isRegularFile(file) ? file : legacyEmailFile;
 
 		if (!Files.isRegularFile(source)) {
@@ -58,7 +60,7 @@ public final class PropertiesSettingsRepository implements SettingsRepository {
 				readDirectories(properties, NFE_SALES_DIRECTORIES_PREFIX, defaults.nfeSalesDirectories()),
 				readDirectories(properties, NFE_PURCHASE_DIRECTORIES_PREFIX, defaults.nfePurchaseDirectories()),
 				parseOrganizeMode(properties.getProperty(ORGANIZE_MODE_KEY), defaults.organizeMode()),
-				readEmailAccount(properties, defaults.emailAccount()),
+				readEmailAccount(properties),
 				new EmailDraft(
 						properties.getProperty(RECIPIENT_KEY, ""),
 						properties.getProperty(SUBJECT_KEY, ""),
@@ -75,11 +77,15 @@ public final class PropertiesSettingsRepository implements SettingsRepository {
 		writeDirectories(properties, NFE_SALES_DIRECTORIES_PREFIX, settings.nfeSalesDirectories());
 		writeDirectories(properties, NFE_PURCHASE_DIRECTORIES_PREFIX, settings.nfePurchaseDirectories());
 		properties.setProperty(ORGANIZE_MODE_KEY, settings.organizeMode().name());
-		properties.setProperty(HOST_KEY, account.host());
-		properties.setProperty(PORT_KEY, String.valueOf(account.port()));
-		properties.setProperty(SECURITY_KEY, account.security().name());
-		properties.setProperty(USERNAME_KEY, account.username());
-		properties.setProperty(PASSWORD_KEY, SecretCipher.encrypt(account.password()));
+
+		if (!account.equals(defaultAccount)) {
+			properties.setProperty(HOST_KEY, account.host());
+			properties.setProperty(PORT_KEY, String.valueOf(account.port()));
+			properties.setProperty(SECURITY_KEY, account.security().name());
+			properties.setProperty(USERNAME_KEY, account.username());
+			properties.setProperty(PASSWORD_KEY, SecretCipher.encrypt(account.password()));
+		}
+
 		properties.setProperty(RECIPIENT_KEY, draft.recipient());
 		properties.setProperty(SUBJECT_KEY, draft.subject());
 		properties.setProperty(BODY_KEY, draft.body());
@@ -128,18 +134,20 @@ public final class PropertiesSettingsRepository implements SettingsRepository {
 		}
 	}
 
-	private static EmailAccount readEmailAccount(Properties properties, EmailAccount defaults) {
+	private EmailAccount readEmailAccount(Properties properties) {
 		String storedPassword = properties.getProperty(PASSWORD_KEY);
 		String password = storedPassword == null
-				? defaults.password()
+				? defaultAccount.password()
 				: SecretCipher.decrypt(storedPassword).orElse("");
 
-		return new EmailAccount(
-				properties.getProperty(HOST_KEY, defaults.host()),
-				parsePort(properties.getProperty(PORT_KEY), defaults.port()),
-				parseSecurity(properties.getProperty(SECURITY_KEY), defaults.security()),
-				properties.getProperty(USERNAME_KEY, defaults.username()),
+		EmailAccount account = new EmailAccount(
+				properties.getProperty(HOST_KEY, defaultAccount.host()),
+				parsePort(properties.getProperty(PORT_KEY), defaultAccount.port()),
+				parseSecurity(properties.getProperty(SECURITY_KEY), defaultAccount.security()),
+				properties.getProperty(USERNAME_KEY, defaultAccount.username()),
 				password);
+
+		return account.isComplete() || !defaultAccount.isComplete() ? account : defaultAccount;
 	}
 
 	private static OrganizeMode parseOrganizeMode(String text, OrganizeMode fallback) {

@@ -10,6 +10,7 @@ public final class AppPaths {
 	private static final String ROOT_DIR_NAME = "Coletor XML";
 	private static final String CONFIG_DIR_NAME = "Config";
 	private static final String DATABASE_DIR_NAME = "Database";
+	private static final String DATABASE_FILE_NAME = "coletor.db";
 	private static final String XML_ARCHIVE_DIR_NAME = "Arquivos_XML";
 	private static final String SETTINGS_FILE_NAME = "settings.properties";
 	private static final String LEGACY_EMAIL_SETTINGS_FILE_NAME = "email.properties";
@@ -36,6 +37,10 @@ public final class AppPaths {
 
 	public Path databaseDir() {
 		return root.resolve(DATABASE_DIR_NAME);
+	}
+
+	public Path databaseFile() {
+		return databaseDir().resolve(DATABASE_FILE_NAME);
 	}
 
 	public Path xmlArchiveDir() {

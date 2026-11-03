@@ -81,6 +81,10 @@ public final class Dialogs {
 			});
 		}
 
+		if (result.historyFailure() != null) {
+			lines.add(result.historyFailure());
+		}
+
 		for (CollectionSummary.CopyFailure failure : result.summary().copyFailures()) {
 			lines.add("Falha ao copiar " + failure.fileName() + ": " + failure.reason());
 		}

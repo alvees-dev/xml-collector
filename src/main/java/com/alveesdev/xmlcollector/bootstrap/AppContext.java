@@ -9,6 +9,8 @@ import com.alveesdev.xmlcollector.infra.archive.MonthZipArchiver;
 import com.alveesdev.xmlcollector.infra.archive.XmlArchive;
 import com.alveesdev.xmlcollector.infra.drive.GoogleDriveStorage;
 import com.alveesdev.xmlcollector.infra.email.SmtpEmailSender;
+import com.alveesdev.xmlcollector.infra.persistence.SqliteIssuedNumberRepository;
+import com.alveesdev.xmlcollector.infra.settings.BundledEmailAccount;
 import com.alveesdev.xmlcollector.infra.settings.PropertiesSettingsRepository;
 import com.alveesdev.xmlcollector.infra.xml.FiscalXmlReader;
 import com.alveesdev.xmlcollector.infra.xml.XmlFileScanner;
@@ -32,13 +34,14 @@ public final class AppContext {
 
 		DocumentReader reader = new FiscalXmlReader();
 
-		this.collectionService = new CollectionService(new XmlFileScanner(), reader, new XmlArchive(reader));
+		this.collectionService = new CollectionService(
+				new XmlFileScanner(), reader, new XmlArchive(reader), new SqliteIssuedNumberRepository(paths.databaseFile()));
 		this.dispatchService = new DispatchService(
 				new MonthZipArchiver(),
 				new SmtpEmailSender(),
 				new GoogleDriveStorage(paths.googleCredentialsFile(), paths.googleTokensDir()));
 		this.settingsService = new SettingsService(
-				new PropertiesSettingsRepository(paths.settingsFile(), paths.legacyEmailSettingsFile()));
+				new PropertiesSettingsRepository(paths.settingsFile(), paths.legacyEmailSettingsFile(), BundledEmailAccount.load()));
 		this.settingsWindow = new SettingsWindow(this::createController);
 	}
 

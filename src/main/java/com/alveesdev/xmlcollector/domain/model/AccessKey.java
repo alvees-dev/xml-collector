@@ -5,6 +5,8 @@ import java.util.Optional;
 public record AccessKey(String value) {
 
 	private static final int LENGTH = 44;
+	private static final int CNPJ_START = 6;
+	private static final int CNPJ_END = 20;
 	private static final int MODEL_START = 20;
 	private static final int MODEL_END = 22;
 
@@ -12,6 +14,10 @@ public record AccessKey(String value) {
 		if (value == null || value.length() != LENGTH || !value.chars().allMatch(Character::isDigit)) {
 			throw new IllegalArgumentException("Invalid access key: " + value);
 		}
+	}
+
+	public String cnpj() {
+		return value.substring(CNPJ_START, CNPJ_END);
 	}
 
 	public String modelCode() {

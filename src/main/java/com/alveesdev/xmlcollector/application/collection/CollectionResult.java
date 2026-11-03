@@ -10,7 +10,8 @@ public record CollectionResult(
 		List<SourceResult> sources,
 		SortedMap<Integer, List<NumberRange>> missingBySeries,
 		CollectionSummary summary,
-		List<SourceFailure> failures
+		List<SourceFailure> failures,
+		String historyFailure
 ) {
 
 	public record SourceResult(int sourceIndex, List<DocumentEntry> entries) {
