@@ -12,6 +12,8 @@ public record VoidingRequest(
 		String justification
 ) {
 
+	public static final String STANDARD_JUSTIFICATION = "Ajuste de numero sequencial com a base de dados";
+
 	private static final int MIN_YEAR = 2000;
 	private static final int MAX_YEAR = 2099;
 	private static final int YEARS_IN_CENTURY = 100;

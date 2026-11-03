@@ -22,6 +22,7 @@ public class FiscalXmlReader implements DocumentReader {
 
 	private static final String CANCEL_EVENT_TYPE = "110111";
 	private static final String VOIDING_APPROVED = "102";
+	private static final String HOMOLOGATION = "2";
 	private static final String NFE_ID_PREFIX = "NFe";
 	private static final String EVENT_ID_PREFIX = "ID";
 	private static final int EVENT_ID_DIGITS = 52;
@@ -114,6 +115,11 @@ public class FiscalXmlReader implements DocumentReader {
 
 		Element info = requiredChild(voiding, "infInut");
 		String status = requiredText(info, "cStat");
+		Element environment = child(info, "tpAmb");
+
+		if (environment != null && HOMOLOGATION.equals(environment.getTextContent().trim())) {
+			return new XmlDocument.Ignored("voiding of the homologation environment has no fiscal effect");
+		}
 
 		if (!VOIDING_APPROVED.equals(status)) {
 			return new XmlDocument.Ignored("voiding was not approved, status " + status);

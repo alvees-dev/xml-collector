@@ -1,18 +1,27 @@
 package com.alveesdev.xmlcollector.ui.controller;
 
+import java.io.File;
 import java.io.IOException;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.function.Function;
 
+import com.alveesdev.xmlcollector.application.port.VoidingException;
+import com.alveesdev.xmlcollector.application.port.VoidingGatewayFactory;
 import com.alveesdev.xmlcollector.application.settings.AppSettings;
+import com.alveesdev.xmlcollector.application.settings.CertificateSettings;
 import com.alveesdev.xmlcollector.application.settings.EmailAccount;
 import com.alveesdev.xmlcollector.application.settings.SearchModelCatalog;
 import com.alveesdev.xmlcollector.application.settings.service.SettingsService;
+import com.alveesdev.xmlcollector.application.voiding.VoidingBatch;
+import com.alveesdev.xmlcollector.domain.model.FiscalEnvironment;
 import com.alveesdev.xmlcollector.domain.model.NfeSearchModel;
 import com.alveesdev.xmlcollector.domain.model.OrganizeMode;
 import com.alveesdev.xmlcollector.domain.model.PdvSearchModel;
 import com.alveesdev.xmlcollector.domain.model.PdvType;
 import com.alveesdev.xmlcollector.domain.model.SeparationMode;
+import com.alveesdev.xmlcollector.ui.model.VoidingText;
 import com.alveesdev.xmlcollector.ui.view.Dialogs;
 import com.alveesdev.xmlcollector.ui.view.DirectoryListEditor;
 
@@ -26,13 +35,17 @@ import javafx.scene.control.ScrollPane;
 import javafx.scene.control.TextField;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.VBox;
+import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 import javafx.util.StringConverter;
 
 public class SettingsController {
 
+	private static final DateTimeFormatter VALIDITY_FORMAT = DateTimeFormatter.ofPattern("dd/MM/yyyy").withZone(ZoneId.systemDefault());
+
 	private final SettingsService settingsService;
 	private final SearchModelCatalog searchModels;
+	private final VoidingBatch voidingBatch;
 
 	@FXML
 	private Label lblTitle;
@@ -79,15 +92,28 @@ public class SettingsController {
 	@FXML
 	private PasswordField txtEmailPassword;
 
+	@FXML
+	private TextField txtCertificatePath;
+
+	@FXML
+	private PasswordField txtCertificatePassword;
+
+	@FXML
+	private ChoiceBox<FiscalEnvironment> choiceEnvironment;
+
+	@FXML
+	private Label lblEnvironmentHint;
+
 	private DirectoryListEditor pdvEditor;
 	private DirectoryListEditor nfeEditor;
 
 	private double dragOffsetX;
 	private double dragOffsetY;
 
-	public SettingsController(SettingsService settingsService, SearchModelCatalog searchModels) {
+	public SettingsController(SettingsService settingsService, SearchModelCatalog searchModels, VoidingBatch voidingBatch) {
 		this.settingsService = settingsService;
 		this.searchModels = searchModels;
+		this.voidingBatch = voidingBatch;
 	}
 
 	@FXML
@@ -113,6 +139,33 @@ public class SettingsController {
 		}
 
 		loadEmailAccount(settings.emailAccount());
+		loadCertificate(settings.certificate());
+	}
+
+	@FXML
+	private void onBrowseCertificate() {
+		FileChooser chooser = new FileChooser();
+		chooser.setTitle("Selecionar certificado A1");
+		chooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("Certificado A1", "*.pfx", "*.p12"));
+
+		File file = chooser.showOpenDialog(btnCancel.getScene().getWindow());
+
+		if (file != null) {
+			txtCertificatePath.setText(file.getPath());
+		}
+	}
+
+	@FXML
+	private void onCheckCertificate() {
+		try {
+			VoidingGatewayFactory.CertificateInfo certificate = voidingBatch.checkCertificate(readCertificate());
+
+			Dialogs.info("Certificado válido.\n\nCNPJ: " + certificate.cnpj()
+					+ "\nVálido até: " + VALIDITY_FORMAT.format(certificate.validUntil()));
+
+		} catch (VoidingException e) {
+			Dialogs.warning(e.getMessage());
+		}
 	}
 
 	@FXML
@@ -160,7 +213,8 @@ public class SettingsController {
 				radioByDay.isSelected() ? OrganizeMode.BY_DAY : OrganizeMode.SINGLE_FOLDER,
 				choiceSeparation.getValue(),
 				readEmailAccount(email),
-				settingsService.current().emailDraft());
+				settingsService.current().emailDraft(),
+				readCertificate());
 
 		try {
 			settingsService.save(settings);
@@ -244,6 +298,32 @@ public class SettingsController {
 
 		return new EmailAccount(
 				current.host(), current.port(), current.security(), email, txtEmailPassword.getText().trim());
+	}
+
+	private void loadCertificate(CertificateSettings certificate) {
+		txtCertificatePath.setText(certificate.path());
+		txtCertificatePassword.setText(certificate.password());
+
+		choiceEnvironment.setConverter(labelled(VoidingText::environment));
+		choiceEnvironment.getItems().setAll(FiscalEnvironment.HOMOLOGATION, FiscalEnvironment.PRODUCTION);
+		choiceEnvironment.getSelectionModel().selectedItemProperty()
+				.addListener((observable, oldValue, newValue) -> showEnvironmentHint(newValue));
+		choiceEnvironment.setValue(certificate.environment());
+		showEnvironmentHint(certificate.environment());
+	}
+
+	private void showEnvironmentHint(FiscalEnvironment environment) {
+		boolean production = environment == FiscalEnvironment.PRODUCTION;
+
+		lblEnvironmentHint.setText(production
+				? "Produção inutiliza de verdade, e isso não pode ser desfeito."
+				: "Homologação é só um teste, sem efeito fiscal.");
+		lblEnvironmentHint.setStyle(production ? "-fx-text-fill: #c62828; -fx-font-weight: bold;" : "");
+	}
+
+	private CertificateSettings readCertificate() {
+		return new CertificateSettings(
+				txtCertificatePath.getText().trim(), txtCertificatePassword.getText(), choiceEnvironment.getValue());
 	}
 
 	private void closeWindow() {

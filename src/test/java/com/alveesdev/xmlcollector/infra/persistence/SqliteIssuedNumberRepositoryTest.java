@@ -73,6 +73,18 @@ class SqliteIssuedNumberRepositoryTest {
 	}
 
 	@Test
+	void findsTheIssuedNumbersOfARangeOnlyInThatCnpjModelAndSeries() throws Exception {
+		repository.saveAll(List.of(
+				new IssuedNumber(CNPJ, NFCE, 1, 5),
+				new IssuedNumber(CNPJ, NFCE, 1, 9),
+				new IssuedNumber(CNPJ, NFCE, 2, 6),
+				new IssuedNumber(CNPJ, NFE, 1, 6),
+				new IssuedNumber(OTHER_CNPJ, NFCE, 1, 6)));
+
+		assertEquals(java.util.Set.of(5), repository.issuedIn(CNPJ, NFCE, 1, new com.alveesdev.xmlcollector.domain.model.NumberRange(4, 8)));
+	}
+
+	@Test
 	void keepsWhatWasSavedBefore() throws Exception {
 		repository.saveAll(List.of(new IssuedNumber(CNPJ, NFCE, 1, 1)));
 		new SqliteIssuedNumberRepository(file).saveAll(List.of(new IssuedNumber(CNPJ, NFCE, 1, 2)));

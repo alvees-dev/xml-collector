@@ -20,6 +20,8 @@ import com.alveesdev.xmlcollector.application.settings.DefaultEmailAccount;
 import com.alveesdev.xmlcollector.application.settings.EmailAccount;
 import com.alveesdev.xmlcollector.application.settings.EmailDraft;
 import com.alveesdev.xmlcollector.application.settings.EmailSecurity;
+import com.alveesdev.xmlcollector.application.settings.CertificateSettings;
+import com.alveesdev.xmlcollector.domain.model.FiscalEnvironment;
 import com.alveesdev.xmlcollector.domain.model.OrganizeMode;
 import com.alveesdev.xmlcollector.domain.model.PdvType;
 import com.alveesdev.xmlcollector.domain.model.SeparationMode;
@@ -27,6 +29,7 @@ import com.alveesdev.xmlcollector.domain.model.SeparationMode;
 class PropertiesSettingsRepositoryTest {
 
 	private static final String PASSWORD = "senha-de-teste";
+	private static final String CERTIFICATE_PASSWORD = "senha-do-certificado";
 	private static final EmailAccount DEFAULT_ACCOUNT = new EmailAccount(
 			"smtp.gmail.com", 587, EmailSecurity.STARTTLS, "envio@exemplo.com", "senha-padrao");
 
@@ -171,6 +174,23 @@ class PropertiesSettingsRepositoryTest {
 	}
 
 	@Test
+	void doesNotKeepTheCertificatePasswordInPlainText() throws IOException {
+		repository.save(sampleSettings());
+
+		assertFalse(Files.readString(file).contains(CERTIFICATE_PASSWORD));
+		assertEquals(CERTIFICATE_PASSWORD, repository.load().certificate().password());
+	}
+
+	@Test
+	void theDefaultEnvironmentIsHomologationEvenWithAnUnknownValue() throws IOException {
+		assertEquals(FiscalEnvironment.HOMOLOGATION, repository.load().certificate().environment());
+
+		Files.writeString(file, "certificate.environment=XYZ\n", StandardCharsets.UTF_8);
+
+		assertEquals(FiscalEnvironment.HOMOLOGATION, repository.load().certificate().environment());
+	}
+
+	@Test
 	void reportsAMalformedFile() throws IOException {
 		Files.writeString(file, "ruim=\\uZZZZ\n", StandardCharsets.UTF_8);
 
@@ -187,6 +207,7 @@ class PropertiesSettingsRepositoryTest {
 				OrganizeMode.BY_DAY,
 				SeparationMode.BY_PDV,
 				new EmailAccount("smtp.gmail.com", 587, EmailSecurity.STARTTLS, "usuario@exemplo.com", PASSWORD),
-				new EmailDraft("dest@exemplo.com", "Assunto = ç", "linha 1\nlinha 2"));
+				new EmailDraft("dest@exemplo.com", "Assunto = ç", "linha 1\nlinha 2"),
+				new CertificateSettings("C:\\certificados\\empresa.pfx", CERTIFICATE_PASSWORD, FiscalEnvironment.PRODUCTION));
 	}
 }

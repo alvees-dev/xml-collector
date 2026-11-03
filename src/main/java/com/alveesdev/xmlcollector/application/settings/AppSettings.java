@@ -15,7 +15,8 @@ public record AppSettings(
 		OrganizeMode organizeMode,
 		SeparationMode separationMode,
 		EmailAccount emailAccount,
-		EmailDraft emailDraft
+		EmailDraft emailDraft,
+		CertificateSettings certificate
 ) {
 
 	private static final List<String> ONE_EMPTY_DIRECTORY = List.of("");
@@ -35,7 +36,8 @@ public record AppSettings(
 				OrganizeMode.SINGLE_FOLDER,
 				SeparationMode.ALL_TOGETHER,
 				DefaultEmailAccount.get(),
-				EmailDraft.empty());
+				EmailDraft.empty(),
+				CertificateSettings.empty());
 	}
 
 	public int pdvCount() {
@@ -43,10 +45,10 @@ public record AppSettings(
 	}
 
 	public AppSettings withEmailAccount(EmailAccount account) {
-		return new AppSettings(pdvDirectories, nfeDirectories, pdvType, pdvModelId, nfeModelId, organizeMode, separationMode, account, emailDraft);
+		return new AppSettings(pdvDirectories, nfeDirectories, pdvType, pdvModelId, nfeModelId, organizeMode, separationMode, account, emailDraft, certificate);
 	}
 
 	public AppSettings withEmailDraft(EmailDraft draft) {
-		return new AppSettings(pdvDirectories, nfeDirectories, pdvType, pdvModelId, nfeModelId, organizeMode, separationMode, emailAccount, draft);
+		return new AppSettings(pdvDirectories, nfeDirectories, pdvType, pdvModelId, nfeModelId, organizeMode, separationMode, emailAccount, draft, certificate);
 	}
 }

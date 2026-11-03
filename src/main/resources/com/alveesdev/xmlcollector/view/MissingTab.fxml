@@ -19,7 +19,7 @@
                   <HBox alignment="CENTER" spacing="10.0">
                      <children>
                         <Button fx:id="btnSearchAll" mnemonicParsing="false" onAction="#onSearchAll" text="Procurar Todas" />
-                        <Button mnemonicParsing="false" text="Inutilizar Todas" />
+                        <Button fx:id="btnVoidAll" mnemonicParsing="false" onAction="#onVoidAll" text="Inutilizar Todas" />
                      </children>
                   </HBox>
                </children>
@@ -42,13 +42,13 @@
                   </HBox>
                   <HBox alignment="CENTER_LEFT" spacing="8.0">
                      <children>
-                        <Button mnemonicParsing="false" prefWidth="105.0" text="Inutilizar NFCe" />
+                        <Button fx:id="btnVoidNumber" mnemonicParsing="false" onAction="#onVoidNumber" prefWidth="105.0" text="Inutilizar NFCe" />
                         <Label text="Série" />
-                        <TextField maxWidth="40.0" />
+                        <TextField fx:id="txtVoidSeries" maxWidth="40.0" />
                         <Label text="NFCe" />
-                        <TextField maxWidth="65.0" />
+                        <TextField fx:id="txtVoidStart" maxWidth="65.0" />
                         <Label text="à" />
-                        <TextField maxWidth="65.0" />
+                        <TextField fx:id="txtVoidEnd" maxWidth="65.0" />
                      </children>
                   </HBox>
                </children>

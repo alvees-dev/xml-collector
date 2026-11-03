@@ -14,9 +14,11 @@ import java.util.Properties;
 
 import com.alveesdev.xmlcollector.application.port.SettingsRepository;
 import com.alveesdev.xmlcollector.application.settings.AppSettings;
+import com.alveesdev.xmlcollector.application.settings.CertificateSettings;
 import com.alveesdev.xmlcollector.application.settings.EmailAccount;
 import com.alveesdev.xmlcollector.application.settings.EmailDraft;
 import com.alveesdev.xmlcollector.application.settings.EmailSecurity;
+import com.alveesdev.xmlcollector.domain.model.FiscalEnvironment;
 import com.alveesdev.xmlcollector.domain.model.OrganizeMode;
 import com.alveesdev.xmlcollector.domain.model.PdvType;
 import com.alveesdev.xmlcollector.domain.model.SeparationMode;
@@ -39,6 +41,9 @@ public final class PropertiesSettingsRepository implements SettingsRepository {
 	private static final String RECIPIENT_KEY = "message.recipient";
 	private static final String SUBJECT_KEY = "message.subject";
 	private static final String BODY_KEY = "message.body";
+	private static final String CERTIFICATE_PATH_KEY = "certificate.path";
+	private static final String CERTIFICATE_PASSWORD_KEY = "certificate.password";
+	private static final String CERTIFICATE_ENVIRONMENT_KEY = "certificate.environment";
 
 	private final Path file;
 	private final Path legacyEmailFile;
@@ -74,7 +79,8 @@ public final class PropertiesSettingsRepository implements SettingsRepository {
 				new EmailDraft(
 						properties.getProperty(RECIPIENT_KEY, ""),
 						properties.getProperty(SUBJECT_KEY, ""),
-						properties.getProperty(BODY_KEY, "")));
+						properties.getProperty(BODY_KEY, "")),
+				readCertificate(properties));
 	}
 
 	@Override
@@ -102,6 +108,11 @@ public final class PropertiesSettingsRepository implements SettingsRepository {
 		properties.setProperty(RECIPIENT_KEY, draft.recipient());
 		properties.setProperty(SUBJECT_KEY, draft.subject());
 		properties.setProperty(BODY_KEY, draft.body());
+
+		CertificateSettings certificate = settings.certificate();
+		properties.setProperty(CERTIFICATE_PATH_KEY, certificate.path());
+		properties.setProperty(CERTIFICATE_PASSWORD_KEY, SecretCipher.encrypt(certificate.password()));
+		properties.setProperty(CERTIFICATE_ENVIRONMENT_KEY, certificate.environment().name());
 
 		Files.createDirectories(file.getParent());
 		Path temp = file.resolveSibling(file.getFileName() + ".part");
@@ -169,6 +180,20 @@ public final class PropertiesSettingsRepository implements SettingsRepository {
 		} catch (IllegalArgumentException e) {
 			return fallback;
 		}
+	}
+
+	private static CertificateSettings readCertificate(Properties properties) {
+		return new CertificateSettings(
+				properties.getProperty(CERTIFICATE_PATH_KEY, ""),
+				SecretCipher.decrypt(properties.getProperty(CERTIFICATE_PASSWORD_KEY)).orElse(""),
+				parseEnvironment(properties.getProperty(CERTIFICATE_ENVIRONMENT_KEY)));
+	}
+
+	// Anything unexpected falls back to homologation, which has no fiscal effect.
+	private static FiscalEnvironment parseEnvironment(String text) {
+		return FiscalEnvironment.PRODUCTION.name().equals(text == null ? "" : text.trim())
+				? FiscalEnvironment.PRODUCTION
+				: FiscalEnvironment.HOMOLOGATION;
 	}
 
 	private static SeparationMode parseSeparationMode(String text, SeparationMode fallback) {

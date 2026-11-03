@@ -8,11 +8,22 @@ import java.util.List;
 import com.alveesdev.xmlcollector.application.collection.CollectionResult;
 import com.alveesdev.xmlcollector.application.collection.CollectionSummary;
 import com.alveesdev.xmlcollector.application.collection.SourceFailure;
+import com.alveesdev.xmlcollector.application.voiding.VoidingOutcome;
+import com.alveesdev.xmlcollector.application.voiding.VoidingProgress;
+import com.alveesdev.xmlcollector.domain.model.FiscalEnvironment;
+import com.alveesdev.xmlcollector.domain.model.VoidingRequest;
 import com.alveesdev.xmlcollector.domain.model.XmlDocument;
 import com.alveesdev.xmlcollector.ui.model.SourceLabels;
 import com.alveesdev.xmlcollector.ui.model.SourceMode;
+import com.alveesdev.xmlcollector.ui.model.VoidingText;
 
 import javafx.scene.control.Alert;
+import javafx.scene.control.Button;
+import javafx.scene.control.ButtonBar;
+import javafx.scene.control.ButtonType;
+import javafx.scene.control.Label;
+import javafx.scene.control.TextInputDialog;
+import javafx.scene.layout.VBox;
 
 public final class Dialogs {
 
@@ -66,6 +77,39 @@ public final class Dialogs {
 				hasProblems ? Alert.AlertType.WARNING : Alert.AlertType.INFORMATION,
 				message.toString());
 		alert.setHeaderText("Coleta concluída");
+		alert.showAndWait();
+	}
+
+	public static boolean confirmVoiding(List<VoidingRequest> requests, FiscalEnvironment environment) {
+
+		String text = VoidingText.confirmation(requests, environment);
+
+		if (environment == FiscalEnvironment.PRODUCTION) {
+			TextInputDialog dialog = new TextInputDialog();
+			dialog.setTitle("Inutilizar notas");
+			dialog.setHeaderText("Confirme a inutilização em PRODUÇÃO");
+			dialog.getDialogPane().setContent(new VBox(10, new Label(text), dialog.getEditor()));
+
+			return dialog.showAndWait().map(VoidingText.CONFIRMATION_WORD::equals).orElse(false);
+		}
+
+		ButtonType send = new ButtonType("Enviar teste", ButtonBar.ButtonData.OK_DONE);
+		ButtonType cancel = new ButtonType("Cancelar", ButtonBar.ButtonData.CANCEL_CLOSE);
+
+		Alert alert = new Alert(Alert.AlertType.CONFIRMATION, text, cancel, send);
+		alert.setHeaderText("Confirme a inutilização em homologação");
+		((Button) alert.getDialogPane().lookupButton(send)).setDefaultButton(false);
+		((Button) alert.getDialogPane().lookupButton(cancel)).setDefaultButton(true);
+
+		return alert.showAndWait().filter(send::equals).isPresent();
+	}
+
+	public static void voidingSummary(List<VoidingOutcome> outcomes, FiscalEnvironment environment) {
+
+		boolean allApproved = outcomes.stream().allMatch(outcome -> outcome.stage() == VoidingProgress.Stage.APPROVED && outcome.archiveFailure() == null);
+
+		Alert alert = new Alert(allApproved ? Alert.AlertType.INFORMATION : Alert.AlertType.WARNING, VoidingText.summary(outcomes, environment));
+		alert.setHeaderText("Inutilização concluída");
 		alert.showAndWait();
 	}
 

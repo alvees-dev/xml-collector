@@ -484,7 +484,7 @@ class CollectionServiceTest {
 		assertEquals(Map.of(
 				"a.xml", january.resolve("PDV1"),
 				"b.xml", january.resolve("PDV2"),
-				"ID1-procInutNFe.xml", january.resolve("PDV2")), storedDirectories());
+				"1-procInutNFe.xml", january.resolve("PDV2")), storedDirectories());
 	}
 
 	@Test
@@ -616,6 +616,11 @@ class CollectionServiceTest {
 
 		@Override
 		public void initialize() {
+		}
+
+		@Override
+		public Set<Integer> issuedIn(String cnpj, String modelCode, int series, NumberRange range) {
+			return Set.of();
 		}
 
 		@Override

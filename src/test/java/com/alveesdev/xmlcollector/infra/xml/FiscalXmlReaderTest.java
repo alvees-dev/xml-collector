@@ -68,6 +68,28 @@ class FiscalXmlReaderTest {
 		assertInstanceOf(XmlDocument.Ignored.class, read(voidingXml("102", "55")));
 	}
 
+	@Test
+	void ignoresAVoidingOfTheHomologationEnvironment() {
+		String xml = voidingXml("102", "65").replace("<infInut>", "<infInut><tpAmb>2</tpAmb>");
+
+		assertInstanceOf(XmlDocument.Ignored.class, read(xml));
+	}
+
+	@Test
+	void readsAVoidingWithTheRootAndNamespaceOfTheOfficialSchema() {
+		String xml = "<ProcInutNFe versao=\"4.00\" xmlns=\"http://www.portalfiscal.inf.br/nfe\">"
+				+ "<inutNFe xmlns=\"http://www.portalfiscal.inf.br/nfe\" versao=\"4.00\"><infInut Id=\"ID1\"><serie>9</serie></infInut></inutNFe>"
+				+ "<retInutNFe versao=\"4.00\" xmlns=\"http://www.portalfiscal.inf.br/nfe\"><infInut><tpAmb>1</tpAmb><verAplic>X</verAplic>"
+				+ "<cStat>102</cStat><xMotivo>Inutilização de número homologado</xMotivo><cUF>35</cUF><ano>26</ano>"
+				+ "<CNPJ>12345678000190</CNPJ><mod>65</mod><serie>1</serie><nNFIni>2</nNFIni><nNFFin>3</nNFFin>"
+				+ "<dhRecbto>2026-02-05T10:00:00-03:00</dhRecbto><nProt>135</nProt></infInut></retInutNFe></ProcInutNFe>";
+
+		XmlDocument.Voiding voiding = assertInstanceOf(XmlDocument.Voiding.class, read(xml));
+
+		assertEquals(1, voiding.series());
+		assertEquals("ID35261234567800019065001000000002000000003", voiding.id());
+	}
+
 	private static String voidingXml(String status, String model) {
 		return "<procInutNFe><retInutNFe><infInut><cStat>" + status + "</cStat><cUF>35</cUF><ano>26</ano>"
 				+ "<CNPJ>12345678000190</CNPJ><mod>" + model + "</mod><serie>1</serie><nNFIni>2</nNFIni><nNFFin>3</nNFFin>"

@@ -117,9 +117,9 @@ public class SefazVoidingGateway implements VoidingGateway {
 	private static String processedXml(String signedRequest, Element result) throws VoidingException {
 		try {
 			return "<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
-					+ "<procInutNFe versao=\"" + VoidingXml.VERSION + "\" xmlns=\"" + VoidingXml.NFE_NAMESPACE + "\">"
+					+ "<ProcInutNFe versao=\"" + VoidingXml.VERSION + "\" xmlns=\"" + VoidingXml.NFE_NAMESPACE + "\">"
 					+ signedRequest + VoidingXml.toText(result)
-					+ "</procInutNFe>";
+					+ "</ProcInutNFe>";
 		} catch (GeneralSecurityException e) {
 			throw new VoidingException(e.getMessage(), e);
 		}
