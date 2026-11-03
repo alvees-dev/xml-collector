@@ -29,6 +29,8 @@ import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
 
 import com.alveesdev.xmlcollector.application.port.VoidingException;
+import com.alveesdev.xmlcollector.application.port.VoidingGatewayFactory;
+import com.alveesdev.xmlcollector.application.settings.CertificateSettings;
 import com.alveesdev.xmlcollector.domain.model.DocumentModel;
 import com.alveesdev.xmlcollector.domain.model.FiscalEnvironment;
 import com.alveesdev.xmlcollector.domain.model.NumberRange;
@@ -146,6 +148,36 @@ class SefazVoidingGatewayTest {
 
 		assertTrue(error.getMessage().contains("vencido"));
 		assertEquals(null, transport.envelope);
+	}
+
+	@Test
+	void readsTheCnpjFromTheNameOfTheCertificate() {
+		assertEquals(java.util.Optional.of("12345678000190"), certificate.cnpj());
+	}
+
+	@Test
+	void theFactoryExplainsEachCertificateProblem() throws Exception {
+		SefazVoidingGatewayFactory factory = new SefazVoidingGatewayFactory(Clock.systemUTC());
+		Path valid = directory.resolve("valid.pfx");
+
+		assertTrue(message(factory, new CertificateSettings("", "", FiscalEnvironment.HOMOLOGATION)).contains("Informe"));
+		assertTrue(message(factory, new CertificateSettings(directory.resolve("ausente.pfx").toString(), "x", FiscalEnvironment.HOMOLOGATION)).contains("não encontrado"));
+		assertTrue(message(factory, new CertificateSettings(valid.toString(), "errada", FiscalEnvironment.HOMOLOGATION)).contains("senha"));
+
+		certificate("vencido", "-10d", 1);
+		assertTrue(message(factory, new CertificateSettings(directory.resolve("vencido.pfx").toString(), new String(PASSWORD), FiscalEnvironment.HOMOLOGATION)).contains("vencido"));
+	}
+
+	@Test
+	void theFactoryOpensAValidCertificateWithoutSendingAnything() throws Exception {
+		VoidingGatewayFactory.Connection connection = new SefazVoidingGatewayFactory(Clock.systemUTC()).open(
+				new CertificateSettings(directory.resolve("valid.pfx").toString(), new String(PASSWORD), FiscalEnvironment.HOMOLOGATION));
+
+		assertEquals("12345678000190", connection.certificate().cnpj());
+	}
+
+	private static String message(SefazVoidingGatewayFactory factory, CertificateSettings settings) {
+		return assertThrows(VoidingException.class, () -> factory.open(settings)).getMessage();
 	}
 
 	@Test

@@ -10,10 +10,14 @@ import java.security.PrivateKey;
 import java.security.cert.X509Certificate;
 import java.time.Instant;
 import java.util.Collections;
+import java.util.Optional;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public final class A1Certificate {
 
 	private static final String KEY_STORE_TYPE = "PKCS12";
+	private static final Pattern CNPJ_IN_NAME = Pattern.compile("CN=[^,]*:([0-9A-Z]{12}[0-9]{2})(?:,|$)");
 
 	private final KeyStore keyStore;
 	private final char[] password;
@@ -66,5 +70,15 @@ public final class A1Certificate {
 
 	boolean isExpired(Instant now) {
 		return now.isAfter(certificate.getNotAfter().toInstant());
+	}
+
+	Instant validUntil() {
+		return certificate.getNotAfter().toInstant();
+	}
+
+	// An e-CNPJ carries the CNPJ at the end of its common name, as in "EMPRESA:12345678000190".
+	Optional<String> cnpj() {
+		Matcher matcher = CNPJ_IN_NAME.matcher(certificate.getSubjectX500Principal().getName());
+		return matcher.find() ? Optional.of(matcher.group(1)) : Optional.empty();
 	}
 }
