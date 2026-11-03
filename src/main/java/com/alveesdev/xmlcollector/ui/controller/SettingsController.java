@@ -160,7 +160,8 @@ public class SettingsController {
 				radioByDay.isSelected() ? OrganizeMode.BY_DAY : OrganizeMode.SINGLE_FOLDER,
 				choiceSeparation.getValue(),
 				readEmailAccount(email),
-				settingsService.current().emailDraft());
+				settingsService.current().emailDraft(),
+				settingsService.current().certificate());
 
 		try {
 			settingsService.save(settings);
