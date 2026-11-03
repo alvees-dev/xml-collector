@@ -38,6 +38,7 @@ import com.alveesdev.xmlcollector.domain.model.DocumentStatus;
 import com.alveesdev.xmlcollector.domain.model.IssuedNumber;
 import com.alveesdev.xmlcollector.domain.model.NumberRange;
 import com.alveesdev.xmlcollector.domain.model.OrganizeMode;
+import com.alveesdev.xmlcollector.domain.model.SeparationMode;
 import com.alveesdev.xmlcollector.domain.model.XmlDocument;
 
 class CollectionServiceTest {
@@ -467,6 +468,67 @@ class CollectionServiceTest {
 		sources.add("pdv1", "evento.xml", cancellation(3, IN_PERIOD));
 
 		assertEquals(java.math.BigDecimal.ZERO, CollectedDocuments.from(collect("pdv1")).authorizedTotal());
+	}
+
+	@Test
+	void storesEachPdvInItsOwnFolderWithoutASubfolder() {
+		sources.add("pdv1", "a.xml", invoice(1, IN_PERIOD));
+		sources.add("pdv2", "b.xml", invoice(2, IN_PERIOD));
+		sources.add("pdv2", "inut.xml", new XmlDocument.Voiding(
+				"ID1", 1, new NumberRange(5, 5), IN_PERIOD.atTime(12, 0).atOffset(java.time.ZoneOffset.ofHours(-3))));
+
+		collectBy(SeparationMode.BY_PDV, OrganizeMode.SINGLE_FOLDER);
+
+		Path january = ARCHIVE.resolve("2026").resolve("Janeiro");
+
+		assertEquals(Map.of(
+				"a.xml", january.resolve("PDV1"),
+				"b.xml", january.resolve("PDV2"),
+				"ID1-procInutNFe.xml", january.resolve("PDV2")), storedDirectories());
+	}
+
+	@Test
+	void keepsThePositionOfThePdvWhenAnEarlierOneIsEmpty() {
+		sources.add("pdv2", "a.xml", invoice(1, IN_PERIOD));
+
+		service.collect(new CollectionRequest(
+				List.of("", "pdv2"), DocumentCategory.NFCE, JANUARY, OrganizeMode.SINGLE_FOLDER, ARCHIVE,
+				List.of(), CollectionTarget.ALL, SeparationMode.BY_PDV));
+
+		assertEquals(ARCHIVE.resolve("2026").resolve("Janeiro").resolve("PDV2"), archive.stored.get(0).directory());
+	}
+
+	@Test
+	void aPdvCanStillBeSeparatedByDay() {
+		sources.add("pdv1", "a.xml", invoice(1, IN_PERIOD));
+
+		collectBy(SeparationMode.BY_PDV, OrganizeMode.BY_DAY);
+
+		assertEquals(
+				ARCHIVE.resolve("2026").resolve("Janeiro").resolve("PDV1").resolve("15-01-2026"),
+				archive.stored.get(0).directory());
+	}
+
+	@Test
+	void allTogetherKeepsTheCategoryFolders() {
+		sources.add("pdv1", "a.xml", invoice(1, IN_PERIOD));
+
+		collectBy(SeparationMode.ALL_TOGETHER, OrganizeMode.SINGLE_FOLDER);
+
+		assertEquals(ARCHIVE.resolve("2026").resolve("Janeiro").resolve("NFCe"), archive.stored.get(0).directory());
+	}
+
+	private void collectBy(SeparationMode separation, OrganizeMode organize) {
+		List<String> directories = sources.directories.keySet().stream().toList();
+
+		service.collect(new CollectionRequest(
+				directories, DocumentCategory.NFCE, JANUARY, organize, ARCHIVE, List.of(), CollectionTarget.ALL, separation));
+	}
+
+	private Map<String, Path> storedDirectories() {
+		Map<String, Path> directories = new HashMap<>();
+		archive.stored.forEach(stored -> directories.put(stored.preferredName(), stored.directory()));
+		return directories;
 	}
 
 	private CollectionResult collect(String... directories) {

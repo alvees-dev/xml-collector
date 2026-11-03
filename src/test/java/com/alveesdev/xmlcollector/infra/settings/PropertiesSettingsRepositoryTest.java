@@ -22,6 +22,7 @@ import com.alveesdev.xmlcollector.application.settings.EmailDraft;
 import com.alveesdev.xmlcollector.application.settings.EmailSecurity;
 import com.alveesdev.xmlcollector.domain.model.OrganizeMode;
 import com.alveesdev.xmlcollector.domain.model.PdvType;
+import com.alveesdev.xmlcollector.domain.model.SeparationMode;
 
 class PropertiesSettingsRepositoryTest {
 
@@ -156,6 +157,20 @@ class PropertiesSettingsRepositoryTest {
 	}
 
 	@Test
+	void anOldFileWithoutTheSeparationKeepsEverythingTogether() throws IOException {
+		Files.writeString(file, "archive.organizeMode=BY_DAY\n", StandardCharsets.UTF_8);
+
+		assertEquals(SeparationMode.ALL_TOGETHER, repository.load().separationMode());
+	}
+
+	@Test
+	void anUnknownSeparationKeepsEverythingTogether() throws IOException {
+		Files.writeString(file, "archive.separationMode=XYZ\n", StandardCharsets.UTF_8);
+
+		assertEquals(SeparationMode.ALL_TOGETHER, repository.load().separationMode());
+	}
+
+	@Test
 	void reportsAMalformedFile() throws IOException {
 		Files.writeString(file, "ruim=\\uZZZZ\n", StandardCharsets.UTF_8);
 
@@ -170,6 +185,7 @@ class PropertiesSettingsRepositoryTest {
 				"modelo-pdv",
 				"modelo-nfe",
 				OrganizeMode.BY_DAY,
+				SeparationMode.BY_PDV,
 				new EmailAccount("smtp.gmail.com", 587, EmailSecurity.STARTTLS, "usuario@exemplo.com", PASSWORD),
 				new EmailDraft("dest@exemplo.com", "Assunto = ç", "linha 1\nlinha 2"));
 	}

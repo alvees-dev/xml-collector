@@ -4,6 +4,7 @@ import java.util.List;
 
 import com.alveesdev.xmlcollector.domain.model.OrganizeMode;
 import com.alveesdev.xmlcollector.domain.model.PdvType;
+import com.alveesdev.xmlcollector.domain.model.SeparationMode;
 
 public record AppSettings(
 		List<String> pdvDirectories,
@@ -12,6 +13,7 @@ public record AppSettings(
 		String pdvModelId,
 		String nfeModelId,
 		OrganizeMode organizeMode,
+		SeparationMode separationMode,
 		EmailAccount emailAccount,
 		EmailDraft emailDraft
 ) {
@@ -31,6 +33,7 @@ public record AppSettings(
 				"",
 				"",
 				OrganizeMode.SINGLE_FOLDER,
+				SeparationMode.ALL_TOGETHER,
 				DefaultEmailAccount.get(),
 				EmailDraft.empty());
 	}
@@ -40,10 +43,10 @@ public record AppSettings(
 	}
 
 	public AppSettings withEmailAccount(EmailAccount account) {
-		return new AppSettings(pdvDirectories, nfeDirectories, pdvType, pdvModelId, nfeModelId, organizeMode, account, emailDraft);
+		return new AppSettings(pdvDirectories, nfeDirectories, pdvType, pdvModelId, nfeModelId, organizeMode, separationMode, account, emailDraft);
 	}
 
 	public AppSettings withEmailDraft(EmailDraft draft) {
-		return new AppSettings(pdvDirectories, nfeDirectories, pdvType, pdvModelId, nfeModelId, organizeMode, emailAccount, draft);
+		return new AppSettings(pdvDirectories, nfeDirectories, pdvType, pdvModelId, nfeModelId, organizeMode, separationMode, emailAccount, draft);
 	}
 }

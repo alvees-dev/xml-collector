@@ -19,6 +19,7 @@ import com.alveesdev.xmlcollector.application.settings.EmailDraft;
 import com.alveesdev.xmlcollector.application.settings.EmailSecurity;
 import com.alveesdev.xmlcollector.domain.model.OrganizeMode;
 import com.alveesdev.xmlcollector.domain.model.PdvType;
+import com.alveesdev.xmlcollector.domain.model.SeparationMode;
 
 public final class PropertiesSettingsRepository implements SettingsRepository {
 
@@ -29,6 +30,7 @@ public final class PropertiesSettingsRepository implements SettingsRepository {
 	private static final String PDV_MODEL_KEY = "search.pdvModel";
 	private static final String NFE_MODEL_KEY = "search.nfeModel";
 	private static final String ORGANIZE_MODE_KEY = "archive.organizeMode";
+	private static final String SEPARATION_MODE_KEY = "archive.separationMode";
 	private static final String HOST_KEY = "smtp.host";
 	private static final String PORT_KEY = "smtp.port";
 	private static final String SECURITY_KEY = "smtp.security";
@@ -67,6 +69,7 @@ public final class PropertiesSettingsRepository implements SettingsRepository {
 				properties.getProperty(PDV_MODEL_KEY, defaults.pdvModelId()),
 				properties.getProperty(NFE_MODEL_KEY, defaults.nfeModelId()),
 				parseOrganizeMode(properties.getProperty(ORGANIZE_MODE_KEY), defaults.organizeMode()),
+				parseSeparationMode(properties.getProperty(SEPARATION_MODE_KEY), defaults.separationMode()),
 				readEmailAccount(properties),
 				new EmailDraft(
 						properties.getProperty(RECIPIENT_KEY, ""),
@@ -86,6 +89,7 @@ public final class PropertiesSettingsRepository implements SettingsRepository {
 		properties.setProperty(PDV_MODEL_KEY, settings.pdvModelId());
 		properties.setProperty(NFE_MODEL_KEY, settings.nfeModelId());
 		properties.setProperty(ORGANIZE_MODE_KEY, settings.organizeMode().name());
+		properties.setProperty(SEPARATION_MODE_KEY, settings.separationMode().name());
 
 		if (!account.equals(defaultAccount)) {
 			properties.setProperty(HOST_KEY, account.host());
@@ -162,6 +166,14 @@ public final class PropertiesSettingsRepository implements SettingsRepository {
 	private static OrganizeMode parseOrganizeMode(String text, OrganizeMode fallback) {
 		try {
 			return text == null ? fallback : OrganizeMode.valueOf(text.trim());
+		} catch (IllegalArgumentException e) {
+			return fallback;
+		}
+	}
+
+	private static SeparationMode parseSeparationMode(String text, SeparationMode fallback) {
+		try {
+			return text == null ? fallback : SeparationMode.valueOf(text.trim());
 		} catch (IllegalArgumentException e) {
 			return fallback;
 		}
