@@ -63,6 +63,9 @@ public class MissingTabController {
 	private Button btnSearchNumber;
 
 	@FXML
+	private TextField txtSearchSeries;
+
+	@FXML
 	private TextField txtSearchNumber;
 
 	public MissingTabController(CollectionService collectionService, SettingsService settingsService,
@@ -137,19 +140,18 @@ public class MissingTabController {
 	@FXML
 	private void onSearchNumber() {
 
+		int series;
 		int number;
 
 		try {
+			series = Integer.parseInt(txtSearchSeries.getText().trim());
 			number = Integer.parseInt(txtSearchNumber.getText().trim());
 		} catch (NumberFormatException e) {
-			Dialogs.warning("Informe o número da NFCe a ser procurada.");
+			Dialogs.warning("Informe a série e o número da NFCe a ser procurada.");
 			return;
 		}
 
-		Map<Integer, List<NumberRange>> wanted = new TreeMap<>();
-		missingBySeries.keySet().forEach(series -> wanted.put(series, List.of(new NumberRange(number, number))));
-
-		search(btnSearchNumber, wanted);
+		search(btnSearchNumber, Map.of(series, List.of(new NumberRange(number, number))));
 	}
 
 	private void search(Node trigger, Map<Integer, List<NumberRange>> wanted) {
