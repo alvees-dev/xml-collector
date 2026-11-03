@@ -1,10 +1,15 @@
 package com.alveesdev.xmlcollector.application.voiding;
 
 import java.io.IOException;
+import java.nio.file.Path;
+import java.time.YearMonth;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeSet;
 
 import com.alveesdev.xmlcollector.application.collection.CollectionResult;
 import com.alveesdev.xmlcollector.application.collection.SourceFailure;
@@ -12,11 +17,14 @@ import com.alveesdev.xmlcollector.application.port.IssuedNumberRepository;
 import com.alveesdev.xmlcollector.application.port.VoidingException;
 import com.alveesdev.xmlcollector.domain.model.DocumentModel;
 import com.alveesdev.xmlcollector.domain.model.NumberRange;
+import com.alveesdev.xmlcollector.domain.model.SearchFolderPattern;
 import com.alveesdev.xmlcollector.domain.model.SeriesOwner;
 import com.alveesdev.xmlcollector.domain.model.VoidingRequest;
 import com.alveesdev.xmlcollector.domain.service.MissingNumberFinder;
 
 public final class VoidingPlanner {
+
+	private static final DateTimeFormatter YEAR_MONTH_FORMAT = DateTimeFormatter.ofPattern("yyyyMM");
 
 	private final IssuedNumberRepository issuedNumbers;
 
@@ -46,6 +54,38 @@ public final class VoidingPlanner {
 		}
 
 		return problems;
+	}
+
+	public static Map<Integer, List<Path>> pdvFolders(List<VoidingRequest> requests, List<String> directories,
+			Map<Integer, Set<Integer>> sourcesBySeries, String folderPattern, YearMonth month) throws VoidingException {
+
+		if (folderPattern.isBlank()) {
+			throw new VoidingException("O modelo de busca não tem pasta de inutilização para guardar o XML no PDV.");
+		}
+
+		Map<Integer, List<Path>> folders = new HashMap<>();
+
+		for (VoidingRequest request : requests) {
+			String relative = folderPattern
+					.replace(SearchFolderPattern.CNPJ, request.cnpj())
+					.replace(SearchFolderPattern.YEAR_MONTH, YEAR_MONTH_FORMAT.format(month));
+
+			List<Path> ofSeries = new ArrayList<>();
+
+			for (int source : new TreeSet<>(sourcesBySeries.getOrDefault(request.series(), Set.of()))) {
+				if (source < directories.size() && !directories.get(source).isBlank()) {
+					ofSeries.add(Path.of(directories.get(source).trim()).resolve(relative));
+				}
+			}
+
+			if (ofSeries.isEmpty()) {
+				throw new VoidingException("Não foi possível identificar o PDV da série " + request.series() + " para guardar o XML.");
+			}
+
+			folders.put(request.series(), ofSeries);
+		}
+
+		return folders;
 	}
 
 	public List<VoidingRequest> plan(Map<Integer, List<NumberRange>> wanted, Map<Integer, List<NumberRange>> missing,
