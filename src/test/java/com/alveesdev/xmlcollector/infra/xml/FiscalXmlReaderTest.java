@@ -69,6 +69,13 @@ class FiscalXmlReaderTest {
 	}
 
 	@Test
+	void ignoresAVoidingOfTheHomologationEnvironment() {
+		String xml = voidingXml("102", "65").replace("<infInut>", "<infInut><tpAmb>2</tpAmb>");
+
+		assertInstanceOf(XmlDocument.Ignored.class, read(xml));
+	}
+
+	@Test
 	void readsAVoidingWithTheRootAndNamespaceOfTheOfficialSchema() {
 		String xml = "<ProcInutNFe versao=\"4.00\" xmlns=\"http://www.portalfiscal.inf.br/nfe\">"
 				+ "<inutNFe xmlns=\"http://www.portalfiscal.inf.br/nfe\" versao=\"4.00\"><infInut Id=\"ID1\"><serie>9</serie></infInut></inutNFe>"
