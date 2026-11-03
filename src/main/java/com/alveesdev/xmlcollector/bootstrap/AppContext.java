@@ -1,12 +1,16 @@
 package com.alveesdev.xmlcollector.bootstrap;
 
+import java.time.Clock;
+
 import com.alveesdev.xmlcollector.application.collection.CollectionService;
 import com.alveesdev.xmlcollector.application.dispatch.DispatchService;
+import com.alveesdev.xmlcollector.application.port.DocumentArchive;
 import com.alveesdev.xmlcollector.application.port.DocumentReader;
 import com.alveesdev.xmlcollector.application.port.IssuedNumberRepository;
 import com.alveesdev.xmlcollector.application.settings.AppPaths;
 import com.alveesdev.xmlcollector.application.settings.SearchModelCatalog;
 import com.alveesdev.xmlcollector.application.settings.service.SettingsService;
+import com.alveesdev.xmlcollector.application.voiding.VoidingBatch;
 import com.alveesdev.xmlcollector.infra.archive.MonthZipArchiver;
 import com.alveesdev.xmlcollector.infra.archive.XmlArchive;
 import com.alveesdev.xmlcollector.infra.archive.XmlArchivedDocuments;
@@ -14,6 +18,7 @@ import com.alveesdev.xmlcollector.infra.drive.GoogleDriveStorage;
 import com.alveesdev.xmlcollector.infra.email.SmtpEmailSender;
 import com.alveesdev.xmlcollector.infra.persistence.SqliteIssuedNumberRepository;
 import com.alveesdev.xmlcollector.infra.search.SearchModelLoader;
+import com.alveesdev.xmlcollector.infra.sefaz.SefazVoidingGatewayFactory;
 import com.alveesdev.xmlcollector.infra.settings.BundledEmailAccount;
 import com.alveesdev.xmlcollector.infra.settings.PropertiesSettingsRepository;
 import com.alveesdev.xmlcollector.infra.xml.FiscalXmlReader;
@@ -30,6 +35,7 @@ public final class AppContext {
 	private final AppPaths paths;
 	private final IssuedNumberRepository issuedNumbers;
 	private final CollectionService collectionService;
+	private final VoidingBatch voidingBatch;
 	private final DispatchService dispatchService;
 	private final SettingsService settingsService;
 	private final SearchModelCatalog searchModels;
@@ -41,7 +47,11 @@ public final class AppContext {
 		DocumentReader reader = new FiscalXmlReader();
 
 		this.issuedNumbers = new SqliteIssuedNumberRepository(paths.databaseFile());
-		this.collectionService = new CollectionService(new XmlFileScanner(), reader, new XmlArchive(reader), issuedNumbers);
+		DocumentArchive archive = new XmlArchive(reader);
+		Clock clock = Clock.systemDefaultZone();
+
+		this.collectionService = new CollectionService(new XmlFileScanner(), reader, archive, issuedNumbers);
+		this.voidingBatch = new VoidingBatch(new SefazVoidingGatewayFactory(clock), archive, clock);
 		this.dispatchService = new DispatchService(
 				new XmlArchivedDocuments(reader),
 				new MonthZipArchiver(),
@@ -83,7 +93,7 @@ public final class AppContext {
 		}
 
 		if (type == SettingsController.class) {
-			return new SettingsController(settingsService, searchModels);
+			return new SettingsController(settingsService, searchModels, voidingBatch);
 		}
 
 		throw new IllegalArgumentException("Unknown controller: " + type.getName());

@@ -210,26 +210,50 @@
                <content>
                   <VBox prefHeight="200.0" prefWidth="100.0">
                      <children>
-                        <Label text="Certificado">
+                        <Label text="Certificado A1 (.pfx)">
                            <VBox.margin>
-                              <Insets left="25.0" top="40.0" />
+                              <Insets left="25.0" top="30.0" />
                            </VBox.margin>
                         </Label>
-                        <TextField fx:id="txtEmailUser1" maxWidth="200.0">
+                        <HBox spacing="8.0">
                            <VBox.margin>
-                              <Insets left="25.0" />
+                              <Insets left="25.0" right="25.0" />
                            </VBox.margin>
-                        </TextField>
+                           <children>
+                              <TextField fx:id="txtCertificatePath" HBox.hgrow="ALWAYS" />
+                              <Button mnemonicParsing="false" onAction="#onBrowseCertificate" text="Procurar" />
+                           </children>
+                        </HBox>
                         <Label text="Senha">
                            <VBox.margin>
                               <Insets left="25.0" top="10.0" />
                            </VBox.margin>
                         </Label>
-                        <PasswordField fx:id="txtEmailPassword1" maxWidth="200.0">
+                        <PasswordField fx:id="txtCertificatePassword" maxWidth="200.0">
                            <VBox.margin>
                               <Insets left="25.0" />
                            </VBox.margin>
                         </PasswordField>
+                        <Label text="Ambiente da inutilização">
+                           <VBox.margin>
+                              <Insets left="25.0" top="10.0" />
+                           </VBox.margin>
+                        </Label>
+                        <ChoiceBox fx:id="choiceEnvironment" prefWidth="150.0">
+                           <VBox.margin>
+                              <Insets left="25.0" />
+                           </VBox.margin>
+                        </ChoiceBox>
+                        <Label fx:id="lblEnvironmentHint" maxWidth="330.0" wrapText="true">
+                           <VBox.margin>
+                              <Insets left="25.0" top="6.0" />
+                           </VBox.margin>
+                        </Label>
+                        <Button mnemonicParsing="false" onAction="#onCheckCertificate" text="Conferir certificado">
+                           <VBox.margin>
+                              <Insets left="25.0" top="14.0" />
+                           </VBox.margin>
+                        </Button>
                      </children>
                   </VBox>
                </content>
