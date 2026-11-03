@@ -5,7 +5,9 @@ import java.time.LocalDate;
 import java.time.YearMonth;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
+import java.util.TreeSet;
 
 import com.alveesdev.xmlcollector.domain.model.DateRange;
 import com.alveesdev.xmlcollector.domain.model.DocumentCategory;
@@ -19,6 +21,7 @@ public final class ArchiveLayout {
 	};
 
 	private static final DateTimeFormatter DAY_FOLDER_FORMAT = DateTimeFormatter.ofPattern("dd-MM-yyyy");
+	private static final String ZIP_PREFIX = "ArquivoXML";
 
 	private ArchiveLayout() {
 	}
@@ -39,6 +42,15 @@ public final class ArchiveLayout {
 		}
 
 		return directories;
+	}
+
+	public static String zipName(Collection<String> cnpjs, Path monthDirectory) {
+		List<String> parts = new ArrayList<>();
+		parts.add(ZIP_PREFIX);
+		parts.addAll(new TreeSet<>(cnpjs));
+		parts.add(monthDirectory.getFileName().toString());
+
+		return String.join("_", parts);
 	}
 
 	public static Path directoryFor(Path archiveRoot, LocalDate date, OrganizeMode mode, DocumentCategory category) {

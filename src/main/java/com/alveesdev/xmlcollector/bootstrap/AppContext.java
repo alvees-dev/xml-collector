@@ -9,6 +9,7 @@ import com.alveesdev.xmlcollector.application.settings.SearchModelCatalog;
 import com.alveesdev.xmlcollector.application.settings.service.SettingsService;
 import com.alveesdev.xmlcollector.infra.archive.MonthZipArchiver;
 import com.alveesdev.xmlcollector.infra.archive.XmlArchive;
+import com.alveesdev.xmlcollector.infra.archive.XmlArchivedDocuments;
 import com.alveesdev.xmlcollector.infra.drive.GoogleDriveStorage;
 import com.alveesdev.xmlcollector.infra.email.SmtpEmailSender;
 import com.alveesdev.xmlcollector.infra.persistence.SqliteIssuedNumberRepository;
@@ -42,6 +43,7 @@ public final class AppContext {
 		this.issuedNumbers = new SqliteIssuedNumberRepository(paths.databaseFile());
 		this.collectionService = new CollectionService(new XmlFileScanner(), reader, new XmlArchive(reader), issuedNumbers);
 		this.dispatchService = new DispatchService(
+				new XmlArchivedDocuments(reader),
 				new MonthZipArchiver(),
 				new SmtpEmailSender(),
 				new GoogleDriveStorage(paths.googleCredentialsFile(), paths.googleTokensDir()));

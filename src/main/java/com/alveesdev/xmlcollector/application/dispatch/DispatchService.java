@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
+import com.alveesdev.xmlcollector.application.port.ArchivedDocuments;
 import com.alveesdev.xmlcollector.application.port.CloudStorage;
 import com.alveesdev.xmlcollector.application.port.DirectoryCompressor;
 import com.alveesdev.xmlcollector.application.port.DirectoryCompressor.CompressedFile;
@@ -13,6 +14,7 @@ import com.alveesdev.xmlcollector.application.port.DispatchException;
 import com.alveesdev.xmlcollector.application.port.EmailMessage;
 import com.alveesdev.xmlcollector.application.port.EmailSender;
 import com.alveesdev.xmlcollector.application.settings.EmailAccount;
+import com.alveesdev.xmlcollector.domain.service.ArchiveLayout;
 
 public class DispatchService {
 
@@ -21,11 +23,14 @@ public class DispatchService {
 	private static final long HEADERS_AND_BODY_RESERVE_BYTES = 256L * 1024;
 	private static final int BASE64_LINE_LENGTH = 76;
 
+	private final ArchivedDocuments archivedDocuments;
 	private final DirectoryCompressor compressor;
 	private final EmailSender emailSender;
 	private final CloudStorage cloudStorage;
 
-	public DispatchService(DirectoryCompressor compressor, EmailSender emailSender, CloudStorage cloudStorage) {
+	public DispatchService(ArchivedDocuments archivedDocuments, DirectoryCompressor compressor, EmailSender emailSender,
+			CloudStorage cloudStorage) {
+		this.archivedDocuments = archivedDocuments;
 		this.compressor = compressor;
 		this.emailSender = emailSender;
 		this.cloudStorage = cloudStorage;
@@ -99,7 +104,8 @@ public class DispatchService {
 
 		for (Path directory : monthDirectories) {
 			try {
-				Optional<CompressedFile> file = compressor.compress(directory);
+				String zipName = ArchiveLayout.zipName(archivedDocuments.cnpjsIn(directory), directory);
+				Optional<CompressedFile> file = compressor.compress(directory, zipName);
 
 				if (file.isEmpty()) {
 					throw new DispatchException("A pasta " + directory.getFileName() + " não tem arquivos para enviar.");

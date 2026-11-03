@@ -9,5 +9,5 @@ public interface DirectoryCompressor {
 	record CompressedFile(Path file, long bytes) {
 	}
 
-	Optional<CompressedFile> compress(Path directory) throws IOException;
+	Optional<CompressedFile> compress(Path directory, String zipName) throws IOException;
 }
