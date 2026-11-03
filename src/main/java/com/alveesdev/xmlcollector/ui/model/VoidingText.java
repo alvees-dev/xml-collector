@@ -5,7 +5,7 @@ import java.util.List;
 import java.util.Map;
 
 import com.alveesdev.xmlcollector.application.voiding.VoidingOutcome;
-import com.alveesdev.xmlcollector.application.voiding.VoidingProgress;
+import com.alveesdev.xmlcollector.application.voiding.VoidingProgress.Stage;
 import com.alveesdev.xmlcollector.domain.model.FiscalEnvironment;
 import com.alveesdev.xmlcollector.domain.model.NumberRange;
 import com.alveesdev.xmlcollector.domain.model.VoidingRequest;
@@ -27,16 +27,6 @@ public final class VoidingText {
 		}
 
 		return labels;
-	}
-
-	public static String stage(VoidingProgress.Stage stage) {
-		return switch (stage) {
-			case SENDING -> "Enviando...";
-			case APPROVED -> "OK";
-			case REJECTED -> "Recusada";
-			case FAILED -> "Falhou";
-			case NOT_SENT -> "Não enviada";
-		};
 	}
 
 	public static String environment(FiscalEnvironment environment) {
@@ -78,25 +68,52 @@ public final class VoidingText {
 			text.append("Teste em homologação, sem efeito fiscal.\n\n");
 		}
 
+		List<VoidingOutcome> rejected = inStage(outcomes, Stage.REJECTED);
+
+		if (rejected.isEmpty()) {
+			text.append("Nenhuma numeração recusada.");
+		} else {
+			text.append("Numerações recusadas:");
+			rejected.forEach(outcome -> text.append('\n').append(rangeLabel(outcome.request())));
+		}
+
+		// The answer is unknown, so they may have been voided anyway.
+		List<VoidingOutcome> failed = inStage(outcomes, Stage.FAILED);
+
+		if (!failed.isEmpty()) {
+			text.append("\n\nFalharam (a resposta da Sefaz é desconhecida, confira antes de reenviar):");
+			failed.forEach(outcome -> text.append('\n').append(rangeLabel(outcome.request())).append(" (").append(outcome.detail()).append(')'));
+		}
+
+		List<VoidingOutcome> notSent = inStage(outcomes, Stage.NOT_SENT);
+
+		if (!notSent.isEmpty()) {
+			text.append("\n\nNão enviadas:");
+			notSent.forEach(outcome -> text.append('\n').append(rangeLabel(outcome.request())));
+		}
+
+		appendSaveFailures(text, outcomes);
+
+		return text.toString();
+	}
+
+	private static List<VoidingOutcome> inStage(List<VoidingOutcome> outcomes, Stage stage) {
+		return outcomes.stream().filter(outcome -> outcome.stage() == stage).toList();
+	}
+
+	private static void appendSaveFailures(StringBuilder text, List<VoidingOutcome> outcomes) {
+
 		for (VoidingOutcome outcome : outcomes) {
-			text.append(rangeLabel(outcome.request())).append(": ").append(stage(outcome.stage()));
-
-			if (outcome.detail() != null) {
-				text.append(" (").append(outcome.detail()).append(')');
-			}
-
 			for (String failure : outcome.pdvFailures()) {
-				text.append("\n  ATENÇÃO: o XML NÃO foi salvo na pasta do PDV. Copie-o de Inutilizadas: ").append(failure);
+				text.append("\n\n").append(rangeLabel(outcome.request()));
+				text.append("\nATENÇÃO: o XML NÃO foi salvo na pasta do PDV. Copie-o de Inutilizadas: ").append(failure);
 			}
 
 			if (outcome.archiveFailure() != null) {
-				text.append("\n  O XML aprovado não foi salvo: ").append(outcome.archiveFailure());
+				text.append("\n\n").append(rangeLabel(outcome.request()));
+				text.append("\nO XML aprovado não foi salvo: ").append(outcome.archiveFailure());
 			}
-
-			text.append('\n');
 		}
-
-		return text.toString().stripTrailing();
 	}
 
 	private static String rangeLabel(VoidingRequest request) {
