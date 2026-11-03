@@ -483,6 +483,7 @@ class CollectionServiceTest {
 							.map(root::resolve)
 							.filter(folder -> directories.containsKey(folder.toString()))
 							.toList(),
+					List.of(),
 					List.of());
 		}
 

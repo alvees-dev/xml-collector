@@ -1,5 +1,6 @@
 package com.alveesdev.xmlcollector.infra.xml;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.DirectoryIteratorException;
 import java.nio.file.DirectoryStream;
@@ -29,8 +30,10 @@ final class SearchFolderResolver {
 
 	private final Set<Path> folders = new LinkedHashSet<>();
 	private final List<Path> inaccessible = new ArrayList<>();
+	private final List<String> missing = new ArrayList<>();
 
 	private Map<String, String> dateNames = Map.of();
+	private boolean matched;
 
 	private SearchFolderResolver() {
 	}
@@ -47,7 +50,7 @@ final class SearchFolderResolver {
 			resolver.resolvePattern(root, List.of(pattern.split(SearchFolderPattern.SEPARATOR)), period);
 		}
 
-		return new ResolvedFolders(List.copyOf(resolver.folders), List.copyOf(resolver.inaccessible));
+		return new ResolvedFolders(List.copyOf(resolver.folders), List.copyOf(resolver.inaccessible), List.copyOf(resolver.missing));
 	}
 
 	private void resolvePattern(Path root, List<String> segments, DateRange period) {
@@ -62,7 +65,13 @@ final class SearchFolderResolver {
 
 		for (YearMonth month = first; !month.isAfter(last); month = month.plusMonths(1)) {
 			dateNames = dateNamesOf(month);
+			matched = false;
+
 			walk(root, segments, 0);
+
+			if (!matched) {
+				missing.add(expectedPath(root, segments));
+			}
 		}
 	}
 
@@ -70,6 +79,7 @@ final class SearchFolderResolver {
 
 		if (index == segments.size()) {
 			folders.add(directory);
+			matched = true;
 			return;
 		}
 
@@ -120,6 +130,18 @@ final class SearchFolderResolver {
 		}
 
 		return children;
+	}
+
+	private String expectedPath(Path root, List<String> segments) {
+
+		List<String> parts = new ArrayList<>();
+		parts.add(root.toString());
+
+		for (String segment : segments) {
+			parts.add(segment.equals(SearchFolderPattern.ANY_DEPTH) ? "..." : dateNames.getOrDefault(segment, segment));
+		}
+
+		return String.join(File.separator, parts);
 	}
 
 	private static boolean hasDate(List<String> segments) {

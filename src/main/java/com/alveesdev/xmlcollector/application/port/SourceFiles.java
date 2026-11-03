@@ -15,7 +15,7 @@ public interface SourceFiles {
 	record ScanResult(List<SourceFile> files, List<Path> inaccessible) {
 	}
 
-	record ResolvedFolders(List<Path> folders, List<Path> inaccessible) {
+	record ResolvedFolders(List<Path> folders, List<Path> inaccessible, List<String> missing) {
 	}
 
 	ResolvedFolders resolveFolders(Path root, List<String> patterns, DateRange period) throws IOException;

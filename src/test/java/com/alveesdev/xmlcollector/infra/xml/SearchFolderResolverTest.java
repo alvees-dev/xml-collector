@@ -94,6 +94,42 @@ class SearchFolderResolverTest {
 	}
 
 	@Test
+	void reportsTheFolderNotFoundWithItsRealDate() throws IOException {
+		create("docs/2026/Janeiro_2026");
+
+		assertEquals(
+				List.of(root.resolve("docs/2026/Fevereiro_2026").toString()),
+				SearchFolderResolver.resolve(root, List.of("docs/{AAAA}/{MES_AAAA}"), JANUARY_TO_FEBRUARY).missing());
+	}
+
+	@Test
+	void reportsAFolderWithoutDateOnlyOnce() throws IOException {
+		assertEquals(
+				List.of(root.resolve("inutilizadas").toString()),
+				SearchFolderResolver.resolve(root, List.of("inutilizadas"), JANUARY_TO_FEBRUARY).missing());
+	}
+
+	@Test
+	void showsAnyDepthInAReadableWay() throws IOException {
+		create("arq/202601/docs");
+
+		assertEquals(
+				List.of(root.resolve("arq") + "\\...\\202602\\docs"),
+				SearchFolderResolver.resolve(root, List.of("arq/**/{AAAAMM}/docs"), JANUARY_TO_FEBRUARY).missing());
+	}
+
+	@Test
+	void reportsNothingWhenEveryFolderExists() throws IOException {
+		create("docs/2026/Janeiro_2026");
+		create("docs/2026/Fevereiro_2026");
+		create("inutilizadas");
+
+		assertEquals(
+				List.of(),
+				SearchFolderResolver.resolve(root, List.of("docs/{AAAA}/{MES_AAAA}", "inutilizadas"), JANUARY_TO_FEBRUARY).missing());
+	}
+
+	@Test
 	void failsWhenTheRootDoesNotExist() {
 		assertThrows(NotDirectoryException.class, () -> SearchFolderResolver.resolve(
 				root.resolve("ausente"), List.of("a"), JANUARY_TO_FEBRUARY));
