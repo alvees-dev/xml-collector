@@ -9,7 +9,7 @@ public record NfeSearchModel(
 		List<String> purchaseFolders
 ) {
 
-	public static final NfeSearchModel NONE = new NfeSearchModel("", "Sem modelo (diretório completo)", List.of(), List.of());
+	public static final NfeSearchModel NONE = new NfeSearchModel("", "Nenhum", List.of(), List.of());
 
 	public NfeSearchModel {
 		salesFolders = List.copyOf(salesFolders);

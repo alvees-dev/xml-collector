@@ -31,7 +31,14 @@ class SearchModelLoaderTest {
 	}
 
 	@Test
-	void listsNoModelFirstAndOnlyTheModelsOfTheType() {
+	void offersNenhumOnlyForNfe() {
+		assertEquals(List.of(com.alveesdev.xmlcollector.domain.model.NfeSearchModel.NONE),
+				new SearchModelCatalog(SearchModelProvider.EMPTY).nfeModels());
+		assertEquals("Nenhum", com.alveesdev.xmlcollector.domain.model.NfeSearchModel.NONE.name());
+	}
+
+	@Test
+	void listsOnlyTheModelsOfTheTypeWithoutAnEmptyOption() {
 		PdvSearchModel food = new PdvSearchModel("f", "F", PdvType.FOOD, List.of("a"), List.of(), "");
 
 		SearchModelCatalog catalog = new SearchModelCatalog(new SearchModelProvider() {
@@ -47,7 +54,7 @@ class SearchModelLoaderTest {
 			}
 		});
 
-		assertEquals(List.of(PdvSearchModel.NONE), catalog.pdvModels(PdvType.PDV));
-		assertEquals(List.of(PdvSearchModel.NONE, food), catalog.pdvModels(PdvType.FOOD));
+		assertEquals(List.of(), catalog.pdvModels(PdvType.PDV));
+		assertEquals(List.of(food), catalog.pdvModels(PdvType.FOOD));
 	}
 }
