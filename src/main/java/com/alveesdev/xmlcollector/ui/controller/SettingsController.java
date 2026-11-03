@@ -143,6 +143,7 @@ public class SettingsController {
 				choicePdvModel.getValue().id(),
 				choiceNfeModel.getValue().id(),
 				radioByDay.isSelected() ? OrganizeMode.BY_DAY : OrganizeMode.SINGLE_FOLDER,
+				settingsService.current().separationMode(),
 				readEmailAccount(email),
 				settingsService.current().emailDraft());
 
