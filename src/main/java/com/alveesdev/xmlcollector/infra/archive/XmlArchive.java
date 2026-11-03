@@ -72,6 +72,23 @@ public class XmlArchive implements DocumentArchive {
 		return Outcome.REPLACED;
 	}
 
+	@Override
+	public void requireWritable(Path directory) throws IOException {
+
+		Path existing = directory;
+
+		// A folder that does not exist yet is created by the first file, so its nearest parent must accept writing.
+		while (existing != null && !Files.isDirectory(existing)) {
+			existing = existing.getParent();
+		}
+
+		if (existing == null) {
+			throw new NoSuchFileException(directory.toString());
+		}
+
+		Files.delete(Files.createTempFile(existing, ".coletor-xml-", TEMP_SUFFIX));
+	}
+
 	private State inspect(byte[] content, FileTime sourceModified, Path existing, String identity)
 			throws IOException {
 
