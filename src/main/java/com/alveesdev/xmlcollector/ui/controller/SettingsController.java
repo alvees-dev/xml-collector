@@ -12,6 +12,7 @@ import com.alveesdev.xmlcollector.domain.model.NfeSearchModel;
 import com.alveesdev.xmlcollector.domain.model.OrganizeMode;
 import com.alveesdev.xmlcollector.domain.model.PdvSearchModel;
 import com.alveesdev.xmlcollector.domain.model.PdvType;
+import com.alveesdev.xmlcollector.domain.model.SeparationMode;
 import com.alveesdev.xmlcollector.ui.view.Dialogs;
 import com.alveesdev.xmlcollector.ui.view.DirectoryListEditor;
 
@@ -64,6 +65,9 @@ public class SettingsController {
 	private VBox nfeListBox;
 
 	@FXML
+	private ChoiceBox<SeparationMode> choiceSeparation;
+
+	@FXML
 	private RadioButton radioSingleFolder;
 
 	@FXML
@@ -97,6 +101,10 @@ public class SettingsController {
 		nfeEditor.load(settings.nfeDirectories());
 
 		loadSearchModels(settings);
+
+		choiceSeparation.setConverter(labelled(SeparationMode::label));
+		choiceSeparation.getItems().setAll(SeparationMode.BY_PDV, SeparationMode.ALL_TOGETHER);
+		choiceSeparation.setValue(settings.separationMode());
 
 		if (settings.organizeMode() == OrganizeMode.BY_DAY) {
 			radioByDay.setSelected(true);
@@ -143,7 +151,7 @@ public class SettingsController {
 				choicePdvModel.getValue().id(),
 				choiceNfeModel.getValue().id(),
 				radioByDay.isSelected() ? OrganizeMode.BY_DAY : OrganizeMode.SINGLE_FOLDER,
-				settingsService.current().separationMode(),
+				choiceSeparation.getValue(),
 				readEmailAccount(email),
 				settingsService.current().emailDraft());
 

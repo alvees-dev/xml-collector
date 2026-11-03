@@ -174,7 +174,7 @@
                                 <Label text="de Separação" />
                              </children>
                           </VBox>
-                          <ChoiceBox prefWidth="150.0" />
+                          <ChoiceBox fx:id="choiceSeparation" prefWidth="150.0" />
                        </children>
                     </HBox>
                     <RadioButton fx:id="radioByDay" mnemonicParsing="false" text="Separado Por Dia" toggleGroup="$organizeGroup">

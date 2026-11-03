@@ -17,6 +17,7 @@ import com.alveesdev.xmlcollector.application.settings.SearchModelCatalog;
 import com.alveesdev.xmlcollector.application.settings.service.SettingsService;
 import com.alveesdev.xmlcollector.domain.model.DateRange;
 import com.alveesdev.xmlcollector.domain.model.DocumentCategory;
+import com.alveesdev.xmlcollector.domain.model.SeparationMode;
 import com.alveesdev.xmlcollector.ui.model.DocumentRow;
 import com.alveesdev.xmlcollector.ui.model.DocumentRowMapper;
 import com.alveesdev.xmlcollector.ui.model.SourceMode;
@@ -165,7 +166,7 @@ public class CollectionTabController {
 
 		return Optional.of(new CollectionRequest(
 				directories, DocumentCategory.NFCE, new DateRange(from, to), settings.organizeMode(), paths.xmlArchiveDir(),
-				folderPatterns, CollectionTarget.ALL));
+				folderPatterns, CollectionTarget.ALL, usesModel ? settings.separationMode() : SeparationMode.ALL_TOGETHER));
 	}
 
 	private void showResult(CollectionRequest request, CollectionResult result, SourceMode sourceMode) {

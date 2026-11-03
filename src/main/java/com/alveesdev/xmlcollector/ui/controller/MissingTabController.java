@@ -173,7 +173,8 @@ public class MissingTabController {
 		CollectionRequest request = new CollectionRequest(
 				settings.pdvDirectories(), DocumentCategory.NFCE, lastCollection.period(), settings.organizeMode(),
 				paths.xmlArchiveDir(), folders,
-				CollectionTarget.missing(wanted, sourcesOfMissingSeries(wanted), searchModel.missingFileSuffix()));
+				CollectionTarget.missing(wanted, sourcesOfMissingSeries(wanted), searchModel.missingFileSuffix()),
+				settings.separationMode());
 
 		CollectionRunner.run(trigger, collectionService, request, SourceMode.PDV_DIRECTORIES, this::showFound);
 	}
