@@ -11,6 +11,7 @@ import java.util.function.Predicate;
 import com.alveesdev.xmlcollector.application.collection.CollectionRequest;
 import com.alveesdev.xmlcollector.application.collection.CollectionResult;
 import com.alveesdev.xmlcollector.application.collection.CollectionService;
+import com.alveesdev.xmlcollector.application.collection.CollectionTarget;
 import com.alveesdev.xmlcollector.application.settings.AppPaths;
 import com.alveesdev.xmlcollector.application.settings.AppSettings;
 import com.alveesdev.xmlcollector.application.settings.SearchModelCatalog;
@@ -143,7 +144,7 @@ public class MissingTabController {
 
 		CollectionRequest request = new CollectionRequest(
 				settings.pdvDirectories(), DocumentCategory.NFCE, lastCollection.period(), settings.organizeMode(),
-				paths.xmlArchiveDir(), folders, wanted);
+				paths.xmlArchiveDir(), folders, new CollectionTarget(index -> true, name -> true, wanted));
 
 		CollectionRunner.run(trigger, collectionService, request, SourceMode.PDV_DIRECTORIES, this::showFound);
 	}

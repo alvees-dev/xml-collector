@@ -10,6 +10,7 @@ import com.alveesdev.xmlcollector.application.collection.CollectedDocuments;
 import com.alveesdev.xmlcollector.application.collection.CollectionRequest;
 import com.alveesdev.xmlcollector.application.collection.CollectionResult;
 import com.alveesdev.xmlcollector.application.collection.CollectionService;
+import com.alveesdev.xmlcollector.application.collection.CollectionTarget;
 import com.alveesdev.xmlcollector.application.settings.AppPaths;
 import com.alveesdev.xmlcollector.application.settings.AppSettings;
 import com.alveesdev.xmlcollector.application.settings.SearchModelCatalog;
@@ -164,7 +165,7 @@ public class CollectionTabController {
 
 		return Optional.of(new CollectionRequest(
 				directories, DocumentCategory.NFCE, new DateRange(from, to), settings.organizeMode(), paths.xmlArchiveDir(),
-				folderPatterns, invoice -> true));
+				folderPatterns, CollectionTarget.ALL));
 	}
 
 	private void showResult(CollectionRequest request, CollectionResult result, SourceMode sourceMode) {

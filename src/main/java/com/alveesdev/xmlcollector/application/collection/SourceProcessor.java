@@ -93,7 +93,7 @@ class SourceProcessor {
 		this.reader = reader;
 		this.archive = archive;
 		this.executor = executor;
-		this.rules = new CollectionRules(request.period(), request.invoiceFilter());
+		this.rules = new CollectionRules(request.period(), request.target().invoice());
 	}
 
 	void process(int sourceIndex, List<SourceFile> files, Runnable onFileDone, BooleanSupplier cancelled) {

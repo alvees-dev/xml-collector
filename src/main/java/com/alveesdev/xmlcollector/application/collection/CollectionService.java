@@ -111,6 +111,12 @@ public class CollectionService {
 
 		for (int index = 0; index < directories.size(); index++) {
 			SourceProcessor.throwIfCancelled(cancelled);
+
+			if (!request.target().source().test(index)) {
+				scanned.add(new ScannedSource(index, List.of()));
+				continue;
+			}
+
 			listener.onProgress(new CollectionProgress(index, 0, -1));
 
 			String directory = directories.get(index) == null ? "" : directories.get(index).trim();
@@ -131,7 +137,9 @@ public class CollectionService {
 						failures.add(new SourceFailure(index, Reason.SUBFOLDER_INACCESSIBLE, inaccessible.toString()));
 					}
 
-					files.addAll(result.files());
+					result.files().stream()
+							.filter(file -> request.target().fileName().test(file.path().getFileName().toString()))
+							.forEach(files::add);
 				}
 
 				scanned.add(new ScannedSource(index, files));
