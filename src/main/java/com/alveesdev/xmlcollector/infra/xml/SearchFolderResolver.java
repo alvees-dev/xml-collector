@@ -47,13 +47,16 @@ final class SearchFolderResolver {
 		SearchFolderResolver resolver = new SearchFolderResolver();
 
 		for (String pattern : patterns) {
-			resolver.resolvePattern(root, List.of(pattern.split(SearchFolderPattern.SEPARATOR)), period);
+			boolean optional = pattern.startsWith(SearchFolderPattern.OPTIONAL_PREFIX);
+			String path = optional ? pattern.substring(SearchFolderPattern.OPTIONAL_PREFIX.length()) : pattern;
+
+			resolver.resolvePattern(root, List.of(path.split(SearchFolderPattern.SEPARATOR)), optional, period);
 		}
 
 		return new ResolvedFolders(List.copyOf(resolver.folders), List.copyOf(resolver.inaccessible), List.copyOf(resolver.missing));
 	}
 
-	private void resolvePattern(Path root, List<String> segments, DateRange period) {
+	private void resolvePattern(Path root, List<String> segments, boolean optional, DateRange period) {
 
 		YearMonth first = YearMonth.from(period.from());
 		YearMonth last = YearMonth.from(period.to());
@@ -69,7 +72,7 @@ final class SearchFolderResolver {
 
 			walk(root, segments, 0);
 
-			if (!matched) {
+			if (!matched && !optional) {
 				missing.add(expectedPath(root, segments));
 			}
 		}

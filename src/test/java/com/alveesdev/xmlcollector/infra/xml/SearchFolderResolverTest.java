@@ -15,6 +15,7 @@ import java.util.stream.Collectors;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
+import com.alveesdev.xmlcollector.application.port.SourceFiles.ResolvedFolders;
 import com.alveesdev.xmlcollector.domain.model.DateRange;
 
 class SearchFolderResolverTest {
@@ -107,6 +108,16 @@ class SearchFolderResolverTest {
 		assertEquals(
 				List.of(root.resolve("inutilizadas").toString()),
 				SearchFolderResolver.resolve(root, List.of("inutilizadas"), JANUARY_TO_FEBRUARY).missing());
+	}
+
+	@Test
+	void doesNotReportAnOptionalFolderButStillReadsIt() throws IOException {
+		create("opcional/2026/Janeiro_2026");
+
+		ResolvedFolders resolved = SearchFolderResolver.resolve(root, List.of("?opcional/{AAAA}/{MES_AAAA}", "?ausente"), JANUARY_TO_FEBRUARY);
+
+		assertEquals(List.of(root.resolve("opcional/2026/Janeiro_2026")), resolved.folders());
+		assertEquals(List.of(), resolved.missing());
 	}
 
 	@Test
