@@ -252,6 +252,62 @@ class CollectionServiceTest {
 				() -> service.collect(request("pdv1"), ProgressListener.NONE, () -> true));
 	}
 
+	@Test
+	void readsOnlyTheFoldersOfTheModelInsideEachRoot() {
+		sources.add(Path.of("pdv1", "enviados").toString(), "a.xml", invoice(1, IN_PERIOD));
+		sources.add(Path.of("pdv1", "outros").toString(), "b.xml", invoice(2, IN_PERIOD));
+
+		CollectionResult result = service.collect(new CollectionRequest(
+				List.of("pdv1"), DocumentCategory.NFCE, JANUARY, OrganizeMode.SINGLE_FOLDER, ARCHIVE,
+				List.of("enviados"), invoice -> true));
+
+		assertEquals("a.xml", onlyEntry(result).fileName());
+	}
+
+	@Test
+	void reportsARootWithoutAnyFolderOfTheModel() {
+		CollectionResult result = service.collect(new CollectionRequest(
+				List.of("pdv1"), DocumentCategory.NFCE, JANUARY, OrganizeMode.SINGLE_FOLDER, ARCHIVE,
+				List.of("enviados"), invoice -> true));
+
+		assertEquals(SourceFailure.Reason.NO_MODEL_FOLDER, result.failures().get(0).reason());
+	}
+
+	@Test
+	void reportsAnInaccessibleRootOfAModel() {
+		CollectionResult result = service.collect(new CollectionRequest(
+				List.of("sem-acesso"), DocumentCategory.NFCE, JANUARY, OrganizeMode.SINGLE_FOLDER, ARCHIVE,
+				List.of("enviados"), invoice -> true));
+
+		assertEquals(SourceFailure.Reason.INACCESSIBLE, result.failures().get(0).reason());
+	}
+
+	@Test
+	void keepsOnlyTheInvoicesAcceptedByTheFilter() {
+		sources.add("pdv1", "a.xml", invoice(1, IN_PERIOD));
+		sources.add("pdv1", "b.xml", invoice(2, IN_PERIOD));
+
+		CollectionResult result = service.collect(new CollectionRequest(
+				List.of("pdv1"), DocumentCategory.NFCE, JANUARY, OrganizeMode.SINGLE_FOLDER, ARCHIVE,
+				List.of(), invoice -> invoice.number() == 2));
+
+		assertEquals("b.xml", onlyEntry(result).fileName());
+		assertEquals(1, archive.stored.size());
+	}
+
+	@Test
+	void aVoidedRangeIsNotMissingAndGoesToItsOwnFolder() {
+		sources.add("pdv1", "a.xml", invoice(1, 1, IN_PERIOD));
+		sources.add("pdv1", "b.xml", invoice(1, 5, IN_PERIOD));
+		sources.add("pdv1", "inut.xml", new XmlDocument.Voiding(
+				"ID1", 1, new NumberRange(2, 3), IN_PERIOD.atTime(12, 0).atOffset(java.time.ZoneOffset.ofHours(-3))));
+
+		CollectionResult result = collect("pdv1");
+
+		assertEquals(Map.of(1, List.of(new NumberRange(4, 4))), result.missingBySeries());
+		assertEquals(1, archive.stored.stream().filter(stored -> stored.directory().endsWith("Inutilizadas")).count());
+	}
+
 	private CollectionResult collect(String... directories) {
 		return service.collect(request(directories));
 	}
@@ -284,6 +340,20 @@ class CollectionServiceTest {
 			Path path = Path.of(directory, fileName);
 			documents.put(path.toString(), document);
 			directories.computeIfAbsent(directory, name -> new ArrayList<>()).add(new SourceFile(path, MODIFIED));
+		}
+
+		@Override
+		public ResolvedFolders resolveFolders(Path root, List<String> patterns, DateRange period) throws IOException {
+			if (!root.toString().equals("pdv1") && !root.toString().equals("pdv2")) {
+				throw new NotDirectoryException(root.toString());
+			}
+
+			return new ResolvedFolders(
+					patterns.stream()
+							.map(root::resolve)
+							.filter(folder -> directories.containsKey(folder.toString()))
+							.toList(),
+					List.of());
 		}
 
 		@Override

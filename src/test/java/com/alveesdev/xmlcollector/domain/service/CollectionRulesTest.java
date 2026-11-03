@@ -38,7 +38,7 @@ class CollectionRulesTest {
 		XmlDocument.Invoice invoice = invoice(1, IN_PERIOD);
 		String key = invoice.key().value();
 
-		assertEquals(new Store(IN_PERIOD, "nota.xml", key + ".xml", key), rules.decide(0, "nota.xml", invoice));
+		assertEquals(new Store(IN_PERIOD, "nota.xml", key + ".xml", key, false), rules.decide(0, "nota.xml", invoice));
 		assertEquals(DocumentStatus.AUTHORIZED, onlyEntry(0).status());
 	}
 
@@ -76,7 +76,31 @@ class CollectionRulesTest {
 		XmlDocument.CancelEvent event = cancellation(1, IN_PERIOD);
 		String name = event.eventId() + ".xml";
 
-		assertEquals(new Store(IN_PERIOD, name, name, event.eventId()), rules.decide(0, "evento.xml", event));
+		assertEquals(new Store(IN_PERIOD, name, name, event.eventId(), false), rules.decide(0, "evento.xml", event));
+	}
+
+	@Test
+	void aVoidingAfterThePeriodStillClosesTheGapButIsNotStored() {
+		rules.decide(0, "a.xml", invoice(1, IN_PERIOD));
+		rules.decide(0, "b.xml", invoice(4, IN_PERIOD));
+
+		XmlDocument.Voiding voiding = new XmlDocument.Voiding(
+				"ID1", 1, new NumberRange(2, 2), AFTER_PERIOD.atTime(12, 0).atOffset(java.time.ZoneOffset.ofHours(-3)));
+
+		assertSkipped(SkipReason.OUT_OF_PERIOD, rules.decide(0, "inut.xml", voiding));
+		assertEquals(java.util.Map.of(1, java.util.List.of(new NumberRange(3, 3))), rules.missingNumbers());
+	}
+
+	@Test
+	void aVoidingOutsideTheCollectedNumbersDoesNotCreateAGap() {
+		rules.decide(0, "a.xml", invoice(1, IN_PERIOD));
+		rules.decide(0, "b.xml", invoice(2, IN_PERIOD));
+
+		XmlDocument.Voiding voiding = new XmlDocument.Voiding(
+				"ID1", 1, new NumberRange(500, 501), IN_PERIOD.atTime(12, 0).atOffset(java.time.ZoneOffset.ofHours(-3)));
+
+		assertTrue(rules.decide(0, "inut.xml", voiding) instanceof Store store && store.voiding());
+		assertEquals(java.util.Map.of(1, java.util.List.<NumberRange>of()), rules.missingNumbers());
 	}
 
 	@Test

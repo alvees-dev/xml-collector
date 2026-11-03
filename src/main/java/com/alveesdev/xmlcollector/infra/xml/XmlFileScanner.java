@@ -12,12 +12,18 @@ import java.util.List;
 import java.util.Locale;
 
 import com.alveesdev.xmlcollector.application.port.SourceFiles;
+import com.alveesdev.xmlcollector.domain.model.DateRange;
 
 public class XmlFileScanner implements SourceFiles {
 
 	@Override
 	public byte[] read(SourceFile file) throws IOException {
 		return Files.readAllBytes(file.path());
+	}
+
+	@Override
+	public ResolvedFolders resolveFolders(Path root, List<String> patterns, DateRange period) throws IOException {
+		return SearchFolderResolver.resolve(root, patterns, period);
 	}
 
 	@Override

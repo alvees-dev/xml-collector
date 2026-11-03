@@ -1,6 +1,10 @@
 ### Credentials ###
 src/main/resources/default-email.properties
 
+### Private search models ###
+src/main/java/com/alveesdev/xmlcollector/infra/search/models/
+src/test/java/com/alveesdev/xmlcollector/infra/search/models/
+
 ### Java ###
 # Compiled class file
 *.class

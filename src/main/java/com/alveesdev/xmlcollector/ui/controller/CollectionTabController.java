@@ -1,17 +1,17 @@
 package com.alveesdev.xmlcollector.ui.controller;
 
-import java.io.IOException;
 import java.time.LocalDate;
 import java.time.YearMonth;
 import java.util.List;
 import java.util.Optional;
-import java.util.function.Consumer;
+import java.util.function.BiConsumer;
 
 import com.alveesdev.xmlcollector.application.collection.CollectionRequest;
 import com.alveesdev.xmlcollector.application.collection.CollectionResult;
 import com.alveesdev.xmlcollector.application.collection.CollectionService;
 import com.alveesdev.xmlcollector.application.settings.AppPaths;
 import com.alveesdev.xmlcollector.application.settings.AppSettings;
+import com.alveesdev.xmlcollector.application.settings.SearchModelCatalog;
 import com.alveesdev.xmlcollector.application.settings.service.SettingsService;
 import com.alveesdev.xmlcollector.domain.model.DateRange;
 import com.alveesdev.xmlcollector.domain.model.DocumentCategory;
@@ -19,7 +19,6 @@ import com.alveesdev.xmlcollector.ui.model.DocumentRow;
 import com.alveesdev.xmlcollector.ui.model.DocumentRowMapper;
 import com.alveesdev.xmlcollector.ui.model.SourceMode;
 import com.alveesdev.xmlcollector.ui.view.Dialogs;
-import com.alveesdev.xmlcollector.ui.view.ProgressWindow;
 
 import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
@@ -35,9 +34,10 @@ public class CollectionTabController {
 
 	private final CollectionService collectionService;
 	private final SettingsService settingsService;
+	private final SearchModelCatalog searchModels;
 	private final AppPaths paths;
 
-	private Consumer<CollectionResult> onCollected = result -> {
+	private BiConsumer<CollectionRequest, CollectionResult> onCollected = (request, result) -> {
 	};
 
 	@FXML
@@ -76,13 +76,15 @@ public class CollectionTabController {
 	@FXML
 	private TableColumn<DocumentRow, String> statusColumn;
 
-	public CollectionTabController(CollectionService collectionService, SettingsService settingsService, AppPaths paths) {
+	public CollectionTabController(CollectionService collectionService, SettingsService settingsService,
+			SearchModelCatalog searchModels, AppPaths paths) {
 		this.collectionService = collectionService;
 		this.settingsService = settingsService;
+		this.searchModels = searchModels;
 		this.paths = paths;
 	}
 
-	public void setOnCollected(Consumer<CollectionResult> onCollected) {
+	public void setOnCollected(BiConsumer<CollectionRequest, CollectionResult> onCollected) {
 		this.onCollected = onCollected;
 	}
 
@@ -114,47 +116,8 @@ public class CollectionTabController {
 			return;
 		}
 
-		CollectionTask task = new CollectionTask(collectionService, request.get(), sourceMode);
-
-		ProgressWindow progressWindow;
-
-		try {
-			progressWindow = new ProgressWindow(
-					documentsTable.getScene().getWindow(),
-					task.progressProperty(),
-					task.titleProperty(),
-					task.messageProperty(),
-					task::cancel);
-		} catch (IOException e) {
-			Dialogs.error("Erro ao abrir a tela de progresso: " + e.getMessage());
-			return;
-		}
-
-		btnCollect.setDisable(true);
-
-		task.setOnSucceeded(event -> {
-			progressWindow.close();
-			btnCollect.setDisable(false);
-			showResult(task.getValue(), sourceMode);
-		});
-
-		task.setOnFailed(event -> {
-			progressWindow.close();
-			btnCollect.setDisable(false);
-			Dialogs.error("Erro ao processar o diretório: " + task.getException().getMessage());
-		});
-
-		task.setOnCancelled(event -> {
-			progressWindow.close();
-			btnCollect.setDisable(false);
-			Dialogs.warning("Coleta cancelada. Os arquivos já copiados foram mantidos.");
-		});
-
-		progressWindow.show();
-
-		Thread collectThread = new Thread(task);
-		collectThread.setDaemon(true);
-		collectThread.start();
+		CollectionRunner.run(btnCollect, collectionService, request.get(), sourceMode,
+				result -> showResult(request.get(), result, sourceMode));
 	}
 
 	private SourceMode selectedSourceMode() {
@@ -178,15 +141,22 @@ public class CollectionTabController {
 
 		AppSettings settings = settingsService.current();
 
-		List<String> directories = sourceMode == SourceMode.PDV_DIRECTORIES
+		boolean usesModel = sourceMode == SourceMode.PDV_DIRECTORIES;
+
+		List<String> directories = usesModel
 				? settings.pdvDirectories()
 				: List.of(txtDirectory.getText().trim());
 
+		List<String> folderPatterns = usesModel
+				? searchModels.pdvModel(settings.pdvModelId()).collectionFolders()
+				: List.of();
+
 		return Optional.of(new CollectionRequest(
-				directories, DocumentCategory.NFCE, new DateRange(from, to), settings.organizeMode(), paths.xmlArchiveDir()));
+				directories, DocumentCategory.NFCE, new DateRange(from, to), settings.organizeMode(), paths.xmlArchiveDir(),
+				folderPatterns, invoice -> true));
 	}
 
-	private void showResult(CollectionResult result, SourceMode sourceMode) {
+	private void showResult(CollectionRequest request, CollectionResult result, SourceMode sourceMode) {
 
 		List<DocumentRow> rows = result.entries().stream()
 				.map(DocumentRowMapper::toRow)
@@ -194,7 +164,7 @@ public class CollectionTabController {
 
 		documentsTable.setItems(FXCollections.observableArrayList(rows));
 
-		onCollected.accept(result);
+		onCollected.accept(request, result);
 
 		Dialogs.collectionSummary(result, paths.xmlArchiveDir(), sourceMode);
 	}

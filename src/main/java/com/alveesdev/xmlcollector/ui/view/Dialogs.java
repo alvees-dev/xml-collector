@@ -2,11 +2,13 @@ package com.alveesdev.xmlcollector.ui.view;
 
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 
 import com.alveesdev.xmlcollector.application.collection.CollectionResult;
 import com.alveesdev.xmlcollector.application.collection.CollectionSummary;
 import com.alveesdev.xmlcollector.application.collection.SourceFailure;
+import com.alveesdev.xmlcollector.domain.model.XmlDocument;
 import com.alveesdev.xmlcollector.ui.model.SourceLabels;
 import com.alveesdev.xmlcollector.ui.model.SourceMode;
 
@@ -67,6 +69,36 @@ public final class Dialogs {
 		alert.showAndWait();
 	}
 
+	public static void missingSearchSummary(CollectionResult result, List<XmlDocument.Invoice> found, Path archiveRoot) {
+
+		List<String> failures = describeFailures(result, SourceMode.PDV_DIRECTORIES);
+
+		StringBuilder message = new StringBuilder();
+		message.append("Encontradas: ").append(found.size());
+
+		found.stream()
+				.sorted(Comparator.comparingInt(XmlDocument.Invoice::series).thenComparingInt(XmlDocument.Invoice::number))
+				.limit(MAX_LISTED_FAILURES)
+				.forEach(invoice -> message.append("\nSérie ").append(invoice.series()).append(": ").append(invoice.number()));
+
+		if (found.size() > MAX_LISTED_FAILURES) {
+			message.append("\n... e mais ").append(found.size() - MAX_LISTED_FAILURES);
+		}
+
+		message.append("\n\nCom erro de leitura: ").append(result.summary().errors());
+		message.append("\nDestino: ").append(archiveRoot);
+
+		if (!failures.isEmpty()) {
+			message.append("\n\nFalhas:\n").append(String.join("\n", failures));
+		}
+
+		Alert alert = new Alert(
+				failures.isEmpty() ? Alert.AlertType.INFORMATION : Alert.AlertType.WARNING,
+				message.toString());
+		alert.setHeaderText("Busca de notas faltantes concluída");
+		alert.showAndWait();
+	}
+
 	private static List<String> describeFailures(CollectionResult result, SourceMode sourceMode) {
 
 		List<String> lines = new ArrayList<>();
@@ -77,6 +109,7 @@ public final class Dialogs {
 			lines.add(switch (failure.reason()) {
 				case NOT_INFORMED -> label + ": diretório não informado";
 				case INACCESSIBLE -> label + ": diretório inacessível (" + failure.path() + ")";
+				case NO_MODEL_FOLDER -> label + ": nenhuma pasta do modelo de busca encontrada em " + failure.path();
 				case SUBFOLDER_INACCESSIBLE -> label + ": subpasta inacessível (" + failure.path() + ")";
 			});
 		}
