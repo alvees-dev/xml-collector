@@ -3,6 +3,7 @@ package com.alveesdev.xmlcollector.application.port;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.attribute.FileTime;
+import java.util.Optional;
 
 public interface DocumentArchive {
 
@@ -21,5 +22,9 @@ public interface DocumentArchive {
 
 	default boolean holdsVoidingInAnotherMonth(Path archiveRoot, Path month, String fileName) throws IOException {
 		return false;
+	}
+
+	default Optional<Path> findDocument(Path month, String identity, String fileName) throws IOException {
+		return Optional.empty();
 	}
 }

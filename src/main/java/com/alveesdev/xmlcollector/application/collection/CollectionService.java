@@ -24,8 +24,10 @@ import com.alveesdev.xmlcollector.application.port.SourceFiles.ResolvedFolders;
 import com.alveesdev.xmlcollector.application.port.SourceFiles.ScanResult;
 import com.alveesdev.xmlcollector.application.port.SourceFiles.SourceFile;
 import com.alveesdev.xmlcollector.domain.model.DocumentCategory;
+import com.alveesdev.xmlcollector.domain.model.DocumentEntry;
 import com.alveesdev.xmlcollector.domain.model.IssuedNumber;
 import com.alveesdev.xmlcollector.domain.model.NumberRange;
+import com.alveesdev.xmlcollector.domain.service.ArchiveLayout;
 import com.alveesdev.xmlcollector.domain.service.MissingNumberFinder;
 
 public class CollectionService {
@@ -54,6 +56,10 @@ public class CollectionService {
 		this.archive = archive;
 		this.issuedNumbers = issuedNumbers;
 		this.threads = threads;
+	}
+
+	public Optional<Path> storedFileOf(Path archiveRoot, DocumentEntry entry) throws IOException {
+		return archive.findDocument(ArchiveLayout.monthDirectory(archiveRoot, entry.invoice().date()), entry.invoice().key().value(), entry.fileName());
 	}
 
 	public CollectionResult collect(CollectionRequest request) {
