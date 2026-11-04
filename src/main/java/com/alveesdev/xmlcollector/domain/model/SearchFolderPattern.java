@@ -12,4 +12,11 @@ public final class SearchFolderPattern {
 
 	private SearchFolderPattern() {
 	}
+
+	public static String fixedPrefix(String pattern) {
+		int firstName = pattern.indexOf('{');
+		String fixed = firstName < 0 ? pattern : pattern.substring(0, firstName);
+
+		return fixed.endsWith(SEPARATOR) ? fixed.substring(0, fixed.length() - SEPARATOR.length()) : fixed;
+	}
 }
