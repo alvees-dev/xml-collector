@@ -8,6 +8,7 @@ import com.alveesdev.xmlcollector.application.port.DocumentArchive;
 import com.alveesdev.xmlcollector.application.port.DocumentReader;
 import com.alveesdev.xmlcollector.application.port.IssuedNumberRepository;
 import com.alveesdev.xmlcollector.application.settings.AppPaths;
+import com.alveesdev.xmlcollector.application.connection.DirectoryTester;
 import com.alveesdev.xmlcollector.application.settings.SearchModelCatalog;
 import com.alveesdev.xmlcollector.application.settings.service.SettingsService;
 import com.alveesdev.xmlcollector.application.voiding.VoidingBatch;
@@ -41,6 +42,7 @@ public final class AppContext {
 	private final DispatchService dispatchService;
 	private final SettingsService settingsService;
 	private final SearchModelCatalog searchModels;
+	private final DirectoryTester directoryTester;
 	private final SettingsWindow settingsWindow;
 
 	public AppContext(AppPaths paths) {
@@ -63,6 +65,7 @@ public final class AppContext {
 		this.settingsService = new SettingsService(
 				new PropertiesSettingsRepository(paths.settingsFile(), paths.legacyEmailSettingsFile(), BundledEmailAccount.load()));
 		this.searchModels = new SearchModelCatalog(SearchModelLoader.load());
+		this.directoryTester = new DirectoryTester(new XmlFileScanner(), archive, clock, DirectoryTester.DEFAULT_TIMEOUT);
 		this.settingsWindow = new SettingsWindow(this::createController);
 	}
 
@@ -96,7 +99,7 @@ public final class AppContext {
 		}
 
 		if (type == SettingsController.class) {
-			return new SettingsController(settingsService, searchModels, voidingBatch);
+			return new SettingsController(settingsService, searchModels, voidingBatch, directoryTester);
 		}
 
 		throw new IllegalArgumentException("Unknown controller: " + type.getName());

@@ -1,6 +1,8 @@
 package com.alveesdev.xmlcollector.infra.xml;
 
 import java.io.IOException;
+import java.nio.file.DirectoryIteratorException;
+import java.nio.file.DirectoryStream;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.NotDirectoryException;
@@ -19,6 +21,15 @@ public class XmlFileScanner implements SourceFiles {
 	@Override
 	public byte[] read(SourceFile file) throws IOException {
 		return Files.readAllBytes(file.path());
+	}
+
+	@Override
+	public void requireReadable(Path directory) throws IOException {
+		try (DirectoryStream<Path> stream = Files.newDirectoryStream(directory)) {
+			stream.iterator().hasNext();
+		} catch (DirectoryIteratorException e) {
+			throw e.getCause();
+		}
 	}
 
 	@Override
