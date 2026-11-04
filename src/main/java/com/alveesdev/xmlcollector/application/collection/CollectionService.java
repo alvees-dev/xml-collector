@@ -20,6 +20,7 @@ import com.alveesdev.xmlcollector.application.port.SourceFiles;
 import com.alveesdev.xmlcollector.application.port.SourceFiles.ResolvedFolders;
 import com.alveesdev.xmlcollector.application.port.SourceFiles.ScanResult;
 import com.alveesdev.xmlcollector.application.port.SourceFiles.SourceFile;
+import com.alveesdev.xmlcollector.domain.model.DocumentCategory;
 
 public class CollectionService {
 
@@ -78,7 +79,8 @@ public class CollectionService {
 				results.add(processor.result(index));
 			}
 
-			String historyFailure = saveIssuedNumbers(processor);
+			// The history only protects the voiding of NFCe, and the numbers of a purchase belong to other companies.
+			String historyFailure = request.category() == DocumentCategory.NFCE ? saveIssuedNumbers(processor) : null;
 
 			return new CollectionResult(
 					results, processor.missingNumbers(), processor.summary(), failures, historyFailure, processor.cancelledKeys());

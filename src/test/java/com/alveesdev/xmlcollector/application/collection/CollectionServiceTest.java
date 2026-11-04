@@ -211,6 +211,16 @@ class CollectionServiceTest {
 	}
 
 	@Test
+	void doesNotSaveTheNumbersOfAnNfeCollection() {
+		sources.add("nfe", "a.xml", invoice(1, IN_PERIOD));
+
+		service.collect(request(DocumentCategory.NFE_SALES, "nfe"));
+		service.collect(request(DocumentCategory.NFE_PURCHASES, "nfe"));
+
+		assertEquals(Set.of(), issuedNumbers.saved);
+	}
+
+	@Test
 	void savesTheNumbersOfAcceptedInvoicesOnce() {
 		sources.add("pdv1", "a.xml", invoice(1, 1, IN_PERIOD));
 		sources.add("pdv2", "copia.xml", invoice(1, 1, IN_PERIOD));
