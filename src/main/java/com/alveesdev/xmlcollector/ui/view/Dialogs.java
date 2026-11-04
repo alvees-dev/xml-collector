@@ -104,7 +104,8 @@ public final class Dialogs {
 		area.setEditable(false);
 		area.setWrapText(true);
 		area.setFocusTraversable(false);
-		area.setPrefRowCount(MessageLayout.rowsFor(message));
+		// One row more, because the height of exactly that many rows leaves a scroll bar over the text.
+		area.setPrefRowCount(MessageLayout.rowsFor(message) + 1);
 		area.setStyle(MESSAGE_STYLE);
 		return area;
 	}
