@@ -20,7 +20,7 @@ public final class ArchiveLayout {
 			"Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"
 	};
 
-	private static final DateTimeFormatter DAY_FOLDER_FORMAT = DateTimeFormatter.ofPattern("dd-MM-yyyy");
+	private static final DateTimeFormatter DAY_FOLDER_FORMAT = DateTimeFormatter.ofPattern("'Dia_'dd");
 	private static final String ZIP_PREFIX = "ArquivoXML";
 	private static final String VOIDING_FILE_SUFFIX = "-procInutNFe.xml";
 	private static final String PDV_FOLDER_PREFIX = "PDV";
@@ -61,6 +61,11 @@ public final class ArchiveLayout {
 		parts.add(monthLabel(monthDirectory));
 
 		return String.join("_", parts);
+	}
+
+	// The CNPJs in the name are only known after reading the notes, so the month is what identifies the zip.
+	public static boolean isZipOfMonth(String fileName, Path monthDirectory) {
+		return fileName.startsWith(ZIP_PREFIX + "_") && fileName.endsWith("_" + monthLabel(monthDirectory) + ".zip");
 	}
 
 	public static String voidingFileName(String voidingId) {

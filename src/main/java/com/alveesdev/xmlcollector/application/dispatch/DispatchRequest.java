@@ -10,6 +10,11 @@ public record DispatchRequest(
 		EmailAccount account,
 		String recipient,
 		String subject,
-		String body
+		String body,
+		boolean reuseExistingZip
 ) {
+
+	public DispatchRequest(List<Path> monthDirectories, EmailAccount account, String recipient, String subject, String body) {
+		this(monthDirectories, account, recipient, subject, body, false);
+	}
 }

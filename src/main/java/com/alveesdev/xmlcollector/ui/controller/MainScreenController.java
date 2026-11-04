@@ -2,6 +2,7 @@ package com.alveesdev.xmlcollector.ui.controller;
 
 import com.alveesdev.xmlcollector.ui.view.SettingsWindow;
 
+import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.scene.layout.VBox;
 
@@ -32,5 +33,10 @@ public class MainScreenController {
 	private void onOpenSettings() {
 		settingsWindow.showAndWait(root.getScene().getWindow());
 		missingTabController.refreshPdvColumns();
+	}
+
+	@FXML
+	private void onExit() {
+		Platform.exit();
 	}
 }

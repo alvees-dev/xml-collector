@@ -54,10 +54,17 @@ public class DispatchService {
 
 		validate(request);
 
-		listener.accept(new DispatchProgress(Step.COMPRESSING, Stage.RUNNING));
 		Set<String> cnpjs = new TreeSet<>();
-		List<CompressedFile> compressed = compressAll(request.monthDirectories(), cnpjs);
-		listener.accept(new DispatchProgress(Step.COMPRESSING, Stage.DONE));
+		List<CompressedFile> compressed;
+
+		if (request.reuseExistingZip()) {
+			listener.accept(new DispatchProgress(Step.COMPRESSING, Stage.SKIPPED));
+			compressed = existingOf(request.monthDirectories(), cnpjs);
+		} else {
+			listener.accept(new DispatchProgress(Step.COMPRESSING, Stage.RUNNING));
+			compressed = compressAll(request.monthDirectories(), cnpjs);
+			listener.accept(new DispatchProgress(Step.COMPRESSING, Stage.DONE));
+		}
 
 		List<Path> zipFiles = compressed.stream().map(CompressedFile::file).toList();
 		long totalBytes = compressed.stream().mapToLong(CompressedFile::bytes).sum();
@@ -146,6 +153,37 @@ public class DispatchService {
 		if (account == null || !account.isComplete()) {
 			throw new DispatchException("Configure a conta de e-mail remetente em Configurações > E-mail.");
 		}
+	}
+
+	public Optional<CompressedFile> existingZipOf(Path monthDirectory) throws DispatchException {
+		try {
+			return compressor.existing(monthDirectory);
+		} catch (IOException e) {
+			throw new DispatchException("Não foi possível verificar o arquivo compactado de " + ArchiveLayout.monthLabel(monthDirectory) + ": " + e.getMessage(), e);
+		}
+	}
+
+	private List<CompressedFile> existingOf(List<Path> monthDirectories, Set<String> cnpjs) throws DispatchException {
+
+		List<CompressedFile> existing = new ArrayList<>();
+
+		for (Path directory : monthDirectories) {
+			Optional<CompressedFile> file = existingZipOf(directory);
+
+			if (file.isEmpty()) {
+				throw new DispatchException("O arquivo compactado de " + ArchiveLayout.monthLabel(directory) + " não foi encontrado.");
+			}
+
+			try {
+				cnpjs.addAll(archivedDocuments.cnpjsIn(directory));
+			} catch (IOException e) {
+				throw new DispatchException("Não foi possível ler a pasta " + ArchiveLayout.monthLabel(directory) + ": " + e.getMessage(), e);
+			}
+
+			existing.add(file.get());
+		}
+
+		return existing;
 	}
 
 	private List<CompressedFile> compressAll(List<Path> monthDirectories, Set<String> cnpjs) throws DispatchException {

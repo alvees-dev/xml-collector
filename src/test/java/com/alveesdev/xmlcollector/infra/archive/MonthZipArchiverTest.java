@@ -102,6 +102,32 @@ class MonthZipArchiverTest {
 		assertFalse(Files.exists(root.resolve("2026").resolve(ZIP_NAME + ".zip")));
 	}
 
+	@Test
+	void findsTheZipOfTheMonthWhateverTheCnpjsInItsName() throws IOException {
+		Path zip = Files.writeString(root.resolve("2026").resolve(ZIP_NAME + ".zip"), "zip");
+
+		CompressedFile existing = archiver.existing(month).orElseThrow();
+
+		assertEquals(zip, existing.file());
+		assertEquals(3, existing.bytes());
+	}
+
+	@Test
+	void findsTheZipOfAMonthWithoutACnpj() throws IOException {
+		Path zip = Files.writeString(root.resolve("2026").resolve("ArquivoXML_Janeiro_2026.zip"), "zip");
+
+		assertEquals(zip, archiver.existing(month).orElseThrow().file());
+	}
+
+	@Test
+	void ignoresTheZipsOfOtherMonthsAndUnfinishedOnes() throws IOException {
+		Files.writeString(root.resolve("2026").resolve("ArquivoXML_12345678000190_Fevereiro_2026.zip"), "zip");
+		Files.writeString(root.resolve("2026").resolve(ZIP_NAME + ".zip.part"), "zip");
+		Files.writeString(root.resolve("2026").resolve("Janeiro_2026.zip"), "zip");
+
+		assertTrue(archiver.existing(month).isEmpty());
+	}
+
 	private static List<String> namesIn(Path directory) throws IOException {
 		List<String> names = new ArrayList<>();
 

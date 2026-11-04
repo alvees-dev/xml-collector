@@ -200,6 +200,11 @@ public class MissingTabController {
 	@FXML
 	private void onVoidAll() {
 
+		if (lastCollection == null) {
+			Dialogs.warning("Não é possível Inutilizar Todas, pois nenhuma coleta foi feita.");
+			return;
+		}
+
 		Map<Integer, List<NumberRange>> wanted = new TreeMap<>();
 
 		missingBySeries.forEach((series, ranges) -> {
@@ -208,7 +213,7 @@ public class MissingTabController {
 			}
 		});
 
-		voidNumbers(btnVoidAll, wanted);
+		voidNumbers(btnVoidAll, wanted, true);
 	}
 
 	@FXML
@@ -232,12 +237,12 @@ public class MissingTabController {
 			return;
 		}
 
-		voidNumbers(btnVoidNumber, Map.of(series, List.of(new NumberRange(start, end))));
+		voidNumbers(btnVoidNumber, Map.of(series, List.of(new NumberRange(start, end))), false);
 	}
 
-	private void voidNumbers(Node trigger, Map<Integer, List<NumberRange>> wanted) {
+	private void voidNumbers(Node trigger, Map<Integer, List<NumberRange>> wanted, boolean searchRequired) {
 
-		Optional<String> blocked = voidingBlock();
+		Optional<String> blocked = voidingBlock(searchRequired);
 
 		if (blocked.isPresent()) {
 			Dialogs.warning(blocked.get());
@@ -259,6 +264,10 @@ public class MissingTabController {
 			voidingBatch.checkPdvFolders(pdvFolders);
 		} catch (VoidingException e) {
 			Dialogs.warning(e.getMessage());
+			return;
+		}
+
+		if (searchProblems == null && !Dialogs.confirmVoidingWithoutSearch()) {
 			return;
 		}
 
@@ -301,10 +310,10 @@ public class MissingTabController {
 		thread.start();
 	}
 
-	private Optional<String> voidingBlock() {
+	private Optional<String> voidingBlock(boolean searchRequired) {
 
 		if (lastCollection == null) {
-			return Optional.of("Faça a coleta e clique em Procurar Todas antes de inutilizar.");
+			return Optional.of("Faça a coleta antes de inutilizar.");
 		}
 
 		if (!lastCollection.directories().equals(settingsService.current().pdvDirectories())) {
@@ -316,7 +325,9 @@ public class MissingTabController {
 		}
 
 		if (searchProblems == null) {
-			return Optional.of("Clique em Procurar Todas antes de inutilizar, para só inutilizar o que realmente não foi encontrado.");
+			return searchRequired
+					? Optional.of("Clique em Procurar Todas antes de inutilizar, para só inutilizar o que realmente não foi encontrado.")
+					: Optional.empty();
 		}
 
 		if (!searchProblems.isEmpty()) {

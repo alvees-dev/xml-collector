@@ -4,12 +4,12 @@ import java.io.IOException;
 
 import com.alveesdev.xmlcollector.application.settings.AppPaths;
 import com.alveesdev.xmlcollector.bootstrap.AppContext;
+import com.alveesdev.xmlcollector.ui.view.Dialogs;
 
 import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Scene;
-import javafx.scene.control.Alert;
 import javafx.stage.Stage;
 
 public class Main extends Application {
@@ -22,10 +22,8 @@ public class Main extends Application {
         try {
             paths.ensureDirectories();
         } catch (IOException e) {
-            new Alert(Alert.AlertType.ERROR,
-                    "Não foi possível criar as pastas do programa em:\n" + paths.root()
-                            + "\n\nVerifique se o usuário do Windows tem permissão para criar pastas em C:\\.")
-                    .showAndWait();
+            Dialogs.error("Não foi possível criar as pastas do programa em:\n" + paths.root()
+                    + "\n\nVerifique se o usuário do Windows tem permissão para criar pastas em C:\\.");
             Platform.exit();
             return;
         }
@@ -33,13 +31,13 @@ public class Main extends Application {
         try {
             context.issuedNumbers().initialize();
         } catch (IOException e) {
-            new Alert(Alert.AlertType.WARNING, e.getMessage()).showAndWait();
+            Dialogs.warning(e.getMessage());
         }
 
         try {
             context.settings().load();
         } catch (IOException e) {
-            new Alert(Alert.AlertType.WARNING, "Não foi possível ler as configurações: " + e.getMessage()).showAndWait();
+            Dialogs.warning("Não foi possível ler as configurações: " + e.getMessage());
         }
 
         FXMLLoader loader = new FXMLLoader(

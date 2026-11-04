@@ -515,7 +515,7 @@ class CollectionServiceTest {
 		collectBy(SeparationMode.BY_PDV, OrganizeMode.BY_DAY);
 
 		assertEquals(
-				ARCHIVE.resolve("2026").resolve("Janeiro").resolve("PDV1").resolve("15-01-2026"),
+				ARCHIVE.resolve("2026").resolve("Janeiro").resolve("PDV1").resolve("Dia_15"),
 				archive.stored.get(0).directory());
 	}
 

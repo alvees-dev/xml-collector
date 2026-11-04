@@ -199,6 +199,56 @@ class DispatchServiceTest {
 		assertEquals(List.of(), sent);
 	}
 
+	@Test
+	void sendsTheExistingZipWithoutCompressingAgain() throws Exception {
+		Path existingZip = MONTH.resolveSibling("ArquivoXML_12345678000190_Janeiro_2026.zip");
+		List<DispatchProgress> events = new ArrayList<>();
+
+		service(compressorWith(existingZip, 10)).dispatch(reusingTheZip(), events::add, () -> false);
+
+		assertEquals(List.of(), zipNames);
+		assertEquals(List.of(existingZip), sent.get(0).attachments());
+		assertEquals(new DispatchProgress(Step.COMPRESSING, Stage.SKIPPED), events.get(0));
+	}
+
+	@Test
+	void sendsALargeExistingZipThroughTheDriveInTheFolderOfTheCnpj() throws Exception {
+		Path existingZip = MONTH.resolveSibling("ArquivoXML_12345678000190_Janeiro_2026.zip");
+
+		DispatchResult result = service(compressorWith(existingZip, DispatchService.MAX_MESSAGE_BYTES)).dispatch(reusingTheZip());
+
+		assertEquals(DispatchResult.Method.DRIVE_LINK, result.method());
+		assertEquals(List.of("12345678000190"), driveFolders);
+		assertEquals(List.of(), zipNames);
+	}
+
+	@Test
+	void reportsWhenTheExistingZipIsGone() {
+		assertThrows(DispatchException.class, () -> service(compressor).dispatch(reusingTheZip()));
+
+		assertEquals(List.of(), sent);
+	}
+
+	private static DispatchRequest reusingTheZip() {
+		return new DispatchRequest(List.of(MONTH), ACCOUNT, "destino@exemplo.com", "", "", true);
+	}
+
+	private DirectoryCompressor compressorWith(Path existingZip, long bytes) {
+		return new DirectoryCompressor() {
+
+			@Override
+			public Optional<CompressedFile> compress(Path directory, String zipName, List<ExtraFile> extraFiles) {
+				zipNames.add(zipName);
+				return Optional.empty();
+			}
+
+			@Override
+			public Optional<CompressedFile> existing(Path directory) {
+				return Optional.of(new CompressedFile(existingZip, bytes));
+			}
+		};
+	}
+
 	private DirectoryCompressor largeCompressor() {
 		return (directory, zipName, extraFiles) -> Optional.of(new DirectoryCompressor.CompressedFile(
 				directory.resolveSibling(zipName + ".zip"), DispatchService.MAX_MESSAGE_BYTES));
