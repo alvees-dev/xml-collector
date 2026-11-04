@@ -5,6 +5,7 @@ import java.io.IOException;
 import com.alveesdev.xmlcollector.application.settings.AppPaths;
 import com.alveesdev.xmlcollector.bootstrap.AppContext;
 import com.alveesdev.xmlcollector.ui.view.Dialogs;
+import com.alveesdev.xmlcollector.ui.view.LightWindows;
 import com.alveesdev.xmlcollector.ui.view.TitleBar;
 
 import javafx.application.Application;
@@ -20,6 +21,8 @@ public class Main extends Application {
 
     @Override
     public void start(Stage stage) throws Exception {
+        LightWindows.applyToEveryWindow();
+
         AppContext context = new AppContext(AppPaths.standard());
         AppPaths paths = context.paths();
 
