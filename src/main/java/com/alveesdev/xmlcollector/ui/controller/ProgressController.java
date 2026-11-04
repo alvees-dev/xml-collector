@@ -124,6 +124,13 @@ public class ProgressController {
 		sourcesBox.getChildren().add(row);
 	}
 
+	// The X of the window does what the button does, and nothing when the button can no longer be used.
+	public void requestCancel() {
+		if (!btnCancel.isDisable()) {
+			onCancel();
+		}
+	}
+
 	@FXML
 	private void onCancel() {
 		btnCancel.setDisable(true);

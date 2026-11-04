@@ -20,7 +20,6 @@
       <ToggleGroup fx:id="organizeGroup" />
    </fx:define>
    <children>
-      <Label fx:id="lblTitle" onMouseDragged="#onTitleDragged" onMousePressed="#onTitlePressed" prefHeight="28.0" prefWidth="385.0" text=" Configurações" />
       <TabPane tabClosingPolicy="UNAVAILABLE" VBox.vgrow="ALWAYS">
         <tabs>
           <Tab text="Modelos">

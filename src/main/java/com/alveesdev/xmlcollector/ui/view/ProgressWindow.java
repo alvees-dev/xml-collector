@@ -13,12 +13,12 @@ import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
-import javafx.stage.StageStyle;
 import javafx.stage.Window;
 
 public final class ProgressWindow {
 
 	private static final String PROGRESS_FXML = "/com/alveesdev/xmlcollector/view/CollectionProgress.fxml";
+	private static final String WINDOW_TITLE = "Coletor XML";
 
 	private final Stage stage = new Stage();
 	private final ProgressController controller;
@@ -42,11 +42,15 @@ public final class ProgressWindow {
 		controller = loader.getController();
 		controller.show(title, labels, labelWidth);
 
-		stage.initStyle(StageStyle.UNDECORATED);
+		stage.setTitle(WINDOW_TITLE);
 		stage.initModality(Modality.APPLICATION_MODAL);
 		stage.initOwner(owner);
 		stage.setResizable(false);
 		stage.setScene(new Scene(root));
+		stage.setOnCloseRequest(event -> {
+			event.consume();
+			controller.requestCancel();
+		});
 	}
 
 	public void setCancelAction(Runnable cancelAction) {

@@ -72,7 +72,6 @@ public final class Dialogs {
 		Alert alert = new Alert(type, message, buttons);
 		alert.getDialogPane().setContent(content);
 		alert.getDialogPane().setPrefWidth(MESSAGE_WIDTH);
-		alert.setResizable(true);
 		return alert;
 	}
 
@@ -97,7 +96,6 @@ public final class Dialogs {
 		alert.setTitle("Mensagem completa");
 		alert.getDialogPane().setContent(messageArea(message));
 		alert.getDialogPane().setPrefWidth(WHOLE_MESSAGE_WIDTH);
-		alert.setResizable(true);
 		alert.showAndWait();
 	}
 
@@ -192,7 +190,6 @@ public final class Dialogs {
 			VBox.setVgrow(area, Priority.ALWAYS);
 			dialog.getDialogPane().setContent(new VBox(10, area, dialog.getEditor()));
 			dialog.getDialogPane().setPrefWidth(MESSAGE_WIDTH);
-			dialog.setResizable(true);
 
 			return dialog.showAndWait().map(VoidingText.CONFIRMATION_WORD::equals).orElse(false);
 		}
