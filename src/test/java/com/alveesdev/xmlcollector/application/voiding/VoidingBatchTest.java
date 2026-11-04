@@ -9,6 +9,7 @@ import java.nio.file.Path;
 import java.nio.file.attribute.FileTime;
 import java.time.Clock;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.List;
@@ -25,7 +26,6 @@ import com.alveesdev.xmlcollector.application.voiding.VoidingProgress.Stage;
 import com.alveesdev.xmlcollector.domain.model.DocumentModel;
 import com.alveesdev.xmlcollector.domain.model.FiscalEnvironment;
 import com.alveesdev.xmlcollector.domain.model.NumberRange;
-import com.alveesdev.xmlcollector.domain.model.OrganizeMode;
 import com.alveesdev.xmlcollector.domain.model.VoidingReceipt;
 import com.alveesdev.xmlcollector.domain.model.VoidingRequest;
 
@@ -33,6 +33,7 @@ class VoidingBatchTest {
 
 	private static final Path ROOT = Path.of("archive");
 	private static final Clock CLOCK = Clock.fixed(Instant.parse("2026-02-05T12:00:00Z"), ZoneOffset.UTC);
+	private static final LocalDate COLLECTED = LocalDate.of(2026, 1, 31);
 	private static final CertificateSettings SETTINGS = new CertificateSettings("a.pfx", "x", FiscalEnvironment.PRODUCTION);
 	private static final VoidingReceipt APPROVED = new VoidingReceipt("102", "Homologado", "135", "agora", "<xml/>");
 	private static final VoidingReceipt REJECTED = new VoidingReceipt("241", "Numero ja utilizado", null, "agora", "<xml/>");
@@ -58,7 +59,7 @@ class VoidingBatchTest {
 	@Test
 	void sendsEveryRangeInOrderAndReportsEach() throws Exception {
 		List<VoidingOutcome> outcomes = batch("12345678000190", request -> APPROVED).run(List.of(FIRST, SECOND), SETTINGS,
-				OrganizeMode.SINGLE_FOLDER, ROOT, Map.of(), events::add, () -> false);
+				ROOT, COLLECTED, Map.of(), events::add, () -> false);
 
 		assertEquals(List.of(FIRST, SECOND), sent);
 		assertEquals(List.of(Stage.APPROVED, Stage.APPROVED), outcomes.stream().map(VoidingOutcome::stage).toList());
@@ -71,7 +72,7 @@ class VoidingBatchTest {
 	@Test
 	void aRejectionDoesNotStopTheNextRangeAndIsNotStored() throws Exception {
 		List<VoidingOutcome> outcomes = batch("12345678000190", request -> request == FIRST ? REJECTED : APPROVED)
-				.run(List.of(FIRST, SECOND), SETTINGS, OrganizeMode.SINGLE_FOLDER, ROOT, Map.of(), events::add, () -> false);
+				.run(List.of(FIRST, SECOND), SETTINGS, ROOT, COLLECTED, Map.of(), events::add, () -> false);
 
 		assertEquals(List.of(Stage.REJECTED, Stage.APPROVED), outcomes.stream().map(VoidingOutcome::stage).toList());
 		assertTrue(outcomes.get(0).detail().contains("241"));
@@ -85,7 +86,7 @@ class VoidingBatchTest {
 				throw new VoidingException("sem resposta");
 			}
 			return APPROVED;
-		}).run(List.of(FIRST, SECOND, THIRD), SETTINGS, OrganizeMode.SINGLE_FOLDER, ROOT, Map.of(), events::add, () -> false);
+		}).run(List.of(FIRST, SECOND, THIRD), SETTINGS, ROOT, COLLECTED, Map.of(), events::add, () -> false);
 
 		assertEquals(List.of(FIRST, SECOND), sent);
 		assertEquals(List.of(Stage.APPROVED, Stage.FAILED, Stage.NOT_SENT), outcomes.stream().map(VoidingOutcome::stage).toList());
@@ -94,7 +95,7 @@ class VoidingBatchTest {
 	@Test
 	void stoppingKeepsWhatWasDoneAndSendsNothingElse() throws Exception {
 		List<VoidingOutcome> outcomes = batch("12345678000190", request -> APPROVED).run(List.of(FIRST, SECOND), SETTINGS,
-				OrganizeMode.SINGLE_FOLDER, ROOT, Map.of(), events::add, () -> !sent.isEmpty());
+				ROOT, COLLECTED, Map.of(), events::add, () -> !sent.isEmpty());
 
 		assertEquals(List.of(FIRST), sent);
 		assertEquals(List.of(Stage.APPROVED, Stage.NOT_SENT), outcomes.stream().map(VoidingOutcome::stage).toList());
@@ -103,7 +104,7 @@ class VoidingBatchTest {
 	@Test
 	void refusesACertificateOfAnotherCompanyBeforeSendingAnything() {
 		VoidingException error = assertThrows(VoidingException.class, () -> batch("98765432000110", request -> APPROVED)
-				.run(List.of(FIRST), SETTINGS, OrganizeMode.SINGLE_FOLDER, ROOT, Map.of(), events::add, () -> false));
+				.run(List.of(FIRST), SETTINGS, ROOT, COLLECTED, Map.of(), events::add, () -> false));
 
 		assertTrue(error.getMessage().contains("98765432000110"));
 		assertEquals(List.of(), sent);
@@ -111,7 +112,7 @@ class VoidingBatchTest {
 
 	@Test
 	void acceptsTheCertificateOfAnotherBranchOfTheSameCompany() throws Exception {
-		batch("12345678000271", request -> APPROVED).run(List.of(FIRST), SETTINGS, OrganizeMode.SINGLE_FOLDER, ROOT, Map.of(), events::add, () -> false);
+		batch("12345678000271", request -> APPROVED).run(List.of(FIRST), SETTINGS, ROOT, COLLECTED, Map.of(), events::add, () -> false);
 
 		assertEquals(List.of(FIRST), sent);
 	}
@@ -139,7 +140,7 @@ class VoidingBatchTest {
 				CLOCK);
 
 		VoidingException error = assertThrows(VoidingException.class, () -> batch.run(List.of(FIRST), SETTINGS,
-				OrganizeMode.SINGLE_FOLDER, ROOT, Map.of(1, List.of(Path.of("pdv1", "saida"))), events::add, () -> false));
+				ROOT, COLLECTED, Map.of(1, List.of(Path.of("pdv1", "saida"))), events::add, () -> false));
 
 		assertTrue(error.getMessage().contains("Nada foi enviado"));
 		assertEquals(List.of(), sent);
@@ -165,7 +166,7 @@ class VoidingBatchTest {
 				},
 				CLOCK);
 
-		List<VoidingOutcome> outcomes = batch.run(List.of(FIRST, SECOND), SETTINGS, OrganizeMode.SINGLE_FOLDER, ROOT,
+		List<VoidingOutcome> outcomes = batch.run(List.of(FIRST, SECOND), SETTINGS, ROOT, COLLECTED,
 				Map.of(1, List.of(Path.of("pdv1", "saida"))), events::add, () -> false);
 
 		assertEquals(List.of(FIRST), sent);

@@ -3,6 +3,7 @@ package com.alveesdev.xmlcollector.application.voiding;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.time.Clock;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -14,7 +15,6 @@ import com.alveesdev.xmlcollector.application.port.VoidingException;
 import com.alveesdev.xmlcollector.application.port.VoidingGatewayFactory;
 import com.alveesdev.xmlcollector.application.settings.CertificateSettings;
 import com.alveesdev.xmlcollector.application.voiding.VoidingProgress.Stage;
-import com.alveesdev.xmlcollector.domain.model.OrganizeMode;
 import com.alveesdev.xmlcollector.domain.model.VoidingRequest;
 
 public class VoidingBatch {
@@ -57,9 +57,9 @@ public class VoidingBatch {
 		}
 	}
 
-	public List<VoidingOutcome> run(List<VoidingRequest> requests, CertificateSettings settings, OrganizeMode organizeMode,
-			Path archiveRoot, Map<Integer, List<Path>> pdvFolders, Consumer<VoidingProgress> listener, BooleanSupplier cancelled)
-			throws VoidingException {
+	public List<VoidingOutcome> run(List<VoidingRequest> requests, CertificateSettings settings,
+			Path archiveRoot, LocalDate archiveDate, Map<Integer, List<Path>> pdvFolders, Consumer<VoidingProgress> listener,
+			BooleanSupplier cancelled) throws VoidingException {
 
 		VoidingGatewayFactory.Connection connection = gateways.open(settings);
 		requireSameCompany(connection.certificate(), requests);
@@ -81,7 +81,7 @@ public class VoidingBatch {
 			listener.accept(new VoidingProgress(index, Stage.SENDING));
 
 			try {
-				VoidingResult result = service.voidRange(request, organizeMode, archiveRoot, pdvFolders.getOrDefault(request.series(), List.of()));
+				VoidingResult result = service.voidRange(request, archiveRoot, archiveDate, pdvFolders.getOrDefault(request.series(), List.of()));
 				Stage stage = result.receipt().approved() ? Stage.APPROVED : Stage.REJECTED;
 
 				outcomes.add(new VoidingOutcome(request, stage, result.receipt().status() + " - " + result.receipt().reason(),

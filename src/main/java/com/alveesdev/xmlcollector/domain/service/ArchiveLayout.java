@@ -71,6 +71,10 @@ public final class ArchiveLayout {
 		return withDay(monthDirectory(archiveRoot, date).resolve(category.folderName()), date, mode);
 	}
 
+	public static Path voidingDirectoryFor(Path archiveRoot, LocalDate date) {
+		return monthDirectory(archiveRoot, date).resolve(DocumentCategory.VOIDED.folderName());
+	}
+
 	public static Path pdvDirectoryFor(Path archiveRoot, LocalDate date, OrganizeMode mode, int sourceIndex) {
 		return withDay(monthDirectory(archiveRoot, date).resolve(PDV_FOLDER_PREFIX + (sourceIndex + 1)), date, mode);
 	}

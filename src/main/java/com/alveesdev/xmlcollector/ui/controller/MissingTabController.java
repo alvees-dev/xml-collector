@@ -275,7 +275,9 @@ public class MissingTabController {
 			return;
 		}
 
-		VoidingTask task = new VoidingTask(voidingBatch, requests, certificate, settings.organizeMode(), paths.xmlArchiveDir(), pdvFolders);
+		// The month of the collection, so the file goes out with the documents of the gaps it closes.
+		VoidingTask task = new VoidingTask(voidingBatch, requests, certificate, paths.xmlArchiveDir(),
+				lastCollection.period().to(), pdvFolders);
 		progressWindow.setCancelAction(task::requestStop);
 
 		trigger.setDisable(true);
