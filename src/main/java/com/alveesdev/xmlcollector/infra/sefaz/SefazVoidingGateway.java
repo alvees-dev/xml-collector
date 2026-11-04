@@ -75,7 +75,7 @@ public class SefazVoidingGateway implements VoidingGateway {
 		try {
 			return transport.post(url, envelope);
 		} catch (IOException e) {
-			throw new VoidingException("Falha ao falar com a Sefaz: " + e.getMessage() + "." + UNCONFIRMED_HINT, e);
+			throw new VoidingException("Falha ao comunicar com a Sefaz: " + e.getMessage() + "." + UNCONFIRMED_HINT, e);
 		} catch (InterruptedException e) {
 			Thread.currentThread().interrupt();
 			throw new VoidingException("O envio foi interrompido." + UNCONFIRMED_HINT, e);

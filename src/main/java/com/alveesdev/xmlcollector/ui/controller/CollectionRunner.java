@@ -54,7 +54,7 @@ final class CollectionRunner {
 		task.setOnCancelled(event -> {
 			progressWindow.close();
 			trigger.setDisable(false);
-			Dialogs.warning("Operação cancelada. Os arquivos já copiados foram mantidos.");
+			Dialogs.warning("Coleta cancelada. Os arquivos já copiados foram mantidos.");
 		});
 
 		progressWindow.show();

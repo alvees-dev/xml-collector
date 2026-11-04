@@ -61,11 +61,9 @@ public final class Dialogs {
 		}
 
 		message.append("\nJá existiam no destino: ").append(summary.alreadyExisting());
-		message.append("\nDuplicados (mesma chave): ").append(summary.duplicates());
 		message.append("\nFora do período: ").append(summary.outOfPeriod());
-		message.append("\nIgnorados (outro tipo de documento): ").append(summary.ignored());
 		message.append("\nCom erro de leitura: ").append(summary.errors());
-		message.append("\n\nDestino: ").append(archiveRoot);
+		message.append("\n\nArquivos salvos em: ").append(archiveRoot);
 
 		if (!failures.isEmpty()) {
 			message.append("\n\nFalhas:\n").append(String.join("\n", failures));
@@ -109,7 +107,7 @@ public final class Dialogs {
 		boolean allApproved = outcomes.stream().allMatch(outcome -> outcome.stage() == VoidingProgress.Stage.APPROVED && outcome.archiveFailure() == null && outcome.pdvFailures().isEmpty());
 
 		Alert alert = new Alert(allApproved ? Alert.AlertType.INFORMATION : Alert.AlertType.WARNING, VoidingText.summary(outcomes, environment));
-		alert.setHeaderText("Inutilização concluída");
+		alert.setHeaderText("Solicitação concluída");
 		alert.showAndWait();
 	}
 

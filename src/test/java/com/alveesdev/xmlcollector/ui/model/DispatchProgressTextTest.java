@@ -13,7 +13,7 @@ class DispatchProgressTextTest {
 	@Test
 	void listsTheStepsInOrder() {
 		assertEquals(
-				List.of("Compactar arquivos", "Salvar no Google Drive", "Enviar e-mail"),
+				List.of("Compactando arquivos", "Salvando no Google Drive", "Enviando e-mail"),
 				List.copyOf(DispatchProgressText.stepLabels().values()));
 	}
 

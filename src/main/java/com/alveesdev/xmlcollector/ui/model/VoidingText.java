@@ -42,7 +42,7 @@ public final class VoidingText {
 			text.append("\n\nEsta operação NÃO pode ser desfeita. Confira se nenhuma dessas notas está em contingência.");
 			text.append("\nPara continuar, digite ").append(CONFIRMATION_WORD).append(':');
 		} else {
-			text.append("\n\nHomologação é só um teste: não tem efeito fiscal, o XML não é guardado, e os números continuam na lista de faltantes.");
+			text.append("\n\nHomologação é só um teste: não tem efeito fiscal. A inutilização de arquivos não será efetivada. Mude para ambiente de Produção para Inutilizar.");
 		}
 
 		return text.toString();
@@ -53,14 +53,20 @@ public final class VoidingText {
 		StringBuilder text = new StringBuilder();
 
 		if (environment == FiscalEnvironment.HOMOLOGATION) {
-			text.append("Teste em homologação, sem efeito fiscal.\n\n");
+			text.append("Teste em homologação, sem efeito fiscal.");
+		}
+
+		if (outcomes.stream().allMatch(outcome -> outcome.stage() == Stage.APPROVED)) {
+			startBlock(text);
+			text.append(environment == FiscalEnvironment.PRODUCTION
+					? "As numerações foram inutilizadas."
+					: "Teste concluído, nenhuma numeração foi inutilizada.");
 		}
 
 		List<VoidingOutcome> rejected = inStage(outcomes, Stage.REJECTED);
 
-		if (rejected.isEmpty()) {
-			text.append("Nenhuma numeração recusada.");
-		} else {
+		if (!rejected.isEmpty()) {
+			startBlock(text);
 			text.append("Numerações recusadas:");
 			rejected.forEach(outcome -> text.append('\n').append(rangeLabel(outcome.request())));
 		}
@@ -69,20 +75,28 @@ public final class VoidingText {
 		List<VoidingOutcome> failed = inStage(outcomes, Stage.FAILED);
 
 		if (!failed.isEmpty()) {
-			text.append("\n\nFalharam (a resposta da Sefaz é desconhecida, confira antes de reenviar):");
+			startBlock(text);
+			text.append("Falharam (a resposta da Sefaz é desconhecida, confira antes de reenviar):");
 			failed.forEach(outcome -> text.append('\n').append(rangeLabel(outcome.request())).append(" (").append(outcome.detail()).append(')'));
 		}
 
 		List<VoidingOutcome> notSent = inStage(outcomes, Stage.NOT_SENT);
 
 		if (!notSent.isEmpty()) {
-			text.append("\n\nNão enviadas:");
+			startBlock(text);
+			text.append("Não enviadas:");
 			notSent.forEach(outcome -> text.append('\n').append(rangeLabel(outcome.request())));
 		}
 
 		appendSaveFailures(text, outcomes);
 
 		return text.toString();
+	}
+
+	private static void startBlock(StringBuilder text) {
+		if (!text.isEmpty()) {
+			text.append("\n\n");
+		}
 	}
 
 	private static List<VoidingOutcome> inStage(List<VoidingOutcome> outcomes, Stage stage) {

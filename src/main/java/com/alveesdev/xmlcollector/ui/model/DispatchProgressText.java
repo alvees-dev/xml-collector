@@ -30,9 +30,9 @@ public final class DispatchProgressText {
 
 	private static String label(DispatchProgress.Step step) {
 		return switch (step) {
-			case COMPRESSING -> "Compactar arquivos";
-			case UPLOADING -> "Salvar no Google Drive";
-			case SENDING -> "Enviar e-mail";
+			case COMPRESSING -> "Compactando arquivos";
+			case UPLOADING -> "Salvando no Google Drive";
+			case SENDING -> "Enviando e-mail";
 		};
 	}
 }

@@ -26,7 +26,7 @@ public final class SettingsWindow {
 			URL fxmlLocation = SettingsWindow.class.getResource(SETTINGS_FXML);
 
 			if (fxmlLocation == null) {
-				Dialogs.error("Arquivo da tela de configurações não encontrado.");
+				Dialogs.error("Não foi possível abrir as configurações.");
 				return;
 			}
 
