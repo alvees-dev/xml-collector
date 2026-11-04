@@ -67,7 +67,7 @@ public class DispatchTabController {
 		EmailDraft draft = settingsService.current().emailDraft();
 		txtRecipient.setText(draft.recipient());
 		txtSubject.setText(draft.subject());
-		txtBody.setText(draft.body());
+		txtBody.setText(draft.body().isBlank() ? EmailDraft.DEFAULT_BODY : draft.body());
 
 		loadMonthChoices();
 

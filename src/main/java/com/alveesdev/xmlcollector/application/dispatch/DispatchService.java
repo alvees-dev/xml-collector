@@ -21,6 +21,7 @@ import com.alveesdev.xmlcollector.application.port.DispatchException;
 import com.alveesdev.xmlcollector.application.port.EmailMessage;
 import com.alveesdev.xmlcollector.application.port.EmailSender;
 import com.alveesdev.xmlcollector.application.settings.EmailAccount;
+import com.alveesdev.xmlcollector.application.settings.EmailDraft;
 import com.alveesdev.xmlcollector.domain.service.ArchiveLayout;
 import com.alveesdev.xmlcollector.domain.service.ValuesReport;
 
@@ -237,6 +238,6 @@ public class DispatchService {
 			return request.body();
 		}
 
-		return "Segue o XML das notas referentes a " + folderNameOf(request.monthDirectories()) + ".";
+		return EmailDraft.DEFAULT_BODY;
 	}
 }
