@@ -29,6 +29,7 @@ import com.alveesdev.xmlcollector.ui.model.SourceMode;
 import com.alveesdev.xmlcollector.ui.view.Dialogs;
 
 import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
 import javafx.scene.control.CheckBox;
@@ -40,6 +41,8 @@ import javafx.scene.control.TextField;
 import javafx.scene.control.cell.PropertyValueFactory;
 
 public class CollectionTabController {
+
+	private static final List<String> COLUMN_PROPERTIES = List.of("number", "series", "totalValue", "emissionDate", "accessKey", "status");
 
 	private final CollectionService collectionService;
 	private final SettingsService settingsService;
@@ -83,25 +86,10 @@ public class CollectionTabController {
 	private TextField txtNfePurchasesTotal;
 
 	@FXML
-	private TableView<DocumentRow> documentsTable;
+	private TableView<DocumentRow> nfceTable;
 
 	@FXML
-	private TableColumn<DocumentRow, String> numberColumn;
-
-	@FXML
-	private TableColumn<DocumentRow, String> seriesColumn;
-
-	@FXML
-	private TableColumn<DocumentRow, String> totalValueColumn;
-
-	@FXML
-	private TableColumn<DocumentRow, String> emissionDateColumn;
-
-	@FXML
-	private TableColumn<DocumentRow, String> accessKeyColumn;
-
-	@FXML
-	private TableColumn<DocumentRow, String> statusColumn;
+	private TableView<DocumentRow> nfeTable;
 
 	public CollectionTabController(CollectionService collectionService, SettingsService settingsService,
 			SearchModelCatalog searchModels, AppPaths paths) {
@@ -122,12 +110,8 @@ public class CollectionTabController {
 
 	@FXML
 	public void initialize() {
-		numberColumn.setCellValueFactory(new PropertyValueFactory<>("number"));
-		seriesColumn.setCellValueFactory(new PropertyValueFactory<>("series"));
-		totalValueColumn.setCellValueFactory(new PropertyValueFactory<>("totalValue"));
-		emissionDateColumn.setCellValueFactory(new PropertyValueFactory<>("emissionDate"));
-		accessKeyColumn.setCellValueFactory(new PropertyValueFactory<>("accessKey"));
-		statusColumn.setCellValueFactory(new PropertyValueFactory<>("status"));
+		bindColumns(nfceTable);
+		bindColumns(nfeTable);
 
 		radioPdvDirectories.setSelected(true);
 
@@ -136,6 +120,15 @@ public class CollectionTabController {
 		YearMonth previousMonth = YearMonth.now().minusMonths(1);
 		dpFrom.setValue(previousMonth.atDay(1));
 		dpTo.setValue(previousMonth.atEndOfMonth());
+	}
+
+	private static void bindColumns(TableView<DocumentRow> table) {
+		for (int index = 0; index < COLUMN_PROPERTIES.size(); index++) {
+			@SuppressWarnings("unchecked")
+			TableColumn<DocumentRow, String> column = (TableColumn<DocumentRow, String>) table.getColumns().get(index);
+
+			column.setCellValueFactory(new PropertyValueFactory<>(COLUMN_PROPERTIES.get(index)));
+		}
 	}
 
 	@FXML
@@ -284,15 +277,18 @@ public class CollectionTabController {
 
 	private void showCollected() {
 
-		List<DocumentRow> rows = Stream.concat(Stream.of(collected), nfeCollected.values().stream())
-				.flatMap(documents -> documents.entries().stream())
-				.map(DocumentRowMapper::toRow)
-				.toList();
-
-		documentsTable.setItems(FXCollections.observableArrayList(rows));
+		nfceTable.setItems(rowsOf(Stream.of(collected)));
+		nfeTable.setItems(rowsOf(nfeCollected.values().stream()));
 		txtNfceTotal.setText(DocumentRowMapper.currency(collected.authorizedTotal()));
 		txtNfeSalesTotal.setText(nfeTotal(DocumentCategory.NFE_SALES));
 		txtNfePurchasesTotal.setText(nfeTotal(DocumentCategory.NFE_PURCHASES));
+	}
+
+	private static ObservableList<DocumentRow> rowsOf(Stream<CollectedDocuments> documents) {
+		return FXCollections.observableArrayList(documents
+				.flatMap(ofCategory -> ofCategory.entries().stream())
+				.map(DocumentRowMapper::toRow)
+				.toList());
 	}
 
 	private String nfeTotal(DocumentCategory category) {

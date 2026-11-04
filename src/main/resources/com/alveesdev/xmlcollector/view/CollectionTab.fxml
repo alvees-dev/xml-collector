@@ -7,6 +7,8 @@
 <?import javafx.scene.control.Label?>
 <?import javafx.scene.control.RadioButton?>
 <?import javafx.scene.control.Separator?>
+<?import javafx.scene.control.Tab?>
+<?import javafx.scene.control.TabPane?>
 <?import javafx.scene.control.TableColumn?>
 <?import javafx.scene.control.TableView?>
 <?import javafx.scene.control.TextField?>
@@ -74,15 +76,37 @@
             </GridPane>
          </children>
       </HBox>
-      <TableView fx:id="documentsTable" VBox.vgrow="ALWAYS">
-        <columns>
-          <TableColumn fx:id="numberColumn" maxWidth="55.0" minWidth="55.0" prefWidth="55.0" text="NOTA" />
-          <TableColumn fx:id="seriesColumn" maxWidth="55.0" minWidth="55.0" prefWidth="55.0" text="SERIE" />
-          <TableColumn fx:id="totalValueColumn" prefWidth="75.0" text="VALOR" />
-          <TableColumn fx:id="emissionDateColumn" maxWidth="120.0" minWidth="120.0" prefWidth="120.0" text="DATA" />
-          <TableColumn fx:id="accessKeyColumn" maxWidth="360.0" minWidth="360.0" prefWidth="360.0" text="CHAVE" />
-          <TableColumn fx:id="statusColumn" maxWidth="113.0" minWidth="40.0" prefWidth="102.0" text="STATUS" />
-        </columns>
-      </TableView>
+      <TabPane tabClosingPolicy="UNAVAILABLE" VBox.vgrow="ALWAYS">
+        <tabs>
+          <Tab text="NFCe">
+            <content>
+              <TableView fx:id="nfceTable">
+                <columns>
+                  <TableColumn maxWidth="55.0" minWidth="55.0" prefWidth="55.0" text="NFCe" />
+                  <TableColumn maxWidth="55.0" minWidth="55.0" prefWidth="55.0" text="SERIE" />
+                  <TableColumn prefWidth="75.0" text="VALOR" />
+                  <TableColumn maxWidth="120.0" minWidth="120.0" prefWidth="120.0" text="DATA" />
+                  <TableColumn maxWidth="360.0" minWidth="360.0" prefWidth="360.0" text="CHAVE" />
+                  <TableColumn maxWidth="113.0" minWidth="40.0" prefWidth="102.0" text="STATUS" />
+                </columns>
+              </TableView>
+            </content>
+          </Tab>
+          <Tab text="NFe">
+            <content>
+              <TableView fx:id="nfeTable">
+                <columns>
+                  <TableColumn maxWidth="55.0" minWidth="55.0" prefWidth="55.0" text="NFe" />
+                  <TableColumn maxWidth="55.0" minWidth="55.0" prefWidth="55.0" text="SERIE" />
+                  <TableColumn prefWidth="75.0" text="VALOR" />
+                  <TableColumn maxWidth="120.0" minWidth="120.0" prefWidth="120.0" text="DATA" />
+                  <TableColumn maxWidth="360.0" minWidth="360.0" prefWidth="360.0" text="CHAVE" />
+                  <TableColumn maxWidth="113.0" minWidth="40.0" prefWidth="102.0" text="STATUS" />
+                </columns>
+              </TableView>
+            </content>
+          </Tab>
+        </tabs>
+      </TabPane>
    </children>
 </VBox>
