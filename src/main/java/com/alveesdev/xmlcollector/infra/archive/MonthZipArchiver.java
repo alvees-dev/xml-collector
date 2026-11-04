@@ -8,6 +8,7 @@ import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.util.List;
 import java.util.Optional;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
@@ -21,7 +22,7 @@ public class MonthZipArchiver implements DirectoryCompressor {
 	private static final String TEMP_SUFFIX = ".part";
 
 	@Override
-	public Optional<CompressedFile> compress(Path monthDirectory, String zipName) throws IOException {
+	public Optional<CompressedFile> compress(Path monthDirectory, String zipName, List<ExtraFile> extraFiles) throws IOException {
 
 		String rootName = ArchiveLayout.monthLabel(monthDirectory);
 		Path zipFile = monthDirectory.resolveSibling(zipName + ZIP_SUFFIX);
@@ -29,6 +30,12 @@ public class MonthZipArchiver implements DirectoryCompressor {
 		int[] entries = {0};
 
 		try (ZipOutputStream output = new ZipOutputStream(Files.newOutputStream(temp))) {
+
+			for (ExtraFile extra : extraFiles) {
+				output.putNextEntry(new ZipEntry(rootName + "/" + extra.name()));
+				output.write(extra.content());
+				output.closeEntry();
+			}
 
 			Files.walkFileTree(monthDirectory, new SimpleFileVisitor<>() {
 
