@@ -95,6 +95,12 @@ public class DispatchTabController {
 			return;
 		}
 
+		if (txtSubject.getText().isBlank()) {
+			Dialogs.warning(DispatchService.SUBJECT_REQUIRED);
+			txtSubject.requestFocus();
+			return;
+		}
+
 		boolean reuseExistingZip = false;
 
 		try {

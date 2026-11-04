@@ -200,6 +200,27 @@ class DispatchServiceTest {
 	}
 
 	@Test
+	void doesNotSendOrCompressWithoutASubject() {
+		for (String subject : new String[] {"", "   ", null}) {
+			DispatchRequest request = new DispatchRequest(List.of(MONTH), ACCOUNT, "destino@exemplo.com", subject, "");
+
+			DispatchException error = assertThrows(DispatchException.class, () -> service(compressor).dispatch(request));
+
+			assertEquals("O Assunto não foi informado", error.getMessage());
+		}
+
+		assertEquals(List.of(), zipNames);
+		assertEquals(List.of(), sent);
+	}
+
+	@Test
+	void sendsTheSubjectTheUserWrote() throws Exception {
+		service(compressor).dispatch(new DispatchRequest(List.of(MONTH), ACCOUNT, "destino@exemplo.com", "  XML de Janeiro ", ""));
+
+		assertEquals("XML de Janeiro", sent.get(0).subject());
+	}
+
+	@Test
 	void usesTheStandardBodyWhenNoneWasWritten() throws Exception {
 		service(compressor).dispatch(REQUEST);
 
