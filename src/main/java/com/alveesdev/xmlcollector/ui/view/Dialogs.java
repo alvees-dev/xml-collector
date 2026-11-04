@@ -13,17 +13,21 @@ import com.alveesdev.xmlcollector.application.voiding.VoidingProgress;
 import com.alveesdev.xmlcollector.domain.model.FiscalEnvironment;
 import com.alveesdev.xmlcollector.domain.model.VoidingRequest;
 import com.alveesdev.xmlcollector.domain.model.XmlDocument;
+import com.alveesdev.xmlcollector.ui.model.MessageLayout;
 import com.alveesdev.xmlcollector.ui.model.SourceLabels;
 import com.alveesdev.xmlcollector.ui.model.SourceMode;
 import com.alveesdev.xmlcollector.ui.model.VoidingText;
 
+import javafx.scene.Node;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
 import javafx.scene.control.ButtonBar;
 import javafx.scene.control.ButtonType;
-import javafx.scene.control.Label;
+import javafx.scene.control.TextArea;
 import javafx.scene.control.TextInputDialog;
+import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
+import javafx.stage.Window;
 
 public final class Dialogs {
 
@@ -34,20 +38,77 @@ public final class Dialogs {
 	}
 
 	private static final int MAX_LISTED_FAILURES = 15;
+	private static final double MESSAGE_WIDTH = 560;
+	private static final double WHOLE_MESSAGE_WIDTH = 760;
+	private static final String MESSAGE_STYLE = "-fx-control-inner-background: -fx-background; -fx-background-color: transparent;"
+			+ " -fx-focus-color: transparent; -fx-faint-focus-color: transparent;";
 
 	private Dialogs() {
 	}
 
 	public static void info(String message) {
-		new Alert(Alert.AlertType.INFORMATION, message).showAndWait();
+		alert(Alert.AlertType.INFORMATION, message).showAndWait();
 	}
 
 	public static void warning(String message) {
-		new Alert(Alert.AlertType.WARNING, message).showAndWait();
+		alert(Alert.AlertType.WARNING, message).showAndWait();
 	}
 
 	public static void error(String message) {
-		new Alert(Alert.AlertType.ERROR, message).showAndWait();
+		alert(Alert.AlertType.ERROR, message).showAndWait();
+	}
+
+	// The label of a plain Alert cuts a long message off without any way of reading the rest.
+	private static Alert alert(Alert.AlertType type, String message, ButtonType... buttons) {
+		return alertWith(previewOf(message), type, message, buttons);
+	}
+
+	// For what must be read before answering: the end of the text can hold the warning or the word to type.
+	private static Alert wholeMessageAlert(Alert.AlertType type, String message, ButtonType... buttons) {
+		return alertWith(messageArea(message), type, message, buttons);
+	}
+
+	private static Alert alertWith(Node content, Alert.AlertType type, String message, ButtonType... buttons) {
+		Alert alert = new Alert(type, message, buttons);
+		alert.getDialogPane().setContent(content);
+		alert.getDialogPane().setPrefWidth(MESSAGE_WIDTH);
+		alert.setResizable(true);
+		return alert;
+	}
+
+	private static Node previewOf(String message) {
+
+		if (!MessageLayout.isLong(message)) {
+			return messageArea(message);
+		}
+
+		Button seeAll = new Button("Ver tudo");
+		seeAll.setFocusTraversable(false);
+		seeAll.setOnAction(event -> showWholeMessage(message, seeAll.getScene().getWindow()));
+
+		return new VBox(8, messageArea(MessageLayout.preview(message)), seeAll);
+	}
+
+	private static void showWholeMessage(String message, Window owner) {
+		ButtonType close = new ButtonType("Fechar", ButtonBar.ButtonData.CANCEL_CLOSE);
+
+		Alert alert = new Alert(Alert.AlertType.NONE, message, close);
+		alert.initOwner(owner);
+		alert.setTitle("Mensagem completa");
+		alert.getDialogPane().setContent(messageArea(message));
+		alert.getDialogPane().setPrefWidth(WHOLE_MESSAGE_WIDTH);
+		alert.setResizable(true);
+		alert.showAndWait();
+	}
+
+	private static TextArea messageArea(String message) {
+		TextArea area = new TextArea(message);
+		area.setEditable(false);
+		area.setWrapText(true);
+		area.setFocusTraversable(false);
+		area.setPrefRowCount(MessageLayout.rowsFor(message));
+		area.setStyle(MESSAGE_STYLE);
+		return area;
 	}
 
 	public static void collectionSummary(CollectionResult result, Path archiveRoot, SourceMode sourceMode, String header) {
@@ -77,7 +138,7 @@ public final class Dialogs {
 
 		boolean hasProblems = !failures.isEmpty() || summary.errors() > 0;
 
-		Alert alert = new Alert(
+		Alert alert = alert(
 				hasProblems ? Alert.AlertType.WARNING : Alert.AlertType.INFORMATION,
 				message.toString());
 		alert.setHeaderText(header);
@@ -90,7 +151,7 @@ public final class Dialogs {
 		ButtonType cancel = new ButtonType("Cancelar envio", ButtonBar.ButtonData.CANCEL_CLOSE);
 		ButtonType sendExisting = new ButtonType("Enviar arquivo existente", ButtonBar.ButtonData.OTHER);
 
-		Alert alert = new Alert(Alert.AlertType.CONFIRMATION,
+		Alert alert = alert(Alert.AlertType.CONFIRMATION,
 				"Foi encontrado um arquivo compactado. Gostaria de compactar um novo e substituir ou enviar o existente?"
 						+ "\n\nO arquivo existente pode estar desatualizado.",
 				replace, cancel, sendExisting);
@@ -110,7 +171,7 @@ public final class Dialogs {
 		ButtonType yes = new ButtonType("Sim", ButtonBar.ButtonData.YES);
 		ButtonType cancel = new ButtonType("Cancelar", ButtonBar.ButtonData.CANCEL_CLOSE);
 
-		Alert alert = new Alert(Alert.AlertType.WARNING,
+		Alert alert = alert(Alert.AlertType.WARNING,
 				"Podem existir notas efetivadas entre as faltantes. Tem certeza que quer INUTILIZAR antes de Procurar Todas?",
 				cancel, yes);
 		((Button) alert.getDialogPane().lookupButton(yes)).setDefaultButton(false);
@@ -127,7 +188,11 @@ public final class Dialogs {
 			TextInputDialog dialog = new TextInputDialog();
 			dialog.setTitle("Inutilizar notas");
 			dialog.setHeaderText("Confirme a inutilização em PRODUÇÃO");
-			dialog.getDialogPane().setContent(new VBox(10, new Label(text), dialog.getEditor()));
+			TextArea area = messageArea(text);
+			VBox.setVgrow(area, Priority.ALWAYS);
+			dialog.getDialogPane().setContent(new VBox(10, area, dialog.getEditor()));
+			dialog.getDialogPane().setPrefWidth(MESSAGE_WIDTH);
+			dialog.setResizable(true);
 
 			return dialog.showAndWait().map(VoidingText.CONFIRMATION_WORD::equals).orElse(false);
 		}
@@ -135,7 +200,7 @@ public final class Dialogs {
 		ButtonType send = new ButtonType("Enviar teste", ButtonBar.ButtonData.OK_DONE);
 		ButtonType cancel = new ButtonType("Cancelar", ButtonBar.ButtonData.CANCEL_CLOSE);
 
-		Alert alert = new Alert(Alert.AlertType.CONFIRMATION, text, cancel, send);
+		Alert alert = wholeMessageAlert(Alert.AlertType.CONFIRMATION, text, cancel, send);
 		alert.setHeaderText("Confirme a inutilização em homologação");
 		((Button) alert.getDialogPane().lookupButton(send)).setDefaultButton(false);
 		((Button) alert.getDialogPane().lookupButton(cancel)).setDefaultButton(true);
@@ -147,7 +212,7 @@ public final class Dialogs {
 
 		boolean allApproved = outcomes.stream().allMatch(outcome -> outcome.stage() == VoidingProgress.Stage.APPROVED && outcome.archiveFailure() == null && outcome.pdvFailures().isEmpty());
 
-		Alert alert = new Alert(allApproved ? Alert.AlertType.INFORMATION : Alert.AlertType.WARNING, VoidingText.summary(outcomes, environment));
+		Alert alert = alert(allApproved ? Alert.AlertType.INFORMATION : Alert.AlertType.WARNING, VoidingText.summary(outcomes, environment));
 		alert.setHeaderText("Solicitação concluída");
 		alert.showAndWait();
 	}
@@ -175,7 +240,7 @@ public final class Dialogs {
 			message.append("\n\nFalhas:\n").append(String.join("\n", failures));
 		}
 
-		Alert alert = new Alert(
+		Alert alert = alert(
 				failures.isEmpty() ? Alert.AlertType.INFORMATION : Alert.AlertType.WARNING,
 				message.toString());
 		alert.setHeaderText("Busca de notas faltantes concluída");
