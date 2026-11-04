@@ -159,13 +159,13 @@ class CollectionRulesTest {
 	}
 
 	@Test
-	void findsMissingNumbersOnlyAmongAcceptedInvoices() {
+	void aNoteOutOfThePeriodExistsAndAnUnreadableOneIsMissing() {
 		rules.decide(0, "a.xml", invoice(1, IN_PERIOD));
 		rules.decide(0, "fora.xml", invoice(2, AFTER_PERIOD));
 		rules.decide(0, "ruim.xml", new XmlDocument.Unreadable("broken"));
-		rules.decide(0, "b.xml", invoice(3, IN_PERIOD));
+		rules.decide(0, "b.xml", invoice(4, IN_PERIOD));
 
-		assertEquals(Map.of(1, List.of(new NumberRange(2, 2))), rules.missingNumbers());
+		assertEquals(Map.of(1, List.of(new NumberRange(3, 3))), rules.missingNumbers());
 	}
 
 	@Test

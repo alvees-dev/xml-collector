@@ -13,8 +13,10 @@ import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -39,6 +41,53 @@ class SqliteIssuedNumberRepositoryTest {
 	void setUp() {
 		file = directory.resolve("Database").resolve("coletor.db");
 		repository = new SqliteIssuedNumberRepository(file);
+	}
+
+	@Test
+	void findsTheLastNumberBeforeTheGivenOneWithItsDate() throws Exception {
+		LocalDate date = LocalDate.of(2025, 12, 31);
+
+		repository.saveAll(List.of(
+				new IssuedNumber(CNPJ, NFCE, 1, 5),
+				new IssuedNumber(CNPJ, NFCE, 1, 9, date),
+				new IssuedNumber(CNPJ, NFCE, 1, 20),
+				new IssuedNumber(CNPJ, NFCE, 2, 15),
+				new IssuedNumber(CNPJ, NFE, 1, 15),
+				new IssuedNumber(OTHER_CNPJ, NFCE, 1, 15)));
+
+		assertEquals(Optional.of(new IssuedNumber(CNPJ, NFCE, 1, 9, date)), repository.lastBefore(CNPJ, NFCE, 1, 12));
+		assertEquals(Optional.empty(), repository.lastBefore(CNPJ, NFCE, 1, 5));
+	}
+
+	@Test
+	void collectingAgainFillsInTheMissingDateAndKeepsAnExistingOne() throws Exception {
+		LocalDate date = LocalDate.of(2025, 12, 31);
+
+		repository.saveAll(List.of(new IssuedNumber(CNPJ, NFCE, 1, 5)));
+		repository.saveAll(List.of(new IssuedNumber(CNPJ, NFCE, 1, 5, date)));
+		repository.saveAll(List.of(new IssuedNumber(CNPJ, NFCE, 1, 5)));
+
+		assertEquals(Optional.of(new IssuedNumber(CNPJ, NFCE, 1, 5, date)), repository.lastBefore(CNPJ, NFCE, 1, 6));
+	}
+
+	@Test
+	void keepsTheNumbersOfADatabaseFromBeforeTheDateColumn() throws Exception {
+		Files.createDirectories(file.getParent());
+
+		try (Connection connection = DriverManager.getConnection("jdbc:sqlite:" + file);
+				Statement statement = connection.createStatement()) {
+			statement.execute("""
+					CREATE TABLE issued_numbers (
+						cnpj TEXT NOT NULL,
+						model TEXT NOT NULL,
+						series INTEGER NOT NULL,
+						number INTEGER NOT NULL,
+						PRIMARY KEY (cnpj, model, series, number)
+					) WITHOUT ROWID""");
+			statement.execute("INSERT INTO issued_numbers VALUES ('" + CNPJ + "', '" + NFCE + "', 1, 5)");
+		}
+
+		assertEquals(Optional.of(new IssuedNumber(CNPJ, NFCE, 1, 5)), repository.lastBefore(CNPJ, NFCE, 1, 6));
 	}
 
 	@Test

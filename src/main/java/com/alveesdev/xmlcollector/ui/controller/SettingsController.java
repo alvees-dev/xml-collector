@@ -37,7 +37,6 @@ import javafx.scene.control.PasswordField;
 import javafx.scene.control.RadioButton;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.control.TextField;
-import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.VBox;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
@@ -51,9 +50,6 @@ public class SettingsController {
 	private final SearchModelCatalog searchModels;
 	private final VoidingBatch voidingBatch;
 	private final DirectoryTester directoryTester;
-
-	@FXML
-	private Label lblTitle;
 
 	@FXML
 	private Button btnSave;
@@ -111,9 +107,6 @@ public class SettingsController {
 
 	private DirectoryListEditor pdvEditor;
 	private DirectoryListEditor nfeEditor;
-
-	private double dragOffsetX;
-	private double dragOffsetY;
 
 	public SettingsController(SettingsService settingsService, SearchModelCatalog searchModels, VoidingBatch voidingBatch,
 			DirectoryTester directoryTester) {
@@ -269,19 +262,6 @@ public class SettingsController {
 	@FXML
 	private void onCancel() {
 		closeWindow();
-	}
-
-	@FXML
-	private void onTitlePressed(MouseEvent event) {
-		dragOffsetX = event.getSceneX();
-		dragOffsetY = event.getSceneY();
-	}
-
-	@FXML
-	private void onTitleDragged(MouseEvent event) {
-		Stage stage = (Stage) lblTitle.getScene().getWindow();
-		stage.setX(event.getScreenX() - dragOffsetX);
-		stage.setY(event.getScreenY() - dragOffsetY);
 	}
 
 	private void loadSearchModels(AppSettings settings) {

@@ -4,7 +4,10 @@ import java.io.IOException;
 import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
@@ -21,6 +24,9 @@ import com.alveesdev.xmlcollector.application.port.SourceFiles.ResolvedFolders;
 import com.alveesdev.xmlcollector.application.port.SourceFiles.ScanResult;
 import com.alveesdev.xmlcollector.application.port.SourceFiles.SourceFile;
 import com.alveesdev.xmlcollector.domain.model.DocumentCategory;
+import com.alveesdev.xmlcollector.domain.model.IssuedNumber;
+import com.alveesdev.xmlcollector.domain.model.NumberRange;
+import com.alveesdev.xmlcollector.domain.service.MissingNumberFinder;
 
 public class CollectionService {
 
@@ -79,24 +85,45 @@ public class CollectionService {
 				results.add(processor.result(index));
 			}
 
-			// The history only protects the voiding of NFCe, and the numbers of a purchase belong to other companies.
-			String historyFailure = request.category() == DocumentCategory.NFCE ? saveIssuedNumbers(processor) : null;
+			Map<Integer, List<NumberRange>> gapsBeforeTheFirst = Map.of();
+			String historyFailure = null;
 
-			return new CollectionResult(
-					results, processor.missingNumbers(), processor.summary(), failures, historyFailure, processor.cancelledKeys());
+			// The history only protects the voiding of NFCe, and the numbers of a purchase belong to other companies.
+			if (request.category() == DocumentCategory.NFCE) {
+				try {
+					// A search only brings back the notes it wanted, so its first number says nothing about the series.
+					if (request.target() == CollectionTarget.ALL) {
+						gapsBeforeTheFirst = gapsBeforeTheFirst(processor);
+					}
+
+					issuedNumbers.saveAll(processor.issuedNumbers());
+
+				} catch (IOException e) {
+					historyFailure = e.getMessage() == null ? e.getClass().getSimpleName() : e.getMessage();
+				}
+			}
+
+			return new CollectionResult(results, processor.missingNumbers(gapsBeforeTheFirst), processor.summary(), failures,
+					historyFailure, processor.cancelledKeys());
 
 		} finally {
 			executor.shutdownNow();
 		}
 	}
 
-	private String saveIssuedNumbers(SourceProcessor processor) {
-		try {
-			issuedNumbers.saveAll(processor.issuedNumbers());
-			return null;
-		} catch (IOException e) {
-			return e.getMessage() == null ? e.getClass().getSimpleName() : e.getMessage();
+	// The last note of a month and the first of the next are only known to be missing when that next month is collected.
+	private Map<Integer, List<NumberRange>> gapsBeforeTheFirst(SourceProcessor processor) throws IOException {
+
+		Map<Integer, List<NumberRange>> gaps = new HashMap<>();
+
+		for (IssuedNumber first : processor.firstIssuedNumbers()) {
+			Optional<NumberRange> gap = issuedNumbers.lastBefore(first.cnpj(), first.modelCode(), first.series(), first.number())
+					.flatMap(previous -> MissingNumberFinder.gapBetweenCollections(previous, first));
+
+			gap.ifPresent(range -> gaps.computeIfAbsent(first.series(), series -> new ArrayList<>()).add(range));
 		}
+
+		return gaps;
 	}
 
 	private void collectSource(int index, CollectionRequest request, SourceProcessor processor, List<SourceFailure> failures,

@@ -28,6 +28,7 @@ import com.alveesdev.xmlcollector.application.voiding.VoidingBatch;
 import com.alveesdev.xmlcollector.application.voiding.VoidingOutcome;
 import com.alveesdev.xmlcollector.application.voiding.VoidingPlanner;
 import com.alveesdev.xmlcollector.application.voiding.VoidingProgress;
+import com.alveesdev.xmlcollector.domain.model.DateRange;
 import com.alveesdev.xmlcollector.domain.model.DocumentCategory;
 import com.alveesdev.xmlcollector.domain.model.DocumentEntry;
 import com.alveesdev.xmlcollector.domain.model.FiscalEnvironment;
@@ -68,6 +69,7 @@ public class MissingTabController {
 	private SortedMap<Integer, List<NumberRange>> missingBySeries = new TreeMap<>();
 	private Map<Integer, Set<Integer>> sourcesBySeries = Map.of();
 	private Map<Integer, Set<SeriesOwner>> ownersBySeries = Map.of();
+	private Map<Integer, Integer> firstNumberBySeries = Map.of();
 	private List<String> collectionProblems = List.of();
 	private List<String> searchProblems;
 	private Consumer<CollectionResult> onFound = result -> {
@@ -127,6 +129,7 @@ public class MissingTabController {
 		missingBySeries = result.missingBySeries();
 		sourcesBySeries = result.sourcesBySeries();
 		ownersBySeries = result.ownersBySeries();
+		firstNumberBySeries = result.firstNumberBySeries();
 		collectionProblems = VoidingPlanner.problemsOf(result);
 		searchProblems = null;
 		show(MissingTableModel.fromResult(result));
@@ -378,13 +381,21 @@ public class MissingTabController {
 			return;
 		}
 
+		// A gap before the first number can be the last note of the previous month.
+		DateRange period = startsBeforeTheCollection(wanted) ? lastCollection.period().fromThePreviousMonth() : lastCollection.period();
+
 		CollectionRequest request = new CollectionRequest(
-				settings.pdvDirectories(), DocumentCategory.NFCE, lastCollection.period(), settings.organizeMode(),
+				settings.pdvDirectories(), DocumentCategory.NFCE, period, settings.organizeMode(),
 				paths.xmlArchiveDir(), folders,
 				CollectionTarget.missing(wanted, sourcesOfMissingSeries(wanted), searchModel.missingFileSuffix()),
 				settings.separationMode());
 
 		CollectionRunner.run(trigger, "Procurando notas faltantes", collectionService, request, SourceMode.PDV_DIRECTORIES, onSuccess);
+	}
+
+	private boolean startsBeforeTheCollection(Map<Integer, List<NumberRange>> wanted) {
+		return wanted.entrySet().stream().anyMatch(entry -> entry.getValue().stream()
+				.anyMatch(range -> firstNumberBySeries.containsKey(entry.getKey()) && range.start() < firstNumberBySeries.get(entry.getKey())));
 	}
 
 	private void showFound(CollectionResult result) {

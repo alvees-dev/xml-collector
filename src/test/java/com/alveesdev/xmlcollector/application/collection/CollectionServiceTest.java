@@ -13,13 +13,16 @@ import java.nio.file.NotDirectoryException;
 import java.nio.file.Path;
 import java.nio.file.attribute.FileTime;
 import java.time.LocalDate;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.ConcurrentHashMap;
@@ -99,6 +102,122 @@ class CollectionServiceTest {
 		CollectionResult result = collect("pdv1", "pdv2");
 
 		assertEquals(Map.of(1, List.of(new NumberRange(2, 3)), 2, List.of()), result.missingBySeries());
+	}
+
+	@Test
+	void anUnreadableXmlLeavesItsNumberInTheMissingList() {
+		sources.add("pdv1", "a.xml", invoice(1, 1, IN_PERIOD));
+		sources.add("pdv1", "ruim.xml", new XmlDocument.Unreadable("broken"));
+		sources.add("pdv1", "c.xml", invoice(1, 3, IN_PERIOD));
+
+		CollectionResult result = collect("pdv1");
+
+		assertEquals(Map.of(1, List.of(new NumberRange(2, 2))), result.missingBySeries());
+		assertEquals(1, result.summary().errors());
+	}
+
+	@Test
+	void findsTheGapBetweenTheLastNoteOfThePreviousMonthAndTheFirstOfThisOne() {
+		issuedNumbers.saved.add(issued(1, 95, LocalDate.of(2025, 12, 31)));
+		sources.add("pdv1", "a.xml", invoice(1, 100, IN_PERIOD));
+		sources.add("pdv1", "b.xml", invoice(1, 101, IN_PERIOD));
+
+		assertEquals(Map.of(1, List.of(new NumberRange(96, 99))), collect("pdv1").missingBySeries());
+	}
+
+	@Test
+	void listsTheGapBeforeTheFirstAheadOfTheOthers() {
+		issuedNumbers.saved.add(issued(1, 95, LocalDate.of(2025, 12, 31)));
+		sources.add("pdv1", "a.xml", invoice(1, 97, IN_PERIOD));
+		sources.add("pdv1", "b.xml", invoice(1, 99, IN_PERIOD));
+
+		assertEquals(Map.of(1, List.of(new NumberRange(96, 96), new NumberRange(98, 98))), collect("pdv1").missingBySeries());
+	}
+
+	@Test
+	void consecutiveNumbersAcrossTheMonthsAreNotAGap() {
+		issuedNumbers.saved.add(issued(1, 99, LocalDate.of(2025, 12, 31)));
+		sources.add("pdv1", "a.xml", invoice(1, 100, IN_PERIOD));
+
+		assertEquals(Map.of(1, List.of()), collect("pdv1").missingBySeries());
+	}
+
+	@Test
+	void aMonthThatWasNeverCollectedIsNotAGap() {
+		issuedNumbers.saved.add(issued(1, 50, LocalDate.of(2025, 11, 30)));
+		sources.add("pdv1", "a.xml", invoice(1, 100, IN_PERIOD));
+
+		assertEquals(Map.of(1, List.of()), collect("pdv1").missingBySeries());
+	}
+
+	@Test
+	void aNumberSavedWithoutADateIsNotComparedYet() {
+		issuedNumbers.saved.add(new IssuedNumber(key(1, 1).cnpj(), key(1, 1).modelCode(), 1, 50));
+		sources.add("pdv1", "a.xml", invoice(1, 100, IN_PERIOD));
+
+		assertEquals(Map.of(1, List.of()), collect("pdv1").missingBySeries());
+	}
+
+	@Test
+	void aFirstCollectionHasNothingToCompareWith() {
+		sources.add("pdv1", "a.xml", invoice(1, 100, IN_PERIOD));
+
+		assertEquals(Map.of(1, List.of()), collect("pdv1").missingBySeries());
+	}
+
+	@Test
+	void collectingAnOlderMonthDoesNotCompareWithLaterNumbers() {
+		issuedNumbers.saved.add(issued(1, 500, LocalDate.of(2026, 3, 1)));
+		sources.add("pdv1", "a.xml", invoice(1, 100, IN_PERIOD));
+
+		assertEquals(Map.of(1, List.of()), collect("pdv1").missingBySeries());
+	}
+
+	@Test
+	void aNoteDatedOutOfThePeriodIsNotMissing() {
+		issuedNumbers.saved.add(issued(1, 95, LocalDate.of(2025, 12, 20)));
+		sources.add("pdv1", "fora.xml", invoice(1, 96, LocalDate.of(2025, 12, 31)));
+		sources.add("pdv1", "a.xml", invoice(1, 98, IN_PERIOD));
+
+		assertEquals(Map.of(1, List.of(new NumberRange(97, 97))), collect("pdv1").missingBySeries());
+	}
+
+	@Test
+	void aVoidedNumberOfTheGapIsNotMissing() {
+		issuedNumbers.saved.add(issued(1, 95, LocalDate.of(2025, 12, 31)));
+		sources.add("pdv1", "a.xml", invoice(1, 100, IN_PERIOD));
+		sources.add("pdv1", "inut.xml", voiding(1, 96, 98));
+
+		assertEquals(Map.of(1, List.of(new NumberRange(99, 99))), collect("pdv1").missingBySeries());
+	}
+
+	@Test
+	void aSearchDoesNotCompareWithTheHistory() {
+		issuedNumbers.saved.add(issued(1, 95, LocalDate.of(2025, 12, 31)));
+		sources.add("pdv1", "a.xml", invoice(1, 100, IN_PERIOD));
+
+		CollectionResult result = service.collect(new CollectionRequest(List.of("pdv1"), DocumentCategory.NFCE, JANUARY,
+				OrganizeMode.SINGLE_FOLDER, ARCHIVE, List.of(), new CollectionTarget(index -> true, name -> true, invoice -> true),
+				SeparationMode.ALL_TOGETHER));
+
+		assertEquals(Map.of(1, List.of()), result.missingBySeries());
+	}
+
+	@Test
+	void reportsAHistoryThatCouldNotBeRead() {
+		issuedNumbers.lookupFailure = new IOException("banco ocupado");
+		sources.add("pdv1", "a.xml", invoice(1, 100, IN_PERIOD));
+
+		assertEquals("banco ocupado", collect("pdv1").historyFailure());
+	}
+
+	@Test
+	void givesTheFirstCollectedNumberOfEachSeries() {
+		sources.add("pdv1", "a.xml", invoice(1, 9, IN_PERIOD));
+		sources.add("pdv1", "b.xml", invoice(1, 7, IN_PERIOD));
+		sources.add("pdv2", "c.xml", invoice(2, 3, IN_PERIOD));
+
+		assertEquals(Map.of(1, 7, 2, 3), collect("pdv1", "pdv2").firstNumberBySeries());
 	}
 
 	@Test
@@ -588,6 +707,16 @@ class CollectionServiceTest {
 		return new CollectionRequest(List.of(directories), category, JANUARY, OrganizeMode.SINGLE_FOLDER, ARCHIVE);
 	}
 
+	private static IssuedNumber issued(int series, int number, LocalDate date) {
+		return new IssuedNumber(key(series, number).cnpj(), key(series, number).modelCode(), series, number, date);
+	}
+
+	private static XmlDocument.Voiding voiding(int series, int start, int end) {
+		String id = String.format("ID3526%s65%03d%09d%09d", key(series, start).cnpj(), series, start, end);
+
+		return new XmlDocument.Voiding(id, series, new NumberRange(start, end), IN_PERIOD.atTime(12, 0).atOffset(ZoneOffset.ofHours(-3)));
+	}
+
 	private static DocumentEntry onlyEntry(CollectionResult result) {
 		assertEquals(1, result.entries().size());
 		return result.entries().get(0);
@@ -658,9 +787,22 @@ class CollectionServiceTest {
 
 		private final Set<IssuedNumber> saved = new HashSet<>();
 		private IOException failure;
+		private IOException lookupFailure;
 
 		@Override
 		public void initialize() {
+		}
+
+		@Override
+		public Optional<IssuedNumber> lastBefore(String cnpj, String modelCode, int series, int number) throws IOException {
+			if (lookupFailure != null) {
+				throw lookupFailure;
+			}
+
+			return saved.stream()
+					.filter(issued -> issued.cnpj().equals(cnpj) && issued.modelCode().equals(modelCode)
+							&& issued.series() == series && issued.number() < number)
+					.max(Comparator.comparingInt(IssuedNumber::number));
 		}
 
 		@Override

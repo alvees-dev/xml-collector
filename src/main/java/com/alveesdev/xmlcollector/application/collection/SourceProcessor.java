@@ -122,8 +122,12 @@ class SourceProcessor {
 		return rules.cancelledKeys();
 	}
 
-	SortedMap<Integer, List<NumberRange>> missingNumbers() {
-		return rules.missingNumbers();
+	List<IssuedNumber> firstIssuedNumbers() {
+		return rules.firstIssuedNumbers();
+	}
+
+	SortedMap<Integer, List<NumberRange>> missingNumbers(Map<Integer, List<NumberRange>> gapsBeforeTheFirst) {
+		return rules.missingNumbers(gapsBeforeTheFirst);
 	}
 
 	CollectionSummary summary() {

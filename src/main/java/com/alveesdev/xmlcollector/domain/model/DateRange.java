@@ -17,4 +17,8 @@ public record DateRange(LocalDate from, LocalDate to) {
 	public boolean contains(LocalDate date) {
 		return !date.isBefore(from) && !date.isAfter(to);
 	}
+
+	public DateRange fromThePreviousMonth() {
+		return new DateRange(from.minusMonths(1).withDayOfMonth(1), to);
+	}
 }

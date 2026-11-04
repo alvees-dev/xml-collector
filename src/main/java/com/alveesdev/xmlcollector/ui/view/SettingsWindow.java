@@ -7,7 +7,6 @@ import javafx.fxml.FXMLLoader;
 import javafx.scene.Scene;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
-import javafx.stage.StageStyle;
 import javafx.stage.Window;
 import javafx.util.Callback;
 
@@ -36,7 +35,6 @@ public final class SettingsWindow {
 			Scene scene = new Scene(loader.load());
 
 			Stage stage = new Stage();
-			stage.initStyle(StageStyle.UNDECORATED);
 			stage.setTitle("Configurações");
 			stage.setScene(scene);
 			stage.setResizable(false);
