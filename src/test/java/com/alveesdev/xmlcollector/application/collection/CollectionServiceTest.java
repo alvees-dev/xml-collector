@@ -105,6 +105,13 @@ class CollectionServiceTest {
 	}
 
 	@Test
+	void looksForTheStoredFileInTheMonthOfTheNote() throws IOException {
+		DocumentEntry entry = DocumentEntry.of(invoice(1, 7, IN_PERIOD), false, "nota.xml");
+
+		assertEquals(Optional.of(Path.of("archive", "2026", "Janeiro", key(1, 7).value())), service.storedFileOf(ARCHIVE, entry));
+	}
+
+	@Test
 	void anUnreadableXmlLeavesItsNumberInTheMissingList() {
 		sources.add("pdv1", "a.xml", invoice(1, 1, IN_PERIOD));
 		sources.add("pdv1", "ruim.xml", new XmlDocument.Unreadable("broken"));
@@ -828,6 +835,11 @@ class CollectionServiceTest {
 
 		void failOn(String fileName) {
 			this.failingName = fileName;
+		}
+
+		@Override
+		public Optional<Path> findDocument(Path month, String identity, String fileName) {
+			return Optional.of(month.resolve(identity));
 		}
 
 		@Override

@@ -107,6 +107,29 @@ public class XmlArchive implements DocumentArchive {
 		return false;
 	}
 
+	@Override
+	public Optional<Path> findDocument(Path month, String identity, String fileName) throws IOException {
+
+		if (!Files.isDirectory(month)) {
+			return Optional.empty();
+		}
+
+		// A name can repeat between folders and a cancellation has the key in its name, so only the content confirms it.
+		try (Stream<Path> files = Files.walk(month)) {
+			return files
+					.filter(Files::isRegularFile)
+					.filter(file -> mayBe(file.getFileName().toString(), identity, fileName))
+					.filter(file -> identityOf(file).filter(identity::equals).isPresent())
+					.findFirst();
+		} catch (UncheckedIOException e) {
+			throw e.getCause();
+		}
+	}
+
+	private static boolean mayBe(String name, String identity, String fileName) {
+		return name.contains(identity) || name.equalsIgnoreCase(fileName);
+	}
+
 	private static boolean holdsVoiding(Path voided, String fileName) throws IOException {
 
 		if (Files.exists(voided.resolve(fileName))) {
