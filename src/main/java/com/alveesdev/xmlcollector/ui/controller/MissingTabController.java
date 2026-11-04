@@ -200,6 +200,11 @@ public class MissingTabController {
 	@FXML
 	private void onVoidAll() {
 
+		if (lastCollection == null) {
+			Dialogs.warning("Não é possível Inutilizar Todas, pois nenhuma coleta foi feita.");
+			return;
+		}
+
 		Map<Integer, List<NumberRange>> wanted = new TreeMap<>();
 
 		missingBySeries.forEach((series, ranges) -> {
