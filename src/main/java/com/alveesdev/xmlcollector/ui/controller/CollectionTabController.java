@@ -1,5 +1,7 @@
 package com.alveesdev.xmlcollector.ui.controller;
 
+import java.io.IOException;
+import java.nio.file.Path;
 import java.time.LocalDate;
 import java.time.YearMonth;
 import java.util.ArrayList;
@@ -21,24 +23,32 @@ import com.alveesdev.xmlcollector.application.settings.SearchModelCatalog;
 import com.alveesdev.xmlcollector.application.settings.service.SettingsService;
 import com.alveesdev.xmlcollector.domain.model.DateRange;
 import com.alveesdev.xmlcollector.domain.model.DocumentCategory;
+import com.alveesdev.xmlcollector.domain.model.DocumentEntry;
 import com.alveesdev.xmlcollector.domain.model.NfeSearchModel;
 import com.alveesdev.xmlcollector.domain.model.SeparationMode;
 import com.alveesdev.xmlcollector.ui.model.DocumentRow;
 import com.alveesdev.xmlcollector.ui.model.DocumentRowMapper;
 import com.alveesdev.xmlcollector.ui.model.SourceMode;
 import com.alveesdev.xmlcollector.ui.view.Dialogs;
+import com.alveesdev.xmlcollector.ui.view.FileExplorer;
 
+import javafx.beans.binding.Bindings;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
 import javafx.scene.control.CheckBox;
+import javafx.scene.control.ContextMenu;
 import javafx.scene.control.DatePicker;
+import javafx.scene.control.MenuItem;
 import javafx.scene.control.RadioButton;
 import javafx.scene.control.TableColumn;
+import javafx.scene.control.TableRow;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
 import javafx.scene.control.cell.PropertyValueFactory;
+import javafx.scene.input.Clipboard;
+import javafx.scene.input.DataFormat;
 
 public class CollectionTabController {
 
@@ -112,6 +122,8 @@ public class CollectionTabController {
 	public void initialize() {
 		bindColumns(nfceTable);
 		bindColumns(nfeTable);
+		addRowMenu(nfceTable);
+		addRowMenu(nfeTable);
 
 		radioPdvDirectories.setSelected(true);
 
@@ -128,6 +140,51 @@ public class CollectionTabController {
 			TableColumn<DocumentRow, String> column = (TableColumn<DocumentRow, String>) table.getColumns().get(index);
 
 			column.setCellValueFactory(new PropertyValueFactory<>(COLUMN_PROPERTIES.get(index)));
+		}
+	}
+
+	private void addRowMenu(TableView<DocumentRow> table) {
+		table.setRowFactory(view -> {
+			TableRow<DocumentRow> row = new TableRow<>();
+
+			MenuItem copyKey = new MenuItem("Copiar chave da nota");
+			copyKey.setOnAction(event -> copyKeyOf(row.getItem().getEntry()));
+
+			MenuItem openFolder = new MenuItem("Abrir diretório da nota");
+			openFolder.setOnAction(event -> openFolderOf(row.getItem().getEntry()));
+
+			ContextMenu menu = new ContextMenu(copyKey, openFolder);
+
+			// A file that could not be read has no key and was not stored.
+			menu.setOnShowing(event -> {
+				boolean unreadable = row.getItem().getEntry().invoice() == null;
+				copyKey.setDisable(unreadable);
+				openFolder.setDisable(unreadable);
+			});
+
+			row.contextMenuProperty().bind(Bindings.when(row.emptyProperty()).then((ContextMenu) null).otherwise(menu));
+
+			return row;
+		});
+	}
+
+	private static void copyKeyOf(DocumentEntry entry) {
+		Clipboard.getSystemClipboard().setContent(Map.of(DataFormat.PLAIN_TEXT, entry.invoice().key().value()));
+	}
+
+	private void openFolderOf(DocumentEntry entry) {
+		try {
+			Optional<Path> file = collectionService.storedFileOf(paths.xmlArchiveDir(), entry);
+
+			if (file.isEmpty()) {
+				Dialogs.warning("O arquivo da nota não foi encontrado em:\n" + paths.xmlArchiveDir());
+				return;
+			}
+
+			FileExplorer.showSelected(file.get());
+
+		} catch (IOException e) {
+			Dialogs.error("Não foi possível abrir o diretório da nota: " + e.getMessage());
 		}
 	}
 

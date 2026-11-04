@@ -22,12 +22,13 @@ public final class DocumentRowMapper {
 		String status = statusLabel(entry.status());
 
 		if (entry.invoice() == null) {
-			return new DocumentRow("", "", "", "", entry.fileName(), status);
+			return new DocumentRow(entry, "", "", "", "", entry.fileName(), status);
 		}
 
 		XmlDocument.Invoice invoice = entry.invoice();
 
 		return new DocumentRow(
+				entry,
 				String.valueOf(invoice.number()),
 				String.valueOf(invoice.series()),
 				currency(invoice.totalValue()),
