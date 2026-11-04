@@ -5,6 +5,8 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
+import java.util.TreeSet;
 import java.util.concurrent.CancellationException;
 import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
@@ -52,7 +54,8 @@ public class DispatchService {
 		validate(request);
 
 		listener.accept(new DispatchProgress(Step.COMPRESSING, Stage.RUNNING));
-		List<CompressedFile> compressed = compressAll(request.monthDirectories());
+		Set<String> cnpjs = new TreeSet<>();
+		List<CompressedFile> compressed = compressAll(request.monthDirectories(), cnpjs);
 		listener.accept(new DispatchProgress(Step.COMPRESSING, Stage.DONE));
 
 		List<Path> zipFiles = compressed.stream().map(CompressedFile::file).toList();
@@ -64,23 +67,34 @@ public class DispatchService {
 		if (fitsInMessage(compressed)) {
 			listener.accept(new DispatchProgress(Step.UPLOADING, Stage.SKIPPED));
 			send(request, new EmailMessage(request.recipient(), subject, body, zipFiles), listener, cancelled);
-			return new DispatchResult(DispatchResult.Method.ATTACHED, zipFiles, totalBytes, null);
+			return new DispatchResult(DispatchResult.Method.ATTACHED, zipFiles, totalBytes, null, null);
 		}
 
 		throwIfCancelled(cancelled);
 
+		String driveFolder = driveFolderOf(cnpjs);
+
 		listener.accept(new DispatchProgress(Step.UPLOADING, Stage.RUNNING));
-		String link = cloudStorage.uploadToSharedFolder(
-				request.account().username(), folderNameOf(request.monthDirectories()), zipFiles);
+		CloudStorage.UploadResult upload = cloudStorage.replaceInSharedFolder(request.account().username(), driveFolder, zipFiles);
 		listener.accept(new DispatchProgress(Step.UPLOADING, Stage.DONE));
 
 		String bodyWithLink = body
 				+ "\n\nOs arquivos são grandes demais para seguir em anexo e foram salvos no Google Drive."
-				+ "\nAcesse pelo link:\n" + link;
+				+ "\nAcesse pelo link:\n" + upload.link();
 
 		send(request, new EmailMessage(request.recipient(), subject, bodyWithLink, List.of()), listener, cancelled);
 
-		return new DispatchResult(DispatchResult.Method.DRIVE_LINK, zipFiles, totalBytes, link);
+		return new DispatchResult(DispatchResult.Method.DRIVE_LINK, zipFiles, totalBytes, upload.link(), upload.cleanupFailure());
+	}
+
+	// The folder keeps only its last file, so a shared folder without a CNPJ would erase the files of other companies.
+	private static String driveFolderOf(Set<String> cnpjs) throws DispatchException {
+
+		if (cnpjs.isEmpty()) {
+			throw new DispatchException("Não foi possível identificar o CNPJ das notas para escolher a pasta no Google Drive.");
+		}
+
+		return String.join("_", cnpjs);
 	}
 
 	private void send(DispatchRequest request, EmailMessage message, Consumer<DispatchProgress> listener, BooleanSupplier cancelled)
@@ -133,13 +147,16 @@ public class DispatchService {
 		}
 	}
 
-	private List<CompressedFile> compressAll(List<Path> monthDirectories) throws DispatchException {
+	private List<CompressedFile> compressAll(List<Path> monthDirectories, Set<String> cnpjs) throws DispatchException {
 
 		List<CompressedFile> compressed = new ArrayList<>();
 
 		for (Path directory : monthDirectories) {
 			try {
-				String zipName = ArchiveLayout.zipName(archivedDocuments.cnpjsIn(directory), directory);
+				Set<String> ofMonth = archivedDocuments.cnpjsIn(directory);
+				cnpjs.addAll(ofMonth);
+
+				String zipName = ArchiveLayout.zipName(ofMonth, directory);
 				Optional<CompressedFile> file = compressor.compress(directory, zipName);
 
 				if (file.isEmpty()) {

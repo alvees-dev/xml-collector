@@ -14,7 +14,9 @@ import org.junit.jupiter.api.Test;
 
 import com.alveesdev.xmlcollector.application.dispatch.DispatchProgress.Stage;
 import com.alveesdev.xmlcollector.application.dispatch.DispatchProgress.Step;
+import com.alveesdev.xmlcollector.application.port.CloudStorage;
 import com.alveesdev.xmlcollector.application.port.DirectoryCompressor;
+import com.alveesdev.xmlcollector.application.port.DispatchException;
 import com.alveesdev.xmlcollector.application.port.EmailMessage;
 import com.alveesdev.xmlcollector.application.settings.EmailAccount;
 import com.alveesdev.xmlcollector.application.settings.EmailSecurity;
@@ -28,6 +30,7 @@ class DispatchServiceTest {
 	private static final DispatchRequest REQUEST = new DispatchRequest(List.of(MONTH), ACCOUNT, "destino@exemplo.com", "", "");
 
 	private int uploads;
+	private final List<String> driveFolders = new ArrayList<>();
 	private final List<String> zipNames = new ArrayList<>();
 	private final List<EmailMessage> sent = new ArrayList<>();
 
@@ -88,6 +91,43 @@ class DispatchServiceTest {
 	}
 
 	@Test
+	void namesTheDriveFolderWithTheCnpj() throws Exception {
+		serviceWith(Set.of("12345678000190"), largeCompressor(), null).dispatch(REQUEST);
+
+		assertEquals(List.of("12345678000190"), driveFolders);
+	}
+
+	@Test
+	void namesTheDriveFolderWithEveryCnpjOfTheMonth() throws Exception {
+		serviceWith(Set.of("98765432000110", "12345678000190"), largeCompressor(), null).dispatch(REQUEST);
+
+		assertEquals(List.of("12345678000190_98765432000110"), driveFolders);
+	}
+
+	@Test
+	void doesNotUploadWithoutACnpjForTheFolder() {
+		assertThrows(DispatchException.class, () -> serviceWith(Set.of(), largeCompressor(), null).dispatch(REQUEST));
+
+		assertEquals(0, uploads);
+		assertEquals(List.of(), sent);
+	}
+
+	@Test
+	void aFileWithoutACnpjStillGoesAttachedWhenItFits() throws Exception {
+		serviceWith(Set.of(), compressor, null).dispatch(REQUEST);
+
+		assertEquals(1, sent.size());
+	}
+
+	@Test
+	void stillSendsTheEmailWhenThePreviousFileCouldNotBeRemoved() throws Exception {
+		DispatchResult result = serviceWith(Set.of("12345678000190"), largeCompressor(), "sem acesso").dispatch(REQUEST);
+
+		assertEquals(1, sent.size());
+		assertEquals("sem acesso", result.driveCleanupFailure());
+	}
+
+	@Test
 	void doesNotSendTheEmailWhenCancelledAfterCompressing() {
 		assertThrows(CancellationException.class, () -> service(compressor).dispatch(REQUEST, progress -> {
 		}, () -> true));
@@ -109,12 +149,12 @@ class DispatchServiceTest {
 		boolean[] cancelled = {false};
 
 		DispatchService service = new DispatchService(
-				directory -> Set.of(),
+				directory -> Set.of("12345678000190"),
 				largeCompressor(),
 				(account, message) -> sent.add(message),
 				(accountEmail, folderName, files) -> {
 					cancelled[0] = true;
-					return "link";
+					return new CloudStorage.UploadResult("link", null);
 				});
 
 		assertThrows(CancellationException.class, () -> service.dispatch(REQUEST, progress -> {
@@ -128,13 +168,18 @@ class DispatchServiceTest {
 	}
 
 	private DispatchService service(DirectoryCompressor chosen) {
+		return serviceWith(Set.of("12345678000190"), chosen, null);
+	}
+
+	private DispatchService serviceWith(Set<String> cnpjs, DirectoryCompressor chosen, String cleanupFailure) {
 		return new DispatchService(
-				directory -> Set.of(),
+				directory -> cnpjs,
 				chosen,
 				(account, message) -> sent.add(message),
 				(accountEmail, folderName, files) -> {
 					uploads++;
-					return "link";
+					driveFolders.add(folderName);
+					return new CloudStorage.UploadResult("link", cleanupFailure);
 				});
 	}
 
@@ -143,7 +188,7 @@ class DispatchServiceTest {
 				directory -> cnpjs,
 				compressor,
 				(account, message) -> sent.add(message),
-				(accountEmail, folderName, files) -> "link");
+				(accountEmail, folderName, files) -> new CloudStorage.UploadResult("link", null));
 
 		service.dispatch(new DispatchRequest(List.of(MONTH), ACCOUNT, "destino@exemplo.com", "", ""));
 	}

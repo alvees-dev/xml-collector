@@ -6,7 +6,9 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.GeneralSecurityException;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import com.alveesdev.xmlcollector.application.port.CloudStorage;
 import com.alveesdev.xmlcollector.application.port.DispatchException;
@@ -34,6 +36,9 @@ public class GoogleDriveStorage implements CloudStorage {
 	private static final String FOLDER_MIME_TYPE = "application/vnd.google-apps.folder";
 	private static final String ZIP_MIME_TYPE = "application/zip";
 	private static final String FOLDER_LINK_PREFIX = "https://drive.google.com/drive/folders/";
+	private static final int MAX_PAGE_SIZE = 1000;
+	private static final String ROOT_FOLDER_NAME = "Arquivos XML";
+	private static final String DRIVE_ROOT = "root";
 
 	private final Path credentialsFile;
 	private final Path tokensDirectory;
@@ -44,7 +49,7 @@ public class GoogleDriveStorage implements CloudStorage {
 	}
 
 	@Override
-	public String uploadToSharedFolder(String accountEmail, String folderName, List<Path> files)
+	public UploadResult replaceInSharedFolder(String accountEmail, String folderName, List<Path> files)
 			throws DispatchException {
 
 		if (!Files.isRegularFile(credentialsFile)) {
@@ -55,11 +60,9 @@ public class GoogleDriveStorage implements CloudStorage {
 		try {
 			Drive drive = createDrive(accountEmail);
 
-			File folderMetadata = new File();
-			folderMetadata.setName(folderName);
-			folderMetadata.setMimeType(FOLDER_MIME_TYPE);
-
-			File folder = drive.files().create(folderMetadata).setFields("id, webViewLink").execute();
+			File root = findOrCreateFolder(drive, ROOT_FOLDER_NAME, DRIVE_ROOT);
+			File folder = findOrCreateFolder(drive, folderName, root.getId());
+			Set<String> uploaded = new HashSet<>();
 
 			for (Path file : files) {
 				File metadata = new File();
@@ -67,7 +70,7 @@ public class GoogleDriveStorage implements CloudStorage {
 				metadata.setParents(List.of(folder.getId()));
 
 				FileContent content = new FileContent(ZIP_MIME_TYPE, file.toFile());
-				drive.files().create(metadata, content).setFields("id").execute();
+				uploaded.add(drive.files().create(metadata, content).setFields("id").execute().getId());
 			}
 
 			Permission anyoneWithLink = new Permission();
@@ -75,11 +78,72 @@ public class GoogleDriveStorage implements CloudStorage {
 			anyoneWithLink.setRole("reader");
 			drive.permissions().create(folder.getId(), anyoneWithLink).execute();
 
-			return folder.getWebViewLink() != null ? folder.getWebViewLink() : FOLDER_LINK_PREFIX + folder.getId();
+			String link = folder.getWebViewLink() != null ? folder.getWebViewLink() : FOLDER_LINK_PREFIX + folder.getId();
+
+			// Only now, so a failed upload never leaves the folder without its previous file.
+			return new UploadResult(link, removeOthers(drive, folder.getId(), uploaded));
 
 		} catch (IOException | GeneralSecurityException e) {
 			throw new DispatchException("Falha ao enviar os arquivos para o Google Drive: " + e.getMessage(), e);
 		}
+	}
+
+	private static File findOrCreateFolder(Drive drive, String folderName, String parentId) throws IOException {
+
+		List<File> found = drive.files().list()
+				.setQ(folderQuery(folderName, parentId))
+				.setSpaces("drive")
+				.setFields("files(id, webViewLink)")
+				.execute()
+				.getFiles();
+
+		if (!found.isEmpty()) {
+			return found.get(0);
+		}
+
+		File metadata = new File();
+		metadata.setName(folderName);
+		metadata.setMimeType(FOLDER_MIME_TYPE);
+		metadata.setParents(List.of(parentId));
+
+		return drive.files().create(metadata).setFields("id, webViewLink").execute();
+	}
+
+	// A deleted file skips the trash, because the trash still counts against the storage of the account.
+	private static String removeOthers(Drive drive, String folderId, Set<String> kept) {
+		try {
+			List<File> children = drive.files().list()
+					.setQ(childrenQuery(folderId))
+					.setSpaces("drive")
+					.setPageSize(MAX_PAGE_SIZE)
+					.setFields("files(id)")
+					.execute()
+					.getFiles();
+
+			for (File child : children) {
+				if (!kept.contains(child.getId())) {
+					drive.files().delete(child.getId()).execute();
+				}
+			}
+
+			return null;
+
+		} catch (IOException e) {
+			return e.getMessage() == null ? e.getClass().getSimpleName() : e.getMessage();
+		}
+	}
+
+	static String folderQuery(String folderName, String parentId) {
+		return "name = '" + escaped(folderName) + "' and mimeType = '" + FOLDER_MIME_TYPE
+				+ "' and '" + escaped(parentId) + "' in parents and trashed = false";
+	}
+
+	static String childrenQuery(String folderId) {
+		return "'" + escaped(folderId) + "' in parents and mimeType != '" + FOLDER_MIME_TYPE + "' and trashed = false";
+	}
+
+	private static String escaped(String value) {
+		return value.replace("\\", "\\\\").replace("'", "\\'");
 	}
 
 	private Drive createDrive(String accountEmail) throws IOException, GeneralSecurityException {
