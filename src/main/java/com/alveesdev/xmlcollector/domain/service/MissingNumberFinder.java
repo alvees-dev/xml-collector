@@ -1,13 +1,16 @@
 package com.alveesdev.xmlcollector.domain.service;
 
+import java.time.YearMonth;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.TreeSet;
 
+import com.alveesdev.xmlcollector.domain.model.IssuedNumber;
 import com.alveesdev.xmlcollector.domain.model.NumberRange;
 import com.alveesdev.xmlcollector.domain.model.XmlDocument.Invoice;
 
@@ -25,6 +28,20 @@ public final class MissingNumberFinder {
 				series, subtract(gaps, voidedBySeries.getOrDefault(series, List.of()))));
 
 		return missingBySeries;
+	}
+
+	// Only the month just before counts: anything older means a month that was never collected, and its notes are not missing.
+	public static Optional<NumberRange> gapBetweenCollections(IssuedNumber previous, IssuedNumber first) {
+
+		if (previous.date() == null || first.number() - previous.number() <= 1) {
+			return Optional.empty();
+		}
+
+		if (YearMonth.from(previous.date()).isBefore(YearMonth.from(first.date()).minusMonths(1))) {
+			return Optional.empty();
+		}
+
+		return Optional.of(new NumberRange(previous.number() + 1, first.number() - 1));
 	}
 
 	public static List<NumberRange> subtract(List<NumberRange> ranges, List<NumberRange> removed) {

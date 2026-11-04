@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.SortedMap;
+import java.util.TreeMap;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
@@ -46,6 +47,7 @@ public final class CollectionRules {
 	private final Set<AccessKey> cancelledKeys = new HashSet<>();
 	private final Set<String> seenVoidingIds = new HashSet<>();
 	private final Map<Integer, List<NumberRange>> voidedBySeries = new HashMap<>();
+	private final Map<Integer, List<NumberRange>> outOfPeriodBySeries = new HashMap<>();
 	private final Map<Integer, List<Accepted>> acceptedBySource = new HashMap<>();
 
 	public CollectionRules(DateRange period) {
@@ -93,7 +95,35 @@ public final class CollectionRules {
 	}
 
 	public SortedMap<Integer, List<NumberRange>> missingNumbers() {
-		return MissingNumberFinder.findBySeries(acceptedInvoices(), voidedBySeries);
+		return missingNumbers(Map.of());
+	}
+
+	public SortedMap<Integer, List<NumberRange>> missingNumbers(Map<Integer, List<NumberRange>> gapsBeforeTheFirst) {
+
+		SortedMap<Integer, List<NumberRange>> missing = new TreeMap<>();
+
+		MissingNumberFinder.findBySeries(acceptedInvoices()).forEach((series, gaps) -> {
+			List<NumberRange> all = new ArrayList<>(gapsBeforeTheFirst.getOrDefault(series, List.of()));
+			all.addAll(gaps);
+
+			List<NumberRange> withoutVoided = MissingNumberFinder.subtract(all, voidedBySeries.getOrDefault(series, List.of()));
+
+			missing.put(series, MissingNumberFinder.subtract(withoutVoided, outOfPeriodBySeries.getOrDefault(series, List.of())));
+		});
+
+		return missing;
+	}
+
+	public List<IssuedNumber> firstIssuedNumbers() {
+
+		Map<List<Object>, IssuedNumber> first = new HashMap<>();
+
+		for (IssuedNumber issued : issuedNumbers()) {
+			first.merge(List.of(issued.cnpj(), issued.modelCode(), issued.series()), issued,
+					(one, other) -> one.number() <= other.number() ? one : other);
+		}
+
+		return List.copyOf(first.values());
 	}
 
 	public Set<AccessKey> cancelledKeys() {
@@ -121,6 +151,10 @@ public final class CollectionRules {
 		}
 
 		if (!period.contains(invoice.date())) {
+			// It exists, even if it does not belong to this period, so it can never be a gap.
+			outOfPeriodBySeries.computeIfAbsent(invoice.series(), series -> new ArrayList<>())
+					.add(new NumberRange(invoice.number(), invoice.number()));
+
 			return new Skip(SkipReason.OUT_OF_PERIOD);
 		}
 

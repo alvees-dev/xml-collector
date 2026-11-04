@@ -50,6 +50,18 @@ public record CollectionResult(
 		return owners;
 	}
 
+	public Map<Integer, Integer> firstNumberBySeries() {
+		Map<Integer, Integer> first = new HashMap<>();
+
+		for (DocumentEntry entry : entries()) {
+			if (entry.invoice() != null) {
+				first.merge(entry.invoice().series(), entry.invoice().number(), Math::min);
+			}
+		}
+
+		return first;
+	}
+
 	public List<DocumentEntry> entries() {
 		return sources.stream()
 				.flatMap(source -> source.entries().stream())
