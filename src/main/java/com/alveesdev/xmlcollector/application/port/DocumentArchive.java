@@ -18,4 +18,8 @@ public interface DocumentArchive {
 
 	default void requireWritable(Path directory) throws IOException {
 	}
+
+	default boolean holdsVoidingInAnotherMonth(Path archiveRoot, Path month, String fileName) throws IOException {
+		return false;
+	}
 }
