@@ -26,9 +26,9 @@ import com.alveesdev.xmlcollector.application.port.DocumentReader;
 import com.alveesdev.xmlcollector.application.port.SourceFiles;
 import com.alveesdev.xmlcollector.application.port.SourceFiles.SourceFile;
 import com.alveesdev.xmlcollector.domain.model.AccessKey;
-import com.alveesdev.xmlcollector.domain.model.DocumentCategory;
 import com.alveesdev.xmlcollector.domain.model.IssuedNumber;
 import com.alveesdev.xmlcollector.domain.model.NumberRange;
+import com.alveesdev.xmlcollector.domain.model.OrganizeMode;
 import com.alveesdev.xmlcollector.domain.model.SeparationMode;
 import com.alveesdev.xmlcollector.domain.model.XmlDocument;
 import com.alveesdev.xmlcollector.domain.service.ArchiveLayout;
@@ -188,7 +188,12 @@ class SourceProcessor {
 			CollectionRules.Decision decision = rules.decide(sourceIndex, file.fileName(), file.document());
 
 			if (decision instanceof CollectionRules.Store store) {
-				jobs.add(job(sourceIndex, file, store));
+				// A gap voided after its collection stays in the collected month, even with a date of the next one.
+				if (heldInAnotherMonth(store)) {
+					counters.alreadyExisting++;
+				} else {
+					jobs.add(job(sourceIndex, file, store));
+				}
 			} else if (decision instanceof CollectionRules.Skip skip) {
 				count(skip.reason());
 			}
@@ -215,12 +220,32 @@ class SourceProcessor {
 
 	private Path directoryOf(int sourceIndex, CollectionRules.Store store) {
 
+		// A voiding has no day folder, whatever the organization of the invoices is.
 		if (request.separationMode() == SeparationMode.BY_PDV) {
-			return ArchiveLayout.pdvDirectoryFor(request.archiveRoot(), store.date(), request.organizeMode(), sourceIndex);
+			OrganizeMode mode = store.voiding() ? OrganizeMode.SINGLE_FOLDER : request.organizeMode();
+			return ArchiveLayout.pdvDirectoryFor(request.archiveRoot(), store.date(), mode, sourceIndex);
 		}
 
-		DocumentCategory category = store.voiding() ? DocumentCategory.VOIDED : request.category();
-		return ArchiveLayout.directoryFor(request.archiveRoot(), store.date(), request.organizeMode(), category);
+		if (store.voiding()) {
+			return ArchiveLayout.voidingDirectoryFor(request.archiveRoot(), store.date());
+		}
+
+		return ArchiveLayout.directoryFor(request.archiveRoot(), store.date(), request.organizeMode(), request.category());
+	}
+
+	private boolean heldInAnotherMonth(CollectionRules.Store store) {
+
+		if (!store.voiding()) {
+			return false;
+		}
+
+		try {
+			return archive.holdsVoidingInAnotherMonth(
+					request.archiveRoot(), ArchiveLayout.monthDirectory(request.archiveRoot(), store.date()), store.preferredName());
+		} catch (IOException e) {
+			// A repeated file is better than a missing one.
+			return false;
+		}
 	}
 
 	private void storeInParallel(List<StoreJob> jobs, BooleanSupplier cancelled) {

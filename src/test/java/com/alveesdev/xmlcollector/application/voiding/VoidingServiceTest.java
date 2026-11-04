@@ -11,6 +11,7 @@ import java.nio.file.Path;
 import java.nio.file.attribute.FileTime;
 import java.time.Clock;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.List;
@@ -22,7 +23,6 @@ import com.alveesdev.xmlcollector.application.port.VoidingException;
 import com.alveesdev.xmlcollector.domain.model.DocumentModel;
 import com.alveesdev.xmlcollector.domain.model.FiscalEnvironment;
 import com.alveesdev.xmlcollector.domain.model.NumberRange;
-import com.alveesdev.xmlcollector.domain.model.OrganizeMode;
 import com.alveesdev.xmlcollector.domain.model.VoidingReceipt;
 import com.alveesdev.xmlcollector.domain.model.VoidingRequest;
 
@@ -30,6 +30,7 @@ class VoidingServiceTest {
 
 	private static final Path ROOT = Path.of("archive");
 	private static final Clock CLOCK = Clock.fixed(Instant.parse("2026-02-05T12:00:00Z"), ZoneOffset.UTC);
+	private static final LocalDate COLLECTED = LocalDate.of(2026, 1, 31);
 	private static final VoidingRequest REQUEST = new VoidingRequest(
 			"35", 2026, "12345678000190", DocumentModel.NFCE, 1, new NumberRange(2, 3), "Numeracao nao utilizada");
 	private static final VoidingReceipt APPROVED = new VoidingReceipt("102", "Inutilizacao homologada", "135", "agora", "<procInutNFe/>");
@@ -39,19 +40,19 @@ class VoidingServiceTest {
 
 	@Test
 	void storesTheProcessedXmlWhenApproved() throws Exception {
-		VoidingResult result = service(APPROVED).voidRange(REQUEST, OrganizeMode.SINGLE_FOLDER, ROOT, List.of());
+		VoidingResult result = service(APPROVED).voidRange(REQUEST, ROOT, COLLECTED, List.of());
 
 		assertEquals(APPROVED, result.receipt());
 		assertNull(result.archiveFailure());
 		assertEquals(1, archive.names.size());
 		assertEquals("35261234567800019065001000000002000000003-procInutNFe.xml", archive.names.get(0));
-		assertEquals(ROOT.resolve("2026").resolve("Fevereiro").resolve("Inutilizadas"), archive.directories.get(0));
+		assertEquals(ROOT.resolve("2026").resolve("Janeiro").resolve("Inutilizadas"), archive.directories.get(0));
 		assertEquals("<procInutNFe/>", archive.contents.get(0));
 	}
 
 	@Test
 	void storesNothingWhenRejected() throws Exception {
-		VoidingResult result = service(REJECTED).voidRange(REQUEST, OrganizeMode.SINGLE_FOLDER, ROOT, List.of());
+		VoidingResult result = service(REJECTED).voidRange(REQUEST, ROOT, COLLECTED, List.of());
 
 		assertEquals("241", result.receipt().status());
 		assertTrue(archive.names.isEmpty());
@@ -61,7 +62,7 @@ class VoidingServiceTest {
 	void keepsTheApprovalWhenStoringFails() throws Exception {
 		archive.failure = new IOException("disco cheio");
 
-		VoidingResult result = service(APPROVED).voidRange(REQUEST, OrganizeMode.SINGLE_FOLDER, ROOT, List.of());
+		VoidingResult result = service(APPROVED).voidRange(REQUEST, ROOT, COLLECTED, List.of());
 
 		assertEquals("135", result.receipt().protocol());
 		assertEquals("disco cheio", result.archiveFailure());
@@ -73,7 +74,7 @@ class VoidingServiceTest {
 			throw new VoidingException("sem conexao");
 		}, archive, CLOCK, FiscalEnvironment.PRODUCTION);
 
-		assertThrows(VoidingException.class, () -> service.voidRange(REQUEST, OrganizeMode.SINGLE_FOLDER, ROOT, List.of()));
+		assertThrows(VoidingException.class, () -> service.voidRange(REQUEST, ROOT, COLLECTED, List.of()));
 		assertTrue(archive.names.isEmpty());
 	}
 
@@ -85,10 +86,10 @@ class VoidingServiceTest {
 	void storesTheApprovedXmlInThePdvFolderAndInTheArchive() throws Exception {
 		Path pdv = Path.of("pdv1", "inutilizadas");
 
-		VoidingResult result = service(APPROVED).voidRange(REQUEST, OrganizeMode.SINGLE_FOLDER, ROOT, List.of(pdv));
+		VoidingResult result = service(APPROVED).voidRange(REQUEST, ROOT, COLLECTED, List.of(pdv));
 
 		assertEquals(List.of(), result.pdvFailures());
-		assertEquals(List.of(pdv, ROOT.resolve("2026").resolve("Fevereiro").resolve("Inutilizadas")), archive.directories);
+		assertEquals(List.of(pdv, ROOT.resolve("2026").resolve("Janeiro").resolve("Inutilizadas")), archive.directories);
 	}
 
 	@Test
@@ -96,7 +97,7 @@ class VoidingServiceTest {
 		Path pdv = Path.of("pdv1", "inutilizadas");
 		archive.failingDirectory = pdv;
 
-		VoidingResult result = service(APPROVED).voidRange(REQUEST, OrganizeMode.SINGLE_FOLDER, ROOT, List.of(pdv));
+		VoidingResult result = service(APPROVED).voidRange(REQUEST, ROOT, COLLECTED, List.of(pdv));
 
 		assertEquals(1, result.pdvFailures().size());
 		assertTrue(result.pdvFailures().get(0).contains("sem acesso"));
@@ -106,9 +107,9 @@ class VoidingServiceTest {
 
 	@Test
 	void aRejectedOrHomologationVoidingDoesNotGoToThePdv() throws Exception {
-		service(REJECTED).voidRange(REQUEST, OrganizeMode.SINGLE_FOLDER, ROOT, List.of(Path.of("pdv1")));
+		service(REJECTED).voidRange(REQUEST, ROOT, COLLECTED, List.of(Path.of("pdv1")));
 		new VoidingService(request -> APPROVED, archive, CLOCK, FiscalEnvironment.HOMOLOGATION)
-				.voidRange(REQUEST, OrganizeMode.SINGLE_FOLDER, ROOT, List.of(Path.of("pdv1")));
+				.voidRange(REQUEST, ROOT, COLLECTED, List.of(Path.of("pdv1")));
 
 		assertTrue(archive.names.isEmpty());
 	}
@@ -116,7 +117,7 @@ class VoidingServiceTest {
 	@Test
 	void aHomologationApprovalIsNotStoredWithTheRealDocuments() throws Exception {
 		VoidingResult result = new VoidingService(request -> APPROVED, archive, CLOCK, FiscalEnvironment.HOMOLOGATION)
-				.voidRange(REQUEST, OrganizeMode.SINGLE_FOLDER, ROOT, List.of());
+				.voidRange(REQUEST, ROOT, COLLECTED, List.of());
 
 		assertTrue(result.receipt().approved());
 		assertTrue(archive.names.isEmpty());

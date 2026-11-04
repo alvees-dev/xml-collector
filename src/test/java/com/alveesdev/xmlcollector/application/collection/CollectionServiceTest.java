@@ -510,6 +510,41 @@ class CollectionServiceTest {
 	}
 
 	@Test
+	void aVoidingHasNoDayFolderWhenOrganizedByDay() {
+		sources.add("pdv1", "inut.xml", new XmlDocument.Voiding(
+				"ID1", 1, new NumberRange(5, 5), IN_PERIOD.atTime(12, 0).atOffset(java.time.ZoneOffset.ofHours(-3))));
+
+		collectBy(SeparationMode.ALL_TOGETHER, OrganizeMode.BY_DAY);
+
+		assertEquals(ARCHIVE.resolve("2026").resolve("Janeiro").resolve("Inutilizadas"), archive.stored.get(0).directory());
+	}
+
+	@Test
+	void aVoidingHasNoDayFolderInsideAPdv() {
+		sources.add("pdv1", "inut.xml", new XmlDocument.Voiding(
+				"ID1", 1, new NumberRange(5, 5), IN_PERIOD.atTime(12, 0).atOffset(java.time.ZoneOffset.ofHours(-3))));
+
+		collectBy(SeparationMode.BY_PDV, OrganizeMode.BY_DAY);
+
+		assertEquals(ARCHIVE.resolve("2026").resolve("Janeiro").resolve("PDV1"), archive.stored.get(0).directory());
+	}
+
+	@Test
+	void aVoidingHeldInAnotherMonthIsNotCopiedAndStillClosesTheGap() {
+		archive.voidingInAnotherMonth = "1-procInutNFe.xml";
+		sources.add("pdv1", "a.xml", invoice(1, 1, IN_PERIOD));
+		sources.add("pdv1", "b.xml", invoice(1, 3, IN_PERIOD));
+		sources.add("pdv1", "inut.xml", new XmlDocument.Voiding(
+				"ID1", 1, new NumberRange(2, 2), IN_PERIOD.atTime(12, 0).atOffset(java.time.ZoneOffset.ofHours(-3))));
+
+		CollectionResult result = collect("pdv1");
+
+		assertEquals(Map.of(1, List.of()), result.missingBySeries());
+		assertEquals(0, archive.stored.stream().filter(stored -> stored.preferredName().equals("1-procInutNFe.xml")).count());
+		assertEquals(1, result.summary().alreadyExisting());
+	}
+
+	@Test
 	void allTogetherKeepsTheCategoryFolders() {
 		sources.add("pdv1", "a.xml", invoice(1, IN_PERIOD));
 
@@ -637,9 +672,15 @@ class CollectionServiceTest {
 
 		private final List<Stored> stored = new ArrayList<>();
 		private String failingName;
+		private String voidingInAnotherMonth;
 
 		void failOn(String fileName) {
 			this.failingName = fileName;
+		}
+
+		@Override
+		public boolean holdsVoidingInAnotherMonth(Path archiveRoot, Path month, String fileName) {
+			return fileName.equals(voidingInAnotherMonth);
 		}
 
 		@Override

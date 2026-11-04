@@ -12,9 +12,7 @@ import java.util.List;
 import com.alveesdev.xmlcollector.application.port.DocumentArchive;
 import com.alveesdev.xmlcollector.application.port.VoidingException;
 import com.alveesdev.xmlcollector.application.port.VoidingGateway;
-import com.alveesdev.xmlcollector.domain.model.DocumentCategory;
 import com.alveesdev.xmlcollector.domain.model.FiscalEnvironment;
-import com.alveesdev.xmlcollector.domain.model.OrganizeMode;
 import com.alveesdev.xmlcollector.domain.model.VoidingReceipt;
 import com.alveesdev.xmlcollector.domain.model.VoidingRequest;
 import com.alveesdev.xmlcollector.domain.service.ArchiveLayout;
@@ -33,7 +31,7 @@ public class VoidingService {
 		this.environment = environment;
 	}
 
-	public VoidingResult voidRange(VoidingRequest request, OrganizeMode organizeMode, Path archiveRoot, List<Path> pdvFolders)
+	public VoidingResult voidRange(VoidingRequest request, Path archiveRoot, LocalDate archiveDate, List<Path> pdvFolders)
 			throws VoidingException {
 
 		VoidingReceipt receipt = gateway.voidRange(request);
@@ -53,7 +51,7 @@ public class VoidingService {
 			}
 		}
 
-		Path archived = ArchiveLayout.directoryFor(archiveRoot, LocalDate.now(clock), organizeMode, DocumentCategory.VOIDED);
+		Path archived = ArchiveLayout.voidingDirectoryFor(archiveRoot, archiveDate);
 
 		return new VoidingResult(receipt, store(request, receipt, archived), pdvFailures);
 	}

@@ -1,6 +1,7 @@
 package com.alveesdev.xmlcollector.infra.archive;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.file.AtomicMoveNotSupportedException;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
@@ -9,11 +10,14 @@ import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
 import java.nio.file.attribute.FileTime;
 import java.util.EnumSet;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Stream;
 
 import com.alveesdev.xmlcollector.application.port.DocumentArchive;
 import com.alveesdev.xmlcollector.application.port.DocumentReader;
+import com.alveesdev.xmlcollector.domain.model.DocumentCategory;
 import com.alveesdev.xmlcollector.domain.model.DocumentModel;
 
 public class XmlArchive implements DocumentArchive {
@@ -87,6 +91,49 @@ public class XmlArchive implements DocumentArchive {
 		}
 
 		Files.delete(Files.createTempFile(existing, ".coletor-xml-", TEMP_SUFFIX));
+	}
+
+	@Override
+	public boolean holdsVoidingInAnotherMonth(Path archiveRoot, Path month, String fileName) throws IOException {
+
+		for (Path year : foldersIn(archiveRoot)) {
+			for (Path other : foldersIn(year)) {
+				if (!other.equals(month) && holdsVoiding(other.resolve(DocumentCategory.VOIDED.folderName()), fileName)) {
+					return true;
+				}
+			}
+		}
+
+		return false;
+	}
+
+	private static boolean holdsVoiding(Path voided, String fileName) throws IOException {
+
+		if (Files.exists(voided.resolve(fileName))) {
+			return true;
+		}
+
+		// Older voidings can still be inside a day folder.
+		for (Path day : foldersIn(voided)) {
+			if (Files.exists(day.resolve(fileName))) {
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	private static List<Path> foldersIn(Path directory) throws IOException {
+
+		if (!Files.isDirectory(directory)) {
+			return List.of();
+		}
+
+		try (Stream<Path> children = Files.list(directory)) {
+			return children.filter(Files::isDirectory).toList();
+		} catch (UncheckedIOException e) {
+			throw e.getCause();
+		}
 	}
 
 	private State inspect(byte[] content, FileTime sourceModified, Path existing, String identity)
