@@ -23,4 +23,7 @@ public interface SourceFiles {
 	ScanResult scan(Path directory, Path excludedRoot) throws IOException;
 
 	byte[] read(SourceFile file) throws IOException;
+
+	default void requireReadable(Path directory) throws IOException {
+	}
 }
