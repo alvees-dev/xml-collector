@@ -2,6 +2,7 @@ package com.alveesdev.xmlcollector.application.port;
 
 import java.io.IOException;
 import java.util.Collection;
+import java.util.Optional;
 import java.util.Set;
 
 import com.alveesdev.xmlcollector.domain.model.IssuedNumber;
@@ -14,4 +15,8 @@ public interface IssuedNumberRepository {
 	void saveAll(Collection<IssuedNumber> numbers) throws IOException;
 
 	Set<Integer> issuedIn(String cnpj, String modelCode, int series, NumberRange range) throws IOException;
+
+	default Optional<IssuedNumber> lastBefore(String cnpj, String modelCode, int series, int number) throws IOException {
+		return Optional.empty();
+	}
 }
