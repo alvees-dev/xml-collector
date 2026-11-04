@@ -6,7 +6,10 @@ import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.function.Function;
+import java.util.stream.Stream;
 
+import com.alveesdev.xmlcollector.application.connection.DirectoryTarget;
+import com.alveesdev.xmlcollector.application.connection.DirectoryTester;
 import com.alveesdev.xmlcollector.application.port.VoidingException;
 import com.alveesdev.xmlcollector.application.port.VoidingGatewayFactory;
 import com.alveesdev.xmlcollector.application.settings.AppSettings;
@@ -20,6 +23,7 @@ import com.alveesdev.xmlcollector.domain.model.NfeSearchModel;
 import com.alveesdev.xmlcollector.domain.model.OrganizeMode;
 import com.alveesdev.xmlcollector.domain.model.PdvSearchModel;
 import com.alveesdev.xmlcollector.domain.model.PdvType;
+import com.alveesdev.xmlcollector.domain.model.SearchFolderPattern;
 import com.alveesdev.xmlcollector.domain.model.SeparationMode;
 import com.alveesdev.xmlcollector.ui.model.VoidingText;
 import com.alveesdev.xmlcollector.ui.view.Dialogs;
@@ -46,6 +50,7 @@ public class SettingsController {
 	private final SettingsService settingsService;
 	private final SearchModelCatalog searchModels;
 	private final VoidingBatch voidingBatch;
+	private final DirectoryTester directoryTester;
 
 	@FXML
 	private Label lblTitle;
@@ -110,18 +115,20 @@ public class SettingsController {
 	private double dragOffsetX;
 	private double dragOffsetY;
 
-	public SettingsController(SettingsService settingsService, SearchModelCatalog searchModels, VoidingBatch voidingBatch) {
+	public SettingsController(SettingsService settingsService, SearchModelCatalog searchModels, VoidingBatch voidingBatch,
+			DirectoryTester directoryTester) {
 		this.settingsService = settingsService;
 		this.searchModels = searchModels;
 		this.voidingBatch = voidingBatch;
+		this.directoryTester = directoryTester;
 	}
 
 	@FXML
 	public void initialize() {
 		AppSettings settings = settingsService.current();
 
-		pdvEditor = new DirectoryListEditor(pdvListBox, pdvScrollPane, "PDV", 45, 219);
-		nfeEditor = new DirectoryListEditor(nfeListBox, nfeScrollPane, "NFe", 45, 219);
+		pdvEditor = new DirectoryListEditor(pdvListBox, pdvScrollPane, "PDV", 45, 219, directoryTester, this::pdvTarget);
+		nfeEditor = new DirectoryListEditor(nfeListBox, nfeScrollPane, "NFe", 45, 219, directoryTester, this::nfeTarget);
 
 		pdvEditor.load(settings.pdvDirectories());
 		nfeEditor.load(settings.nfeDirectories());
@@ -186,6 +193,40 @@ public class SettingsController {
 	@FXML
 	private void onRemoveNfe() {
 		nfeEditor.removeLastRow();
+	}
+
+	@FXML
+	private void onTestAllPdv() {
+		pdvEditor.testAll();
+	}
+
+	@FXML
+	private void onTestAllNfe() {
+		nfeEditor.testAll();
+	}
+
+	private DirectoryTarget pdvTarget(String directory) {
+		PdvSearchModel model = choicePdvModel.getValue();
+
+		if (model == null) {
+			return new DirectoryTarget(directory, List.of(), "");
+		}
+
+		List<String> folders = Stream.concat(model.collectionFolders().stream(), model.missingFolders().stream())
+				.distinct()
+				.toList();
+
+		return new DirectoryTarget(directory, folders, SearchFolderPattern.fixedPrefix(model.voidingFolder()));
+	}
+
+	private DirectoryTarget nfeTarget(String directory) {
+		NfeSearchModel model = choiceNfeModel.getValue();
+
+		List<String> folders = Stream.concat(model.salesFolders().stream(), model.purchaseFolders().stream())
+				.distinct()
+				.toList();
+
+		return new DirectoryTarget(directory, folders, null);
 	}
 
 	@FXML

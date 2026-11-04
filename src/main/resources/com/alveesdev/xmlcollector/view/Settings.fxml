@@ -103,7 +103,7 @@
                                             </Label>
                                             <Button maxHeight="24.0" maxWidth="24.0" minHeight="24.0" minWidth="24.0" mnemonicParsing="false" onAction="#onAddPdv" prefHeight="24.0" prefWidth="24.0" style="-fx-background-radius: 50; -fx-border-radius: 50; -fx-border-width: 0; -fx-padding: -8 1 0 0; -fx-font-size: 25; -fx-font-weight: bold; -fx-cursor: hand; -fx-alignment: center; -fx-content-display: center;" text="+" />
                                             <Button maxHeight="24.0" maxWidth="24.0" minHeight="24.0" minWidth="24.0" mnemonicParsing="false" onAction="#onRemovePdv" prefHeight="24.0" prefWidth="24.0" style="-fx-background-radius: 50; -fx-border-radius: 50; -fx-border-width: 0; -fx-padding: -8 0 0 0; -fx-font-size: 25; -fx-font-weight: bold; -fx-cursor: hand; -fx-alignment: center; -fx-content-display: center;" text="-" />
-                                            <Button mnemonicParsing="false" text="Testar Todos">
+                                            <Button mnemonicParsing="false" onAction="#onTestAllPdv" text="Testar Todos">
                                                    <HBox.margin>
                                                       <Insets left="50.0" />
                                                    </HBox.margin>
@@ -136,7 +136,7 @@
                                                 </Label>
                                                 <Button maxHeight="24.0" maxWidth="24.0" minHeight="24.0" minWidth="24.0" mnemonicParsing="false" onAction="#onAddNfe" prefHeight="24.0" prefWidth="24.0" style="-fx-background-radius: 50; -fx-border-radius: 50; -fx-border-width: 0; -fx-padding: -8 1 0 0; -fx-font-size: 25; -fx-font-weight: bold; -fx-cursor: hand; -fx-alignment: center; -fx-content-display: center;" text="+" />
                                                 <Button maxHeight="24.0" maxWidth="24.0" minHeight="24.0" minWidth="24.0" mnemonicParsing="false" onAction="#onRemoveNfe" prefHeight="24.0" prefWidth="24.0" style="-fx-background-radius: 50; -fx-border-radius: 50; -fx-border-width: 0; -fx-padding: -8 0 0 0; -fx-font-size: 25; -fx-font-weight: bold; -fx-cursor: hand; -fx-alignment: center; -fx-content-display: center;" text="-" />
-                                                <Button mnemonicParsing="false" text="Testar Todos">
+                                                <Button mnemonicParsing="false" onAction="#onTestAllNfe" text="Testar Todos">
                                                    <HBox.margin>
                                                       <Insets left="50.0" />
                                                    </HBox.margin>

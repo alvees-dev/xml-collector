@@ -2,6 +2,12 @@ package com.alveesdev.xmlcollector.ui.view;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Function;
+
+import com.alveesdev.xmlcollector.application.connection.DirectoryTarget;
+import com.alveesdev.xmlcollector.application.connection.DirectoryTestResult;
+import com.alveesdev.xmlcollector.application.connection.DirectoryTester;
+import com.alveesdev.xmlcollector.ui.model.DirectoryTestText;
 
 import javafx.application.Platform;
 import javafx.geometry.Insets;
@@ -15,21 +21,30 @@ import javafx.scene.layout.VBox;
 
 public class DirectoryListEditor {
 
+	private static final double STATUS_MAX_WIDTH = 300;
+
+	private record Row(TextField field, Button testButton, Label status) {
+	}
+
 	private final VBox listBox;
 	private final ScrollPane scrollPane;
 	private final String labelPrefix;
 	private final double labelWidth;
 	private final double fieldWidth;
+	private final DirectoryTester tester;
+	private final Function<String, DirectoryTarget> targets;
 
-	private final List<TextField> fields = new ArrayList<>();
+	private final List<Row> rows = new ArrayList<>();
 
 	public DirectoryListEditor(VBox listBox, ScrollPane scrollPane, String labelPrefix, double labelWidth,
-			double fieldWidth) {
+			double fieldWidth, DirectoryTester tester, Function<String, DirectoryTarget> targets) {
 		this.listBox = listBox;
 		this.scrollPane = scrollPane;
 		this.labelPrefix = labelPrefix;
 		this.labelWidth = labelWidth;
 		this.fieldWidth = fieldWidth;
+		this.tester = tester;
+		this.targets = targets;
 	}
 
 	public void load(List<String> savedDirectories) {
@@ -41,7 +56,7 @@ public class DirectoryListEditor {
 	}
 
 	public void addRow(String directory) {
-		int number = fields.size() + 1;
+		int number = rows.size() + 1;
 
 		Label label = new Label(String.format("%s %02d", labelPrefix, number));
 		label.setMinWidth(labelWidth);
@@ -51,33 +66,83 @@ public class DirectoryListEditor {
 
 		Button testButton = new Button("Teste");
 
-		HBox row = new HBox(8, label, field, testButton);
-		row.setAlignment(Pos.CENTER_LEFT);
-		row.setPadding(new Insets(8, 0, 0, 15));
+		HBox line = new HBox(8, label, field, testButton);
+		line.setAlignment(Pos.CENTER_LEFT);
 
-		fields.add(field);
-		listBox.getChildren().add(row);
+		Label status = new Label();
+		status.setWrapText(true);
+		status.setMaxWidth(STATUS_MAX_WIDTH);
+		status.setVisible(false);
+		status.managedProperty().bind(status.visibleProperty());
+		VBox.setMargin(status, new Insets(2, 0, 0, labelWidth + 8));
+
+		VBox rowBox = new VBox(line, status);
+		rowBox.setPadding(new Insets(8, 0, 0, 15));
+
+		Row row = new Row(field, testButton, status);
+		testButton.setOnAction(event -> test(row));
+
+		rows.add(row);
+		listBox.getChildren().add(rowBox);
 
 		Platform.runLater(() -> scrollPane.setVvalue(1.0));
 	}
 
 	public void removeLastRow() {
-		if (fields.size() <= 1) {
+		if (rows.size() <= 1) {
 			return;
 		}
 
-		int lastIndex = fields.size() - 1;
-		fields.remove(lastIndex);
+		int lastIndex = rows.size() - 1;
+		rows.remove(lastIndex);
 		listBox.getChildren().remove(lastIndex);
 	}
 
 	public List<String> values() {
 		List<String> values = new ArrayList<>();
 
-		for (TextField field : fields) {
-			values.add(field.getText().trim());
+		for (Row row : rows) {
+			values.add(row.field().getText().trim());
 		}
 
 		return values;
+	}
+
+	public void testAll() {
+		rows.forEach(this::test);
+	}
+
+	private void test(Row row) {
+
+		DirectoryTarget target = targets.apply(row.field().getText().trim());
+
+		row.testButton().setDisable(true);
+		showStatus(row, DirectoryTestText.RUNNING, "");
+
+		Thread thread = new Thread(() -> {
+			DirectoryTestResult result = tester.test(target);
+
+			Platform.runLater(() -> {
+				row.testButton().setDisable(false);
+				showStatus(row, DirectoryTestText.of(result), styleOf(result));
+			});
+		}, "directory-test-row");
+
+		thread.setDaemon(true);
+		thread.start();
+	}
+
+	private static void showStatus(Row row, String text, String style) {
+		row.status().setText(text);
+		row.status().setStyle(style);
+		row.status().setVisible(true);
+	}
+
+	private static String styleOf(DirectoryTestResult result) {
+		return switch (result.status()) {
+			case OK -> "-fx-text-fill: #2e7d32;";
+			case WARNING -> "-fx-text-fill: #e65100;";
+			case FAILED -> "-fx-text-fill: #c62828; -fx-font-weight: bold;";
+		};
 	}
 }
