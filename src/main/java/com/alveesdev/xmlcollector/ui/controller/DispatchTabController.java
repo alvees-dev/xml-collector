@@ -95,6 +95,23 @@ public class DispatchTabController {
 			return;
 		}
 
+		boolean reuseExistingZip = false;
+
+		try {
+			if (service.existingZipOf(monthDirectory).isPresent()) {
+				Dialogs.ExistingZipChoice choice = Dialogs.askAboutExistingZip();
+
+				if (choice == Dialogs.ExistingZipChoice.CANCEL) {
+					return;
+				}
+
+				reuseExistingZip = choice == Dialogs.ExistingZipChoice.SEND_EXISTING;
+			}
+		} catch (DispatchException e) {
+			Dialogs.error(e.getMessage());
+			return;
+		}
+
 		updateDraft();
 		saveSettings();
 
@@ -102,7 +119,7 @@ public class DispatchTabController {
 		EmailDraft draft = settings.emailDraft();
 
 		DispatchRequest request = new DispatchRequest(
-				List.of(monthDirectory), settings.emailAccount(), draft.recipient().trim(), draft.subject(), draft.body());
+				List.of(monthDirectory), settings.emailAccount(), draft.recipient().trim(), draft.subject(), draft.body(), reuseExistingZip);
 
 		ProgressWindow progressWindow;
 

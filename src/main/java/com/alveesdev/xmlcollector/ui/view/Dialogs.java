@@ -27,6 +27,12 @@ import javafx.scene.layout.VBox;
 
 public final class Dialogs {
 
+	public enum ExistingZipChoice {
+		REPLACE,
+		SEND_EXISTING,
+		CANCEL
+	}
+
 	private static final int MAX_LISTED_FAILURES = 15;
 
 	private Dialogs() {
@@ -76,6 +82,27 @@ public final class Dialogs {
 				message.toString());
 		alert.setHeaderText(header);
 		alert.showAndWait();
+	}
+
+	public static ExistingZipChoice askAboutExistingZip() {
+
+		ButtonType replace = new ButtonType("Sim", ButtonBar.ButtonData.YES);
+		ButtonType cancel = new ButtonType("Cancelar envio", ButtonBar.ButtonData.CANCEL_CLOSE);
+		ButtonType sendExisting = new ButtonType("Enviar arquivo existente", ButtonBar.ButtonData.OTHER);
+
+		Alert alert = new Alert(Alert.AlertType.CONFIRMATION,
+				"Foi encontrado um arquivo compactado. Gostaria de compactar um novo e substituir ou enviar o existente?"
+						+ "\n\nO arquivo existente pode estar desatualizado.",
+				replace, cancel, sendExisting);
+		alert.setHeaderText("Arquivo compactado encontrado");
+
+		ButtonType chosen = alert.showAndWait().orElse(cancel);
+
+		if (chosen == replace) {
+			return ExistingZipChoice.REPLACE;
+		}
+
+		return chosen == sendExisting ? ExistingZipChoice.SEND_EXISTING : ExistingZipChoice.CANCEL;
 	}
 
 	public static boolean confirmVoiding(List<VoidingRequest> requests, FiscalEnvironment environment) {
