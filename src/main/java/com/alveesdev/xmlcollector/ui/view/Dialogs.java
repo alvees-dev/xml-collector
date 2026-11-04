@@ -105,6 +105,20 @@ public final class Dialogs {
 		return chosen == sendExisting ? ExistingZipChoice.SEND_EXISTING : ExistingZipChoice.CANCEL;
 	}
 
+	public static boolean confirmVoidingWithoutSearch() {
+
+		ButtonType yes = new ButtonType("Sim", ButtonBar.ButtonData.YES);
+		ButtonType cancel = new ButtonType("Cancelar", ButtonBar.ButtonData.CANCEL_CLOSE);
+
+		Alert alert = new Alert(Alert.AlertType.WARNING,
+				"Podem existir notas efetivadas entre as faltantes. Tem certeza que quer INUTILIZAR antes de Procurar Todas?",
+				cancel, yes);
+		((Button) alert.getDialogPane().lookupButton(yes)).setDefaultButton(false);
+		((Button) alert.getDialogPane().lookupButton(cancel)).setDefaultButton(true);
+
+		return alert.showAndWait().filter(yes::equals).isPresent();
+	}
+
 	public static boolean confirmVoiding(List<VoidingRequest> requests, FiscalEnvironment environment) {
 
 		String text = VoidingText.confirmation(requests, environment);
