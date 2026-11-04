@@ -76,7 +76,7 @@
             </GridPane>
          </children>
       </HBox>
-      <TabPane tabClosingPolicy="UNAVAILABLE" VBox.vgrow="ALWAYS">
+      <TabPane tabClosingPolicy="UNAVAILABLE" tabMaxWidth="370.0" tabMinWidth="370.0" VBox.vgrow="ALWAYS">
         <tabs>
           <Tab text="NFCe">
             <content>
