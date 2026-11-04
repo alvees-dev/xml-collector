@@ -6,7 +6,11 @@ public final class SourceLabels {
 	}
 
 	public static String label(int sourceIndex, SourceMode mode) {
-		return mode == SourceMode.PDV_DIRECTORIES ? String.format("PDV %02d", sourceIndex + 1) : "Diretório";
+		return switch (mode) {
+			case PDV_DIRECTORIES -> String.format("PDV %02d", sourceIndex + 1);
+			case NFE_DIRECTORIES -> String.format("NFe %02d", sourceIndex + 1);
+			case SINGLE_DIRECTORY -> "Diretório";
+		};
 	}
 
 	public static String header(int sourceIndex) {

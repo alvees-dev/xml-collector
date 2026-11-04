@@ -54,8 +54,8 @@
                   <Insets left="8.0" right="10.0" />
                </padding>
                <children>
-                  <CheckBox mnemonicParsing="false" text="NFe Vendas" />
-                  <CheckBox mnemonicParsing="false" text="NFe Compras" />
+                  <CheckBox fx:id="chkNfeSales" mnemonicParsing="false" text="NFe Vendas" />
+                  <CheckBox fx:id="chkNfePurchases" mnemonicParsing="false" text="NFe Compras" />
                </children>
             </VBox>
             <Separator orientation="VERTICAL" />
@@ -67,16 +67,16 @@
                   <Label text="NFCe" />
                   <TextField fx:id="txtNfceTotal" editable="false" prefWidth="110.0" GridPane.columnIndex="1" />
                   <Label text="NFe V" GridPane.rowIndex="1" />
-                  <TextField editable="false" prefWidth="110.0" GridPane.columnIndex="1" GridPane.rowIndex="1" />
+                  <TextField fx:id="txtNfeSalesTotal" editable="false" prefWidth="110.0" GridPane.columnIndex="1" GridPane.rowIndex="1" />
                   <Label text="NFe C" GridPane.rowIndex="2" />
-                  <TextField editable="false" prefWidth="110.0" GridPane.columnIndex="1" GridPane.rowIndex="2" />
+                  <TextField fx:id="txtNfePurchasesTotal" editable="false" prefWidth="110.0" GridPane.columnIndex="1" GridPane.rowIndex="2" />
                </children>
             </GridPane>
          </children>
       </HBox>
       <TableView fx:id="documentsTable" VBox.vgrow="ALWAYS">
         <columns>
-          <TableColumn fx:id="numberColumn" maxWidth="55.0" minWidth="55.0" prefWidth="55.0" text="NFCe" />
+          <TableColumn fx:id="numberColumn" maxWidth="55.0" minWidth="55.0" prefWidth="55.0" text="NOTA" />
           <TableColumn fx:id="seriesColumn" maxWidth="55.0" minWidth="55.0" prefWidth="55.0" text="SERIE" />
           <TableColumn fx:id="totalValueColumn" prefWidth="75.0" text="VALOR" />
           <TableColumn fx:id="emissionDateColumn" maxWidth="120.0" minWidth="120.0" prefWidth="120.0" text="DATA" />
