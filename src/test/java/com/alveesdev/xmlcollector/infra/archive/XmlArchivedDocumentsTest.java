@@ -73,6 +73,17 @@ class XmlArchivedDocumentsTest {
 	}
 
 	@Test
+	void readsTheDocumentsOfTheCompanyWithoutThePurchases() throws IOException {
+		Path sales = Files.createDirectories(directory.resolve("NFCe"));
+		Path purchases = Files.createDirectories(directory.resolve("NFe_Compras"));
+		Files.writeString(sales.resolve("nota.xml"), "invoice");
+		Files.writeString(sales.resolve("leia-me.txt"), "invoice");
+		Files.writeString(purchases.resolve("compra.xml"), "invoice");
+
+		assertEquals(java.util.List.of(invoice(1, 10, DAY)), documents().documentsOfTheCompanyIn(directory));
+	}
+
+	@Test
 	void ignoresWhatHasNoCnpj() throws IOException {
 		Files.writeString(directory.resolve("ruim.xml"), "unreadable");
 		Files.writeString(directory.resolve("leia-me.txt"), "invoice");

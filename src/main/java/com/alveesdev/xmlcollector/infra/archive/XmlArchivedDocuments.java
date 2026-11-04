@@ -3,6 +3,7 @@ package com.alveesdev.xmlcollector.infra.archive;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Locale;
@@ -49,6 +50,20 @@ public class XmlArchivedDocuments implements ArchivedDocuments {
 		}
 
 		return cnpjs;
+	}
+
+	@Override
+	public List<XmlDocument> documentsOfTheCompanyIn(Path directory) throws IOException {
+
+		List<XmlDocument> documents = new ArrayList<>();
+
+		for (Path file : xmlFilesIn(directory)) {
+			if (!isPurchase(directory, file)) {
+				documents.add(reader.read(Files.readAllBytes(file), ALL_MODELS));
+			}
+		}
+
+		return documents;
 	}
 
 	private static boolean isPurchase(Path directory, Path file) {

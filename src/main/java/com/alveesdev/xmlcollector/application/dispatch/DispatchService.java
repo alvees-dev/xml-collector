@@ -22,6 +22,7 @@ import com.alveesdev.xmlcollector.application.port.EmailMessage;
 import com.alveesdev.xmlcollector.application.port.EmailSender;
 import com.alveesdev.xmlcollector.application.settings.EmailAccount;
 import com.alveesdev.xmlcollector.domain.service.ArchiveLayout;
+import com.alveesdev.xmlcollector.domain.service.ValuesReport;
 
 public class DispatchService {
 
@@ -157,7 +158,7 @@ public class DispatchService {
 				cnpjs.addAll(ofMonth);
 
 				String zipName = ArchiveLayout.zipName(ofMonth, directory);
-				Optional<CompressedFile> file = compressor.compress(directory, zipName);
+				Optional<CompressedFile> file = compressor.compress(directory, zipName, List.of(valuesReportOf(directory)));
 
 				if (file.isEmpty()) {
 					throw new DispatchException("A pasta " + ArchiveLayout.monthLabel(directory) + " não tem arquivos para enviar.");
@@ -171,6 +172,14 @@ public class DispatchService {
 		}
 
 		return compressed;
+	}
+
+	private DirectoryCompressor.ExtraFile valuesReportOf(Path directory) throws IOException {
+
+		ValuesReport report = ValuesReport.of(archivedDocuments.documentsOfTheCompanyIn(directory));
+		String month = directory.getFileName() + " de " + directory.getParent().getFileName();
+
+		return new DirectoryCompressor.ExtraFile(ValuesReportText.FILE_NAME, ValuesReportText.bytesOf(month, report));
 	}
 
 	private static String folderNameOf(List<Path> monthDirectories) {

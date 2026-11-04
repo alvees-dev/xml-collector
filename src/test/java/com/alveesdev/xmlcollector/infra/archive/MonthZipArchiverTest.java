@@ -1,5 +1,6 @@
 package com.alveesdev.xmlcollector.infra.archive;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -17,6 +18,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 import com.alveesdev.xmlcollector.application.port.DirectoryCompressor.CompressedFile;
+import com.alveesdev.xmlcollector.application.port.DirectoryCompressor.ExtraFile;
 
 class MonthZipArchiverTest {
 
@@ -38,7 +40,7 @@ class MonthZipArchiverTest {
 	void namesTheZipAsRequestedAndLeavesNoTemporaryFile() throws IOException {
 		Files.writeString(month.resolve("NFCe").resolve("nota.xml"), "<a/>");
 
-		CompressedFile zip = archiver.compress(month, ZIP_NAME).orElseThrow();
+		CompressedFile zip = archiver.compress(month, ZIP_NAME, List.of()).orElseThrow();
 
 		assertEquals(root.resolve("2026").resolve(ZIP_NAME + ".zip"), zip.file());
 		assertEquals(Files.size(zip.file()), zip.bytes());
@@ -49,7 +51,7 @@ class MonthZipArchiverTest {
 	void keepsTheMonthFolderInsideTheZip() throws IOException {
 		Files.writeString(month.resolve("NFCe").resolve("nota.xml"), "<a/>");
 
-		CompressedFile zip = archiver.compress(month, ZIP_NAME).orElseThrow();
+		CompressedFile zip = archiver.compress(month, ZIP_NAME, List.of()).orElseThrow();
 
 		try (ZipFile file = new ZipFile(zip.file().toFile())) {
 			assertEquals("Janeiro_2026/NFCe/nota.xml", file.entries().nextElement().getName());
@@ -60,10 +62,10 @@ class MonthZipArchiverTest {
 	void sendingAgainReplacesTheSameFile() throws IOException {
 		Path note = month.resolve("NFCe").resolve("nota.xml");
 		Files.writeString(note, "<a/>");
-		archiver.compress(month, ZIP_NAME);
+		archiver.compress(month, ZIP_NAME, List.of());
 
 		Files.writeString(month.resolve("NFCe").resolve("outra.xml"), "<b/>");
-		CompressedFile zip = archiver.compress(month, ZIP_NAME).orElseThrow();
+		CompressedFile zip = archiver.compress(month, ZIP_NAME, List.of()).orElseThrow();
 
 		try (ZipFile file = new ZipFile(zip.file().toFile())) {
 			assertEquals(2, file.size());
@@ -72,7 +74,29 @@ class MonthZipArchiverTest {
 
 	@Test
 	void createsNothingForAnEmptyFolder() throws IOException {
-		Optional<CompressedFile> zip = archiver.compress(month, ZIP_NAME);
+		Optional<CompressedFile> zip = archiver.compress(month, ZIP_NAME, List.of());
+
+		assertTrue(zip.isEmpty());
+		assertFalse(Files.exists(root.resolve("2026").resolve(ZIP_NAME + ".zip")));
+	}
+
+	@Test
+	void putsTheExtraFileInsideTheMonthFolderOfTheZipOnly() throws IOException {
+		Files.writeString(month.resolve("NFCe").resolve("nota.xml"), "<a/>");
+
+		CompressedFile zip = archiver.compress(month, ZIP_NAME, List.of(new ExtraFile("Relatório.txt", new byte[] {1, 2}))).orElseThrow();
+
+		try (ZipFile file = new ZipFile(zip.file().toFile())) {
+			assertEquals(2, file.size());
+			assertArrayEquals(new byte[] {1, 2}, file.getInputStream(file.getEntry("Janeiro_2026/Relatório.txt")).readAllBytes());
+		}
+
+		assertEquals(List.of("NFCe"), namesIn(month));
+	}
+
+	@Test
+	void anExtraFileDoesNotMakeAnEmptyFolderWorthAZip() throws IOException {
+		Optional<CompressedFile> zip = archiver.compress(month, ZIP_NAME, List.of(new ExtraFile("Relatório.txt", new byte[] {1})));
 
 		assertTrue(zip.isEmpty());
 		assertFalse(Files.exists(root.resolve("2026").resolve(ZIP_NAME + ".zip")));
