@@ -20,7 +20,7 @@ public final class ArchiveLayout {
 			"Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"
 	};
 
-	private static final DateTimeFormatter DAY_FOLDER_FORMAT = DateTimeFormatter.ofPattern("dd-MM-yyyy");
+	private static final DateTimeFormatter DAY_FOLDER_FORMAT = DateTimeFormatter.ofPattern("'Dia_'dd");
 	private static final String ZIP_PREFIX = "ArquivoXML";
 	private static final String VOIDING_FILE_SUFFIX = "-procInutNFe.xml";
 	private static final String PDV_FOLDER_PREFIX = "PDV";
