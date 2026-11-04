@@ -182,9 +182,16 @@ public class DispatchTabController {
 					+ " em anexo (" + size + ").";
 		}
 
-		return "O XML de " + monthLabel + " (" + size + ") passou do limite de 25 MB e foi salvo no Google Drive."
+		String success = "O XML de " + monthLabel + " (" + size + ") passou do limite de 25 MB e foi salvo no Google Drive."
 				+ "\nO link da pasta foi enviado para " + recipient + "."
 				+ "\n\nLink: " + result.driveLink();
+
+		if (result.driveCleanupFailure() == null) {
+			return success;
+		}
+
+		return success + "\n\nAtenção: o arquivo anterior não foi removido da pasta e continua ocupando espaço. "
+				+ "Ele será removido no próximo envio, ou você pode apagá-lo no Drive.\nMotivo: " + result.driveCleanupFailure();
 	}
 
 	private static String describeFailure(Throwable error) {
