@@ -33,7 +33,7 @@ class DispatchServiceTest {
 	private static final EmailAccount ACCOUNT = new EmailAccount(
 			"smtp.gmail.com", 587, EmailSecurity.STARTTLS, "envio@exemplo.com", "senha-de-teste");
 
-	private static final DispatchRequest REQUEST = new DispatchRequest(List.of(MONTH), ACCOUNT, "destino@exemplo.com", "", "");
+	private static final DispatchRequest REQUEST = new DispatchRequest(List.of(MONTH), ACCOUNT, "destino@exemplo.com", "Assunto", "");
 
 	private int uploads;
 	private final List<String> driveFolders = new ArrayList<>();
@@ -200,6 +200,41 @@ class DispatchServiceTest {
 	}
 
 	@Test
+	void doesNotSendOrCompressWithoutASubject() {
+		for (String subject : new String[] {"", "   ", null}) {
+			DispatchRequest request = new DispatchRequest(List.of(MONTH), ACCOUNT, "destino@exemplo.com", subject, "");
+
+			DispatchException error = assertThrows(DispatchException.class, () -> service(compressor).dispatch(request));
+
+			assertEquals("O Assunto não foi informado", error.getMessage());
+		}
+
+		assertEquals(List.of(), zipNames);
+		assertEquals(List.of(), sent);
+	}
+
+	@Test
+	void sendsTheSubjectTheUserWrote() throws Exception {
+		service(compressor).dispatch(new DispatchRequest(List.of(MONTH), ACCOUNT, "destino@exemplo.com", "  XML de Janeiro ", ""));
+
+		assertEquals("XML de Janeiro", sent.get(0).subject());
+	}
+
+	@Test
+	void usesTheStandardBodyWhenNoneWasWritten() throws Exception {
+		service(compressor).dispatch(REQUEST);
+
+		assertEquals("Olá, Prezados\nSegue o arquivo XML\n\nAtenciosamente,", sent.get(0).body());
+	}
+
+	@Test
+	void keepsTheBodyTheUserWrote() throws Exception {
+		service(compressor).dispatch(new DispatchRequest(List.of(MONTH), ACCOUNT, "destino@exemplo.com", "Assunto", "Meu texto"));
+
+		assertEquals("Meu texto", sent.get(0).body());
+	}
+
+	@Test
 	void sendsTheExistingZipWithoutCompressingAgain() throws Exception {
 		Path existingZip = MONTH.resolveSibling("ArquivoXML_12345678000190_Janeiro_2026.zip");
 		List<DispatchProgress> events = new ArrayList<>();
@@ -230,7 +265,7 @@ class DispatchServiceTest {
 	}
 
 	private static DispatchRequest reusingTheZip() {
-		return new DispatchRequest(List.of(MONTH), ACCOUNT, "destino@exemplo.com", "", "", true);
+		return new DispatchRequest(List.of(MONTH), ACCOUNT, "destino@exemplo.com", "Assunto", "", true);
 	}
 
 	private DirectoryCompressor compressorWith(Path existingZip, long bytes) {
@@ -277,6 +312,6 @@ class DispatchServiceTest {
 				(account, message) -> sent.add(message),
 				(accountEmail, folderName, files) -> new CloudStorage.UploadResult("link", null));
 
-		service.dispatch(new DispatchRequest(List.of(MONTH), ACCOUNT, "destino@exemplo.com", "", ""));
+		service.dispatch(REQUEST);
 	}
 }

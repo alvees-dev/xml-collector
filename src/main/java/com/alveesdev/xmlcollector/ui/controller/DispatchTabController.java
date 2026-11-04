@@ -67,7 +67,7 @@ public class DispatchTabController {
 		EmailDraft draft = settingsService.current().emailDraft();
 		txtRecipient.setText(draft.recipient());
 		txtSubject.setText(draft.subject());
-		txtBody.setText(draft.body());
+		txtBody.setText(draft.body().isBlank() ? EmailDraft.DEFAULT_BODY : draft.body());
 
 		loadMonthChoices();
 
@@ -92,6 +92,12 @@ public class DispatchTabController {
 
 		if (!Files.isDirectory(monthDirectory)) {
 			Dialogs.warning("Não há pasta coletada para " + monthLabel + ". Faça a coleta desse mês antes de enviar.");
+			return;
+		}
+
+		if (txtSubject.getText().isBlank()) {
+			Dialogs.warning(DispatchService.SUBJECT_REQUIRED);
+			txtSubject.requestFocus();
 			return;
 		}
 

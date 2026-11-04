@@ -21,12 +21,14 @@ import com.alveesdev.xmlcollector.application.port.DispatchException;
 import com.alveesdev.xmlcollector.application.port.EmailMessage;
 import com.alveesdev.xmlcollector.application.port.EmailSender;
 import com.alveesdev.xmlcollector.application.settings.EmailAccount;
+import com.alveesdev.xmlcollector.application.settings.EmailDraft;
 import com.alveesdev.xmlcollector.domain.service.ArchiveLayout;
 import com.alveesdev.xmlcollector.domain.service.ValuesReport;
 
 public class DispatchService {
 
 	public static final long MAX_MESSAGE_BYTES = 25L * 1024 * 1024;
+	public static final String SUBJECT_REQUIRED = "O Assunto não foi informado";
 
 	private static final long HEADERS_AND_BODY_RESERVE_BYTES = 256L * 1024;
 	private static final int BASE64_LINE_LENGTH = 76;
@@ -69,7 +71,7 @@ public class DispatchService {
 		List<Path> zipFiles = compressed.stream().map(CompressedFile::file).toList();
 		long totalBytes = compressed.stream().mapToLong(CompressedFile::bytes).sum();
 
-		String subject = subjectOf(request);
+		String subject = request.subject().trim();
 		String body = bodyOf(request);
 
 		if (fitsInMessage(compressed)) {
@@ -148,6 +150,10 @@ public class DispatchService {
 			throw new DispatchException("Informe um e-mail destinatário válido na aba Envio de XML.");
 		}
 
+		if (request.subject() == null || request.subject().isBlank()) {
+			throw new DispatchException(SUBJECT_REQUIRED);
+		}
+
 		EmailAccount account = request.account();
 
 		if (account == null || !account.isComplete()) {
@@ -220,23 +226,7 @@ public class DispatchService {
 		return new DirectoryCompressor.ExtraFile(ValuesReportText.FILE_NAME, ValuesReportText.bytesOf(month, report));
 	}
 
-	private static String folderNameOf(List<Path> monthDirectories) {
-		return String.join(" e ", monthDirectories.stream().map(ArchiveLayout::monthLabel).toList());
-	}
-
-	private static String subjectOf(DispatchRequest request) {
-		if (request.subject() != null && !request.subject().isBlank()) {
-			return request.subject().trim();
-		}
-
-		return "XML NFCe - " + folderNameOf(request.monthDirectories());
-	}
-
 	private static String bodyOf(DispatchRequest request) {
-		if (request.body() != null && !request.body().isBlank()) {
-			return request.body();
-		}
-
-		return "Segue o XML das notas referentes a " + folderNameOf(request.monthDirectories()) + ".";
+		return request.body() == null || request.body().isBlank() ? EmailDraft.DEFAULT_BODY : request.body();
 	}
 }
