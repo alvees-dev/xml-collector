@@ -107,7 +107,7 @@ public class DispatchTabController {
 		ProgressWindow progressWindow;
 
 		try {
-			progressWindow = new ProgressWindow(btnSend.getScene().getWindow(), "Enviando XML de " + monthLabel,
+			progressWindow = new ProgressWindow(btnSend.getScene().getWindow(), "Enviando arquivo XML de " + monthLabel,
 					DispatchProgressText.stepLabels(), STEP_LABEL_WIDTH);
 		} catch (IOException e) {
 			Dialogs.error("Erro ao abrir a tela de progresso: " + e.getMessage());
@@ -182,8 +182,8 @@ public class DispatchTabController {
 					+ " em anexo (" + size + ").";
 		}
 
-		String success = "O XML de " + monthLabel + " (" + size + ") passou do limite de 25 MB e foi salvo no Google Drive."
-				+ "\nO link da pasta foi enviado para " + recipient + "."
+		String success = "O Arquivo XML de " + monthLabel + " (" + size + ") passou do limite de 25 MB e foi salvo no Google Drive."
+				+ "\nO link para acessar a pasta foi enviado para " + recipient + "."
 				+ "\n\nLink: " + result.driveLink();
 
 		if (result.driveCleanupFailure() == null) {
@@ -191,7 +191,7 @@ public class DispatchTabController {
 		}
 
 		return success + "\n\nAtenção: o arquivo anterior não foi removido da pasta e continua ocupando espaço. "
-				+ "Ele será removido no próximo envio, ou você pode apagá-lo no Drive.\nMotivo: " + result.driveCleanupFailure();
+				+ "\nMotivo: " + result.driveCleanupFailure();
 	}
 
 	private static String describeFailure(Throwable error) {
