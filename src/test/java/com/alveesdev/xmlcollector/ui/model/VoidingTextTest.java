@@ -50,11 +50,35 @@ class VoidingTextTest {
 	}
 
 	@Test
-	void theReportSaysWhenNothingWasRefused() {
+	void theReportSaysTheNumbersWereVoidedWhenAllWereApproved() {
 		String text = VoidingText.summary(List.of(
 				new VoidingOutcome(SINGLE, Stage.APPROVED, "102 - Homologado", null, List.of())), FiscalEnvironment.PRODUCTION);
 
-		assertEquals("Nenhuma numeração recusada.", text);
+		assertEquals("As numerações foram inutilizadas.", text);
+	}
+
+	@Test
+	void theReportDoesNotClaimTheNumbersWereVoidedWhenTheSendingFailed() {
+		String text = VoidingText.summary(List.of(
+				new VoidingOutcome(SINGLE, Stage.FAILED, "sem resposta")), FiscalEnvironment.PRODUCTION);
+
+		assertEquals("Falharam (a resposta da Sefaz é desconhecida, confira antes de reenviar):\nSérie 1: 7 (sem resposta)", text);
+	}
+
+	@Test
+	void theReportDoesNotClaimTheNumbersWereVoidedWhenTheyWereNotSent() {
+		String text = VoidingText.summary(List.of(
+				new VoidingOutcome(SINGLE, Stage.NOT_SENT, null)), FiscalEnvironment.PRODUCTION);
+
+		assertEquals("Não enviadas:\nSérie 1: 7", text);
+	}
+
+	@Test
+	void anApprovedTestInHomologationDoesNotClaimTheNumbersWereVoided() {
+		String text = VoidingText.summary(List.of(
+				new VoidingOutcome(SINGLE, Stage.APPROVED, "102 - Homologado", null, List.of())), FiscalEnvironment.HOMOLOGATION);
+
+		assertEquals("Teste em homologação, sem efeito fiscal.\n\nTeste concluído, nenhuma numeração foi inutilizada.", text);
 	}
 
 	@Test
