@@ -1,6 +1,7 @@
 package com.alveesdev.xmlcollector.infra.archive;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.file.AtomicMoveNotSupportedException;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
@@ -8,8 +9,11 @@ import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.nio.file.attribute.FileTime;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Stream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
@@ -20,6 +24,36 @@ public class MonthZipArchiver implements DirectoryCompressor {
 
 	private static final String ZIP_SUFFIX = ".zip";
 	private static final String TEMP_SUFFIX = ".part";
+
+	@Override
+	public Optional<CompressedFile> existing(Path monthDirectory) throws IOException {
+
+		Path yearDirectory = monthDirectory.getParent();
+
+		if (!Files.isDirectory(yearDirectory)) {
+			return Optional.empty();
+		}
+
+		try (Stream<Path> files = Files.list(yearDirectory)) {
+			Optional<Path> newest = files
+					.filter(Files::isRegularFile)
+					.filter(file -> ArchiveLayout.isZipOfMonth(file.getFileName().toString(), monthDirectory))
+					.max(Comparator.comparing(MonthZipArchiver::modifiedTime));
+
+			return newest.isPresent() ? Optional.of(new CompressedFile(newest.get(), Files.size(newest.get()))) : Optional.empty();
+
+		} catch (UncheckedIOException e) {
+			throw e.getCause();
+		}
+	}
+
+	private static FileTime modifiedTime(Path file) {
+		try {
+			return Files.getLastModifiedTime(file);
+		} catch (IOException e) {
+			throw new UncheckedIOException(e);
+		}
+	}
 
 	@Override
 	public Optional<CompressedFile> compress(Path monthDirectory, String zipName, List<ExtraFile> extraFiles) throws IOException {

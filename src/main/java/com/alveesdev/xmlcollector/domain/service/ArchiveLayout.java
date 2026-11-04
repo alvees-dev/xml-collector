@@ -63,6 +63,11 @@ public final class ArchiveLayout {
 		return String.join("_", parts);
 	}
 
+	// The CNPJs in the name are only known after reading the notes, so the month is what identifies the zip.
+	public static boolean isZipOfMonth(String fileName, Path monthDirectory) {
+		return fileName.startsWith(ZIP_PREFIX + "_") && fileName.endsWith("_" + monthLabel(monthDirectory) + ".zip");
+	}
+
 	public static String voidingFileName(String voidingId) {
 		return voidingId.replaceFirst("^ID", "") + VOIDING_FILE_SUFFIX;
 	}
