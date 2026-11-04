@@ -67,7 +67,7 @@ public class SmtpEmailSender implements EmailSender {
 
 		} catch (AuthenticationFailedException e) {
 			throw new DispatchException(
-					"O servidor recusou o usuário ou a senha do e-mail. No Gmail, use uma senha de app.", e);
+					"O servidor recusou o usuário ou a senha do e-mail. \nNo Gmail, use uma senha de app.", e);
 		} catch (AddressException e) {
 			throw new DispatchException("Endereço de e-mail inválido. Confira o remetente e o destinatário.", e);
 		} catch (MessagingException | IOException e) {
