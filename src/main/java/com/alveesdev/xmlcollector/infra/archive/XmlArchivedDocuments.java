@@ -14,6 +14,7 @@ import java.util.stream.Stream;
 import com.alveesdev.xmlcollector.application.port.ArchivedDocuments;
 import com.alveesdev.xmlcollector.application.port.DocumentReader;
 import com.alveesdev.xmlcollector.domain.model.AccessKey;
+import com.alveesdev.xmlcollector.domain.model.DocumentCategory;
 import com.alveesdev.xmlcollector.domain.model.DocumentModel;
 import com.alveesdev.xmlcollector.domain.model.XmlDocument;
 
@@ -33,6 +34,11 @@ public class XmlArchivedDocuments implements ArchivedDocuments {
 		Set<String> cnpjs = new TreeSet<>();
 
 		for (Path file : xmlFilesIn(directory)) {
+			// The key of a purchase has the CNPJ of the supplier, not of the company these documents belong to.
+			if (isPurchase(directory, file)) {
+				continue;
+			}
+
 			Optional<AccessKey> key = AccessKey.findIn(file.getFileName().toString());
 
 			if (key.isEmpty()) {
@@ -43,6 +49,16 @@ public class XmlArchivedDocuments implements ArchivedDocuments {
 		}
 
 		return cnpjs;
+	}
+
+	private static boolean isPurchase(Path directory, Path file) {
+		for (Path folder : directory.relativize(file)) {
+			if (folder.toString().equalsIgnoreCase(DocumentCategory.NFE_PURCHASES.folderName())) {
+				return true;
+			}
+		}
+
+		return false;
 	}
 
 	private static List<Path> xmlFilesIn(Path directory) throws IOException {

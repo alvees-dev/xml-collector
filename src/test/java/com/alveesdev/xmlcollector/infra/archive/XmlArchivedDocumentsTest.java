@@ -63,6 +63,16 @@ class XmlArchivedDocumentsTest {
 	}
 
 	@Test
+	void leavesTheSuppliersOfThePurchasesOut() throws IOException {
+		Path sales = Files.createDirectories(directory.resolve("NFe_Vendas"));
+		Path purchases = Files.createDirectories(directory.resolve("NFe_Compras"));
+		Files.writeString(sales.resolve(KEY + ".xml"), "");
+		Files.writeString(purchases.resolve(OTHER_KEY + ".xml"), "");
+
+		assertEquals(Set.of(CNPJ), documents().cnpjsIn(directory));
+	}
+
+	@Test
 	void ignoresWhatHasNoCnpj() throws IOException {
 		Files.writeString(directory.resolve("ruim.xml"), "unreadable");
 		Files.writeString(directory.resolve("leia-me.txt"), "invoice");
