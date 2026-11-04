@@ -54,7 +54,7 @@ public class GoogleDriveStorage implements CloudStorage {
 
 		if (!Files.isRegularFile(credentialsFile)) {
 			throw new DispatchException("O arquivo de credenciais do Google Drive não foi encontrado em:\n"
-					+ credentialsFile + "\nCopie para essa pasta o arquivo JSON criado no Google Cloud Console.");
+					+ credentialsFile);
 		}
 
 		try {
