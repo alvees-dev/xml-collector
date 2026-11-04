@@ -15,4 +15,8 @@ public record NfeSearchModel(
 		salesFolders = List.copyOf(salesFolders);
 		purchaseFolders = List.copyOf(purchaseFolders);
 	}
+
+	public List<String> foldersOf(DocumentCategory category) {
+		return category == DocumentCategory.NFE_PURCHASES ? purchaseFolders : salesFolders;
+	}
 }

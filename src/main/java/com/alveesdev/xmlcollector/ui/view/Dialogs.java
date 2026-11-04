@@ -44,7 +44,7 @@ public final class Dialogs {
 		new Alert(Alert.AlertType.ERROR, message).showAndWait();
 	}
 
-	public static void collectionSummary(CollectionResult result, Path archiveRoot, SourceMode sourceMode) {
+	public static void collectionSummary(CollectionResult result, Path archiveRoot, SourceMode sourceMode, String header) {
 
 		CollectionSummary summary = result.summary();
 		List<String> failures = describeFailures(result, sourceMode);
@@ -63,7 +63,7 @@ public final class Dialogs {
 		message.append("\nJá existiam no destino: ").append(summary.alreadyExisting());
 		message.append("\nDuplicados (mesma chave): ").append(summary.duplicates());
 		message.append("\nFora do período: ").append(summary.outOfPeriod());
-		message.append("\nIgnorados (não são NFCe): ").append(summary.ignored());
+		message.append("\nIgnorados (outro tipo de documento): ").append(summary.ignored());
 		message.append("\nCom erro de leitura: ").append(summary.errors());
 		message.append("\n\nDestino: ").append(archiveRoot);
 
@@ -76,7 +76,7 @@ public final class Dialogs {
 		Alert alert = new Alert(
 				hasProblems ? Alert.AlertType.WARNING : Alert.AlertType.INFORMATION,
 				message.toString());
-		alert.setHeaderText("Coleta concluída");
+		alert.setHeaderText(header);
 		alert.showAndWait();
 	}
 

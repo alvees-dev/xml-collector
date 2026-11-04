@@ -2,9 +2,13 @@ package com.alveesdev.xmlcollector.ui.controller;
 
 import java.time.LocalDate;
 import java.time.YearMonth;
+import java.util.ArrayList;
+import java.util.EnumMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.function.BiConsumer;
+import java.util.stream.Stream;
 
 import com.alveesdev.xmlcollector.application.collection.CollectedDocuments;
 import com.alveesdev.xmlcollector.application.collection.CollectionRequest;
@@ -17,6 +21,7 @@ import com.alveesdev.xmlcollector.application.settings.SearchModelCatalog;
 import com.alveesdev.xmlcollector.application.settings.service.SettingsService;
 import com.alveesdev.xmlcollector.domain.model.DateRange;
 import com.alveesdev.xmlcollector.domain.model.DocumentCategory;
+import com.alveesdev.xmlcollector.domain.model.NfeSearchModel;
 import com.alveesdev.xmlcollector.domain.model.SeparationMode;
 import com.alveesdev.xmlcollector.ui.model.DocumentRow;
 import com.alveesdev.xmlcollector.ui.model.DocumentRowMapper;
@@ -26,6 +31,7 @@ import com.alveesdev.xmlcollector.ui.view.Dialogs;
 import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
+import javafx.scene.control.CheckBox;
 import javafx.scene.control.DatePicker;
 import javafx.scene.control.RadioButton;
 import javafx.scene.control.TableColumn;
@@ -41,6 +47,7 @@ public class CollectionTabController {
 	private final AppPaths paths;
 
 	private CollectedDocuments collected = new CollectedDocuments();
+	private final Map<DocumentCategory, CollectedDocuments> nfeCollected = new EnumMap<>(DocumentCategory.class);
 
 	private BiConsumer<CollectionRequest, CollectionResult> onCollected = (request, result) -> {
 	};
@@ -61,7 +68,19 @@ public class CollectionTabController {
 	private Button btnCollect;
 
 	@FXML
+	private CheckBox chkNfeSales;
+
+	@FXML
+	private CheckBox chkNfePurchases;
+
+	@FXML
 	private TextField txtNfceTotal;
+
+	@FXML
+	private TextField txtNfeSalesTotal;
+
+	@FXML
+	private TextField txtNfePurchasesTotal;
 
 	@FXML
 	private TableView<DocumentRow> documentsTable;
@@ -129,8 +148,86 @@ public class CollectionTabController {
 			return;
 		}
 
-		CollectionRunner.run(btnCollect, "Coletando XML", collectionService, request.get(), sourceMode,
-				result -> showResult(request.get(), result, sourceMode));
+		Optional<List<CollectionRequest>> nfeRequests = buildNfeRequests();
+
+		if (nfeRequests.isEmpty()) {
+			return;
+		}
+
+		CollectionRunner.run(btnCollect, "Coletando XML", collectionService, request.get(), sourceMode, result -> {
+			showResult(request.get(), result, sourceMode);
+			collectNfe(nfeRequests.get());
+		});
+	}
+
+	private void collectNfe(List<CollectionRequest> requests) {
+
+		if (requests.isEmpty()) {
+			return;
+		}
+
+		CollectionRequest request = requests.get(0);
+		String label = nfeLabel(request.category());
+
+		CollectionRunner.run(btnCollect, "Coletando " + label, collectionService, request, SourceMode.NFE_DIRECTORIES, result -> {
+			nfeCollected.put(request.category(), CollectedDocuments.from(result));
+			showCollected();
+
+			Dialogs.collectionSummary(result, paths.xmlArchiveDir(), SourceMode.NFE_DIRECTORIES, "Coleta de " + label + " concluída");
+
+			collectNfe(requests.subList(1, requests.size()));
+		});
+	}
+
+	// Checked before anything runs, so a problem here does not appear only after the NFCe collection.
+	private Optional<List<CollectionRequest>> buildNfeRequests() {
+
+		List<DocumentCategory> categories = new ArrayList<>();
+
+		if (chkNfeSales.isSelected()) {
+			categories.add(DocumentCategory.NFE_SALES);
+		}
+
+		if (chkNfePurchases.isSelected()) {
+			categories.add(DocumentCategory.NFE_PURCHASES);
+		}
+
+		if (categories.isEmpty()) {
+			return Optional.of(List.of());
+		}
+
+		AppSettings settings = settingsService.current();
+		NfeSearchModel model = searchModels.nfeModel(settings.nfeModelId());
+
+		if (model.equals(NfeSearchModel.NONE)) {
+			Dialogs.warning("Selecione o Modelo de Busca NFe em Configurações antes de coletar.");
+			return Optional.empty();
+		}
+
+		if (settings.nfeDirectories().stream().allMatch(String::isBlank)) {
+			Dialogs.warning("Informe os diretórios de NFe em Configurações antes de coletar.");
+			return Optional.empty();
+		}
+
+		List<CollectionRequest> requests = new ArrayList<>();
+
+		for (DocumentCategory category : categories) {
+			// Without folders the collection would read the whole directory and mix sales with purchases.
+			if (model.foldersOf(category).isEmpty()) {
+				Dialogs.warning("O Modelo de Busca NFe selecionado não tem pasta para " + nfeLabel(category) + ".");
+				return Optional.empty();
+			}
+
+			requests.add(new CollectionRequest(
+					settings.nfeDirectories(), category, new DateRange(dpFrom.getValue(), dpTo.getValue()), settings.organizeMode(),
+					paths.xmlArchiveDir(), model.foldersOf(category), CollectionTarget.ALL, SeparationMode.ALL_TOGETHER));
+		}
+
+		return Optional.of(requests);
+	}
+
+	private static String nfeLabel(DocumentCategory category) {
+		return category == DocumentCategory.NFE_PURCHASES ? "NFe Compras" : "NFe Vendas";
 	}
 
 	private SourceMode selectedSourceMode() {
@@ -177,20 +274,28 @@ public class CollectionTabController {
 	private void showResult(CollectionRequest request, CollectionResult result, SourceMode sourceMode) {
 
 		collected = CollectedDocuments.from(result);
+		nfeCollected.clear();
 		showCollected();
 
 		onCollected.accept(request, result);
 
-		Dialogs.collectionSummary(result, paths.xmlArchiveDir(), sourceMode);
+		Dialogs.collectionSummary(result, paths.xmlArchiveDir(), sourceMode, "Coleta concluída");
 	}
 
 	private void showCollected() {
 
-		List<DocumentRow> rows = collected.entries().stream()
+		List<DocumentRow> rows = Stream.concat(Stream.of(collected), nfeCollected.values().stream())
+				.flatMap(documents -> documents.entries().stream())
 				.map(DocumentRowMapper::toRow)
 				.toList();
 
 		documentsTable.setItems(FXCollections.observableArrayList(rows));
 		txtNfceTotal.setText(DocumentRowMapper.currency(collected.authorizedTotal()));
+		txtNfeSalesTotal.setText(nfeTotal(DocumentCategory.NFE_SALES));
+		txtNfePurchasesTotal.setText(nfeTotal(DocumentCategory.NFE_PURCHASES));
+	}
+
+	private String nfeTotal(DocumentCategory category) {
+		return DocumentRowMapper.currency(nfeCollected.getOrDefault(category, new CollectedDocuments()).authorizedTotal());
 	}
 }
