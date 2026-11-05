@@ -40,6 +40,9 @@ public final class CollectionRules {
 	private record Accepted(String fileName, XmlDocument.Invoice invoice) {
 	}
 
+	private record SeriesKey(String cnpj, String modelCode, int series) {
+	}
+
 	private final DateRange period;
 	private final Predicate<XmlDocument.Invoice> invoiceFilter;
 	private final Set<AccessKey> seenKeys = new HashSet<>();
@@ -100,10 +103,10 @@ public final class CollectionRules {
 
 	public List<IssuedNumber> firstIssuedNumbers() {
 
-		Map<List<Object>, IssuedNumber> first = new HashMap<>();
+		Map<SeriesKey, IssuedNumber> first = new HashMap<>();
 
 		for (IssuedNumber issued : issuedNumbers()) {
-			first.merge(List.of(issued.cnpj(), issued.modelCode(), issued.series()), issued,
+			first.merge(new SeriesKey(issued.cnpj(), issued.modelCode(), issued.series()), issued,
 					(one, other) -> one.number() <= other.number() ? one : other);
 		}
 
