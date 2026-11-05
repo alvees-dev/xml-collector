@@ -61,10 +61,8 @@ public class SqliteIssuedNumberRepository implements IssuedNumberRepository {
 	@Override
 	public void initialize() throws IOException {
 
-		Files.createDirectories(file.getParent());
-
-		try (Connection connection = DriverManager.getConnection("jdbc:sqlite:" + file)) {
-			createTable(connection);
+		try (Connection connection = open()) {
+			// Opening is what prepares the database.
 		} catch (SQLException e) {
 			throw new IOException("Não foi possível criar o banco de dados: " + e.getMessage(), e);
 		}
@@ -77,10 +75,7 @@ public class SqliteIssuedNumberRepository implements IssuedNumberRepository {
 			return;
 		}
 
-		Files.createDirectories(file.getParent());
-
-		try (Connection connection = DriverManager.getConnection("jdbc:sqlite:" + file)) {
-			createTable(connection);
+		try (Connection connection = open()) {
 			insert(connection, numbers);
 		} catch (SQLException e) {
 			throw new IOException("Não foi possível gravar no banco de dados: " + e.getMessage(), e);
@@ -90,10 +85,7 @@ public class SqliteIssuedNumberRepository implements IssuedNumberRepository {
 	@Override
 	public Set<Integer> issuedIn(String cnpj, String modelCode, int series, NumberRange range) throws IOException {
 
-		Files.createDirectories(file.getParent());
-
-		try (Connection connection = DriverManager.getConnection("jdbc:sqlite:" + file)) {
-			createTable(connection);
+		try (Connection connection = open()) {
 
 			try (PreparedStatement statement = connection.prepareStatement(SELECT_IN_RANGE)) {
 				statement.setString(1, cnpj);
@@ -120,10 +112,7 @@ public class SqliteIssuedNumberRepository implements IssuedNumberRepository {
 	@Override
 	public Optional<IssuedNumber> lastBefore(String cnpj, String modelCode, int series, int number) throws IOException {
 
-		Files.createDirectories(file.getParent());
-
-		try (Connection connection = DriverManager.getConnection("jdbc:sqlite:" + file)) {
-			createTable(connection);
+		try (Connection connection = open()) {
 
 			try (PreparedStatement statement = connection.prepareStatement(SELECT_LAST_BEFORE)) {
 				statement.setString(1, cnpj);
@@ -143,6 +132,20 @@ public class SqliteIssuedNumberRepository implements IssuedNumberRepository {
 			}
 		} catch (SQLException | DateTimeParseException e) {
 			throw new IOException("Não foi possível consultar o banco de dados: " + e.getMessage(), e);
+		}
+	}
+
+	private Connection open() throws IOException, SQLException {
+		Files.createDirectories(file.getParent());
+
+		Connection connection = DriverManager.getConnection("jdbc:sqlite:" + file);
+
+		try {
+			createTable(connection);
+			return connection;
+		} catch (SQLException e) {
+			connection.close();
+			throw e;
 		}
 	}
 
