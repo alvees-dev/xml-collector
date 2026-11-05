@@ -13,6 +13,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import com.alveesdev.xmlcollector.application.port.DocumentArchive;
+import com.alveesdev.xmlcollector.application.port.Failures;
 import com.alveesdev.xmlcollector.application.port.VoidingException;
 import com.alveesdev.xmlcollector.application.port.VoidingGatewayFactory;
 import com.alveesdev.xmlcollector.application.settings.CertificateSettings;
@@ -108,11 +109,11 @@ public class VoidingBatch {
 				// The file of this range is not safe yet, so no other one goes out until that is solved.
 				stopped = !result.pdvFailures().isEmpty();
 
-			} catch (VoidingException e) {
-				// The answer is unknown, so nothing else goes out until someone checks the Sefaz.
+			} catch (VoidingException | RuntimeException e) {
+				// The answer is unknown, so nothing else goes out until someone checks the Sefaz, and what was already answered is kept.
 				stopped = true;
 				LOG.log(Level.WARNING, "No known answer for the voiding " + request.id(), e);
-				record(outcomes, new VoidingOutcome(request, Stage.FAILED, e.getMessage()), settings);
+				record(outcomes, new VoidingOutcome(request, Stage.FAILED, Failures.describe(e)), settings);
 				listener.accept(new VoidingProgress(index, Stage.FAILED));
 			}
 		}

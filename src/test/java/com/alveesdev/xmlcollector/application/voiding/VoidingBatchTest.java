@@ -222,4 +222,28 @@ class VoidingBatchTest {
 		assertEquals(List.of(), sent);
 	}
 
+
+	@Test
+	void anUnexpectedFailureStopsTheBatchAndKeepsWhatWasDone() throws Exception {
+		List<VoidingOutcome> outcomes = batch("12345678000190", request -> {
+			if (request == SECOND) {
+				throw new IllegalArgumentException("UF desconhecida");
+			}
+			return APPROVED;
+		}).run(List.of(FIRST, SECOND, THIRD), SETTINGS, ROOT, COLLECTED, Map.of(), events::add, () -> false);
+
+		assertEquals(List.of(FIRST, SECOND), sent);
+		assertEquals(List.of(Stage.APPROVED, Stage.FAILED, Stage.NOT_SENT), outcomes.stream().map(VoidingOutcome::stage).toList());
+		assertEquals("UF desconhecida", outcomes.get(1).detail());
+	}
+
+	@Test
+	void anUnexpectedFailureWithoutMessageIsNamedByItsType() throws Exception {
+		List<VoidingOutcome> outcomes = batch("12345678000190", request -> {
+			throw new IllegalStateException();
+		}).run(List.of(FIRST), SETTINGS, ROOT, COLLECTED, Map.of(), events::add, () -> false);
+
+		assertEquals("IllegalStateException", outcomes.get(0).detail());
+	}
+
 }
