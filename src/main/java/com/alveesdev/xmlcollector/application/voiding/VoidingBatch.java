@@ -102,7 +102,7 @@ public class VoidingBatch {
 				Stage stage = result.receipt().approved() ? Stage.APPROVED : Stage.REJECTED;
 
 				record(outcomes, new VoidingOutcome(request, stage, result.receipt().status() + " - " + result.receipt().reason(),
-						result.archiveFailure(), result.pdvFailures()), settings);
+						result.archiveFailure(), result.pdvFailures(), result.unsavedXml()), settings);
 				listener.accept(new VoidingProgress(index, stage));
 
 				// The file of this range is not safe yet, so no other one goes out until that is solved.
@@ -128,6 +128,10 @@ public class VoidingBatch {
 
 		LOG.log(clean ? Level.INFO : Level.WARNING, "Voiding " + outcome.request().id() + " in " + settings.environment() + ": " + outcome.stage()
 				+ ", detail: " + outcome.detail() + ", archive failure: " + outcome.archiveFailure() + ", PDV failures: " + outcome.pdvFailures());
+
+		if (outcome.unsavedXml() != null) {
+			LOG.severe("Approved voiding " + outcome.request().id() + " was not saved anywhere, its XML follows: " + outcome.unsavedXml());
+		}
 	}
 
 	private static void requireSameCompany(VoidingGatewayFactory.CertificateInfo certificate, List<VoidingRequest> requests)
