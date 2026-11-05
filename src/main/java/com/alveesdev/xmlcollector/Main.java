@@ -1,9 +1,12 @@
 package com.alveesdev.xmlcollector;
 
 import java.io.IOException;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import com.alveesdev.xmlcollector.application.settings.AppPaths;
 import com.alveesdev.xmlcollector.bootstrap.AppContext;
+import com.alveesdev.xmlcollector.infra.logging.FileLog;
 import com.alveesdev.xmlcollector.ui.view.Dialogs;
 import com.alveesdev.xmlcollector.ui.view.LightWindows;
 import com.alveesdev.xmlcollector.ui.view.TitleBar;
@@ -17,6 +20,7 @@ import javafx.stage.Stage;
 
 public class Main extends Application {
 
+    private static final Logger LOG = Logger.getLogger(Main.class.getName());
     private static final String APP_TITLE = "Coletor XML";
 
     @Override
@@ -35,15 +39,19 @@ public class Main extends Application {
             return;
         }
 
+        startLog(paths);
+
         try {
             context.issuedNumbers().initialize();
         } catch (IOException e) {
+            LOG.log(Level.WARNING, "The history database could not be prepared", e);
             Dialogs.warning(e.getMessage());
         }
 
         try {
             context.settings().load();
         } catch (IOException e) {
+            LOG.log(Level.WARNING, "The settings could not be read", e);
             Dialogs.warning("Não foi possível ler as configurações: " + e.getMessage());
         }
 
@@ -59,6 +67,16 @@ public class Main extends Application {
         stage.setTitle(APP_TITLE);
         stage.setScene(scene);
         stage.show();
+    }
+
+    private static void startLog(AppPaths paths) {
+        try {
+            FileLog.start(paths.logsDir());
+            LOG.info("Started on Java " + Runtime.version());
+        } catch (IOException e) {
+            // The program works without the file, and this message still reaches the console during development.
+            LOG.log(Level.WARNING, "The log file could not be opened", e);
+        }
     }
 
     public static void main(String[] args) {

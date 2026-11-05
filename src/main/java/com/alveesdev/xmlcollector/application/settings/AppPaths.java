@@ -12,6 +12,7 @@ public final class AppPaths {
 	private static final String DATABASE_DIR_NAME = "Database";
 	private static final String DATABASE_FILE_NAME = "coletor.db";
 	private static final String XML_ARCHIVE_DIR_NAME = "Arquivos_XML";
+	private static final String LOGS_DIR_NAME = "Logs";
 	private static final String SETTINGS_FILE_NAME = "settings.properties";
 	private static final String LEGACY_EMAIL_SETTINGS_FILE_NAME = "email.properties";
 	private static final String GOOGLE_CREDENTIALS_FILE_NAME = "google_credentials.json";
@@ -47,6 +48,10 @@ public final class AppPaths {
 		return root.resolve(XML_ARCHIVE_DIR_NAME);
 	}
 
+	public Path logsDir() {
+		return root.resolve(LOGS_DIR_NAME);
+	}
+
 	public Path settingsFile() {
 		return configDir().resolve(SETTINGS_FILE_NAME);
 	}
@@ -67,5 +72,6 @@ public final class AppPaths {
 		Files.createDirectories(configDir());
 		Files.createDirectories(databaseDir());
 		Files.createDirectories(xmlArchiveDir());
+		Files.createDirectories(logsDir());
 	}
 }
