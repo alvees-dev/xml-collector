@@ -64,6 +64,6 @@ class ValuesReportTextTest {
 	void theBytesStartWithTheMarkOfTheEncoding() {
 		String decoded = new String(ValuesReportText.bytesOf("Outubro de 2026", new ValuesReport(List.of(), 0)), StandardCharsets.UTF_8);
 
-		assertTrue(decoded.startsWith("﻿RELATÓRIO"), decoded);
+		assertTrue(decoded.startsWith("\uFEFFRELATÓRIO"), decoded);
 	}
 }

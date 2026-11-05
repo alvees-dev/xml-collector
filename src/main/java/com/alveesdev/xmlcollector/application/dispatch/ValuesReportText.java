@@ -18,7 +18,7 @@ public final class ValuesReportText {
 
 	private static final Locale BRAZIL = Locale.forLanguageTag("pt-BR");
 	private static final String LINE_BREAK = "\r\n";
-	private static final String BYTE_ORDER_MARK = "﻿";
+	private static final String BYTE_ORDER_MARK = "\uFEFF";
 	private static final String NONE = "Nenhuma";
 	private static final String NO_NUMBER = "-";
 
@@ -97,6 +97,6 @@ public final class ValuesReportText {
 	}
 
 	private static String currency(BigDecimal value) {
-		return NumberFormat.getCurrencyInstance(BRAZIL).format(value).replace(' ', ' ');
+		return NumberFormat.getCurrencyInstance(BRAZIL).format(value).replace('\u00A0', ' ');
 	}
 }
