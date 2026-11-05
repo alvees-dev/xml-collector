@@ -50,13 +50,13 @@
                   <Insets top="30.0" />
                </VBox.margin>
             </Label>
-            <CheckBox mnemonicParsing="false" selected="true" text="Valores NCFe">
+            <CheckBox fx:id="chkValuesNfce" mnemonicParsing="false" selected="true" text="Valores NFCe">
                <VBox.margin>
                   <Insets top="5.0" />
                </VBox.margin>
             </CheckBox>
-            <CheckBox mnemonicParsing="false" text="Valores NFe Vendas" />
-            <CheckBox mnemonicParsing="false" text="Valores NFe Compras" />
+            <CheckBox fx:id="chkValuesNfeSales" mnemonicParsing="false" text="Valores NFe Vendas" />
+            <CheckBox fx:id="chkValuesNfePurchases" mnemonicParsing="false" text="Valores NFe Compras" />
             <Region VBox.vgrow="ALWAYS" />
             <HBox alignment="CENTER_RIGHT">
                <children>

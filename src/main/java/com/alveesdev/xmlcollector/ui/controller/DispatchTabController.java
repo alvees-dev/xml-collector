@@ -10,6 +10,7 @@ import java.util.Optional;
 
 import com.alveesdev.xmlcollector.application.dispatch.DispatchRequest;
 import com.alveesdev.xmlcollector.application.dispatch.DispatchService;
+import com.alveesdev.xmlcollector.application.dispatch.ReportOptions;
 import com.alveesdev.xmlcollector.application.port.DispatchException;
 import com.alveesdev.xmlcollector.application.settings.AppPaths;
 import com.alveesdev.xmlcollector.application.settings.AppSettings;
@@ -23,6 +24,7 @@ import com.alveesdev.xmlcollector.ui.view.ProgressWindow;
 
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
+import javafx.scene.control.CheckBox;
 import javafx.scene.control.ChoiceBox;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
@@ -50,6 +52,15 @@ public class DispatchTabController {
 
 	@FXML
 	private ChoiceBox<String> choiceMonth;
+
+	@FXML
+	private CheckBox chkValuesNfce;
+
+	@FXML
+	private CheckBox chkValuesNfeSales;
+
+	@FXML
+	private CheckBox chkValuesNfePurchases;
 
 	@FXML
 	private Button btnSend;
@@ -130,7 +141,8 @@ public class DispatchTabController {
 		EmailDraft draft = settings.emailDraft();
 
 		DispatchRequest request = new DispatchRequest(
-				List.of(monthDirectory), settings.emailAccount(), draft.recipient().trim(), draft.subject(), draft.body(), reuseExistingZip);
+				List.of(monthDirectory), settings.emailAccount(), draft.recipient().trim(), draft.subject(), draft.body(), reuseExistingZip,
+				new ReportOptions(chkValuesNfce.isSelected(), chkValuesNfeSales.isSelected(), chkValuesNfePurchases.isSelected()));
 
 		TaskRunner.withProgress(btnSend, "xml-dispatch",
 				() -> new ProgressWindow(btnSend.getScene().getWindow(), "Enviando arquivo XML de " + monthLabel, DispatchProgressText.stepLabels(), STEP_LABEL_WIDTH),
