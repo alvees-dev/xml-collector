@@ -8,6 +8,7 @@ import com.alveesdev.xmlcollector.application.settings.AppPaths;
 import com.alveesdev.xmlcollector.bootstrap.AppContext;
 import com.alveesdev.xmlcollector.infra.logging.FileLog;
 import com.alveesdev.xmlcollector.ui.model.FailureText;
+import com.alveesdev.xmlcollector.ui.view.AppIcon;
 import com.alveesdev.xmlcollector.ui.view.Dialogs;
 import com.alveesdev.xmlcollector.ui.view.LightWindows;
 import com.alveesdev.xmlcollector.ui.view.TitleBar;
@@ -41,6 +42,7 @@ public class Main extends Application {
     }
 
     private void open(Stage stage, AppPaths paths) throws Exception {
+        AppIcon.applyToEveryWindow();
         LightWindows.applyToEveryWindow();
 
         try {
