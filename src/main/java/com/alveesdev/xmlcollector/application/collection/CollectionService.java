@@ -13,6 +13,8 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BooleanSupplier;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import com.alveesdev.xmlcollector.application.collection.CollectionResult.SourceResult;
 import com.alveesdev.xmlcollector.application.collection.SourceFailure.Reason;
@@ -33,6 +35,8 @@ import com.alveesdev.xmlcollector.domain.service.MissingNumberFinder;
 public class CollectionService {
 
 	public static final int DEFAULT_THREADS = 4;
+
+	private static final Logger LOG = Logger.getLogger(CollectionService.class.getName());
 
 	private final SourceFiles sourceFiles;
 	private final DocumentReader reader;
@@ -105,6 +109,7 @@ public class CollectionService {
 					issuedNumbers.saveAll(processor.issuedNumbers());
 
 				} catch (IOException e) {
+					LOG.log(Level.WARNING, "The history of numbers could not be updated", e);
 					historyFailure = e.getMessage() == null ? e.getClass().getSimpleName() : e.getMessage();
 				}
 			}
