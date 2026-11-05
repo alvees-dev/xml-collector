@@ -14,7 +14,7 @@ import com.alveesdev.xmlcollector.application.port.VoidingException;
 import com.alveesdev.xmlcollector.application.settings.AppSettings;
 import com.alveesdev.xmlcollector.application.settings.CertificateSettings;
 import com.alveesdev.xmlcollector.application.settings.EmailAccount;
-import com.alveesdev.xmlcollector.application.settings.SearchModelCatalog;
+import com.alveesdev.xmlcollector.application.settings.service.SearchModelCatalog;
 import com.alveesdev.xmlcollector.application.settings.service.SettingsService;
 import com.alveesdev.xmlcollector.application.voiding.VoidingBatch;
 import com.alveesdev.xmlcollector.domain.model.FiscalEnvironment;

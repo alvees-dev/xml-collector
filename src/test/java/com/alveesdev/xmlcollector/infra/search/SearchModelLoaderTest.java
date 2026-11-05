@@ -9,7 +9,7 @@ import java.util.List;
 import org.junit.jupiter.api.Test;
 
 import com.alveesdev.xmlcollector.application.port.SearchModelProvider;
-import com.alveesdev.xmlcollector.application.settings.SearchModelCatalog;
+import com.alveesdev.xmlcollector.application.settings.service.SearchModelCatalog;
 import com.alveesdev.xmlcollector.domain.model.PdvSearchModel;
 import com.alveesdev.xmlcollector.domain.model.PdvType;
 
