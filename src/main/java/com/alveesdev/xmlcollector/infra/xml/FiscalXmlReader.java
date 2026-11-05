@@ -13,6 +13,7 @@ import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
 
 import com.alveesdev.xmlcollector.application.port.DocumentReader;
+import com.alveesdev.xmlcollector.application.port.Failures;
 import com.alveesdev.xmlcollector.domain.model.AccessKey;
 import com.alveesdev.xmlcollector.domain.model.DocumentModel;
 import com.alveesdev.xmlcollector.domain.model.NumberRange;
@@ -37,7 +38,7 @@ public class FiscalXmlReader implements DocumentReader {
 		try {
 			document = loader.load(content);
 		} catch (IOException | SAXException e) {
-			return new XmlDocument.Unreadable(describe(e));
+			return new XmlDocument.Unreadable(Failures.describe(e));
 		}
 
 		try {
@@ -238,9 +239,5 @@ public class FiscalXmlReader implements DocumentReader {
 		} catch (DateTimeParseException e) {
 			throw new XmlFormatException("invalid date in <" + tag + ">: " + text);
 		}
-	}
-
-	private static String describe(Exception e) {
-		return e.getMessage() == null ? e.getClass().getSimpleName() : e.getMessage();
 	}
 }

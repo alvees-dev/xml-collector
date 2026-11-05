@@ -25,8 +25,9 @@ import com.alveesdev.xmlcollector.application.collection.CollectionResult.Source
 import com.alveesdev.xmlcollector.application.collection.CollectionSummary.CopyFailure;
 import com.alveesdev.xmlcollector.application.port.DocumentArchive;
 import com.alveesdev.xmlcollector.application.port.DocumentReader;
-import com.alveesdev.xmlcollector.application.port.SourceFiles;
+import com.alveesdev.xmlcollector.application.port.Failures;
 import com.alveesdev.xmlcollector.application.port.SourceFiles.SourceFile;
+import com.alveesdev.xmlcollector.application.port.SourceFiles;
 import com.alveesdev.xmlcollector.domain.model.AccessKey;
 import com.alveesdev.xmlcollector.domain.model.IssuedNumber;
 import com.alveesdev.xmlcollector.domain.model.NumberRange;
@@ -182,7 +183,7 @@ class SourceProcessor {
 			return new ReadFile(source, fileName, document, needsStoring ? content : null);
 
 		} catch (IOException e) {
-			String reason = e.getMessage() == null ? e.getClass().getSimpleName() : e.getMessage();
+			String reason = Failures.describe(e);
 			return new ReadFile(source, fileName, new XmlDocument.Unreadable(reason), null);
 		}
 	}
@@ -309,7 +310,7 @@ class SourceProcessor {
 							job.canonicalName(), job.identity()),
 					null);
 		} catch (IOException e) {
-			String reason = e.getMessage() == null ? e.getClass().getSimpleName() : e.getMessage();
+			String reason = Failures.describe(e);
 			LOG.log(Level.WARNING, "File not stored: " + job.sourceName(), e);
 			return new StoreResult(null, new CopyFailure(job.sourceName(), reason));
 		}

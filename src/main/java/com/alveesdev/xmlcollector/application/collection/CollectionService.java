@@ -20,11 +20,12 @@ import com.alveesdev.xmlcollector.application.collection.CollectionResult.Source
 import com.alveesdev.xmlcollector.application.collection.SourceFailure.Reason;
 import com.alveesdev.xmlcollector.application.port.DocumentArchive;
 import com.alveesdev.xmlcollector.application.port.DocumentReader;
+import com.alveesdev.xmlcollector.application.port.Failures;
 import com.alveesdev.xmlcollector.application.port.IssuedNumberRepository;
-import com.alveesdev.xmlcollector.application.port.SourceFiles;
 import com.alveesdev.xmlcollector.application.port.SourceFiles.ResolvedFolders;
 import com.alveesdev.xmlcollector.application.port.SourceFiles.ScanResult;
 import com.alveesdev.xmlcollector.application.port.SourceFiles.SourceFile;
+import com.alveesdev.xmlcollector.application.port.SourceFiles;
 import com.alveesdev.xmlcollector.domain.model.DocumentCategory;
 import com.alveesdev.xmlcollector.domain.model.DocumentEntry;
 import com.alveesdev.xmlcollector.domain.model.IssuedNumber;
@@ -106,7 +107,7 @@ public class CollectionService {
 
 				} catch (IOException e) {
 					LOG.log(Level.WARNING, "The history of numbers could not be updated", e);
-					historyFailure = e.getMessage() == null ? e.getClass().getSimpleName() : e.getMessage();
+					historyFailure = Failures.describe(e);
 				}
 			}
 
