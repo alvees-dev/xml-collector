@@ -18,6 +18,8 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import com.alveesdev.xmlcollector.application.collection.CollectionResult.SourceResult;
 import com.alveesdev.xmlcollector.application.collection.CollectionSummary.CopyFailure;
@@ -36,6 +38,7 @@ import com.alveesdev.xmlcollector.domain.service.CollectionRules;
 
 class SourceProcessor {
 
+	private static final Logger LOG = Logger.getLogger(SourceProcessor.class.getName());
 	private static final int BATCH_SIZE = 400;
 
 	private record ReadFile(SourceFile source, String fileName, XmlDocument document, byte[] content) {
@@ -189,6 +192,8 @@ class SourceProcessor {
 		List<StoreJob> jobs = new ArrayList<>();
 
 		for (ReadFile file : readFiles) {
+			logIfLeftOut(file);
+
 			CollectionRules.Decision decision = rules.decide(sourceIndex, file.fileName(), file.document());
 
 			if (decision instanceof CollectionRules.Store store) {
@@ -204,6 +209,15 @@ class SourceProcessor {
 		}
 
 		return jobs;
+	}
+
+	// The screen only counts these files, so this is the one place that says which file it was and why.
+	private static void logIfLeftOut(ReadFile file) {
+		if (file.document() instanceof XmlDocument.Unreadable unreadable) {
+			LOG.warning("Unreadable file " + file.source().path() + ": " + unreadable.reason());
+		} else if (file.document() instanceof XmlDocument.Ignored ignored) {
+			LOG.info("Ignored file " + file.source().path() + ": " + ignored.reason());
+		}
 	}
 
 	private void count(CollectionRules.SkipReason reason) {
@@ -296,6 +310,7 @@ class SourceProcessor {
 					null);
 		} catch (IOException e) {
 			String reason = e.getMessage() == null ? e.getClass().getSimpleName() : e.getMessage();
+			LOG.log(Level.WARNING, "File not stored: " + job.sourceName(), e);
 			return new StoreResult(null, new CopyFailure(job.sourceName(), reason));
 		}
 	}

@@ -11,4 +11,9 @@ public record EmailAccount(String host, int port, EmailSecurity security, String
 				&& username != null && !username.isBlank()
 				&& password != null && !password.isBlank();
 	}
+
+	@Override
+	public String toString() {
+		return "EmailAccount[host=" + host + ", port=" + port + ", security=" + security + ", username=" + username + "]";
+	}
 }

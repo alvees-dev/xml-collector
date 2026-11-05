@@ -18,11 +18,13 @@ import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.logging.Level;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
+import com.alveesdev.xmlcollector.LogCapture;
 import com.alveesdev.xmlcollector.application.collection.CollectionRequest;
 import com.alveesdev.xmlcollector.application.collection.CollectionResult;
 import com.alveesdev.xmlcollector.application.collection.CollectionService;
@@ -113,6 +115,25 @@ class VoidingFlowTest {
 		assertTrue(Files.isRegularFile(ArchiveLayout.voidingDirectoryFor(archiveRoot, LAST_COLLECTED_DAY).resolve(fileName)));
 
 		assertEquals(List.of(), collect().missingBySeries().getOrDefault(1, List.of()));
+	}
+
+	@Test
+	void recordsWhatHappenedToEachRangeWithoutThePassword() throws Exception {
+		writeInvoice(pdv, 1, 1, COLLECTED_DAY);
+		writeInvoice(pdv, 1, 3, COLLECTED_DAY);
+
+		CollectionResult collected = collect();
+		NumberRange gap = new NumberRange(2, 2);
+		List<VoidingRequest> requests = new VoidingPlanner(history).plan(Map.of(1, List.of(gap)), collected.missingBySeries(), collected.ownersBySeries());
+
+		try (LogCapture log = new LogCapture(VoidingBatch.class)) {
+			batch.run(requests, CERTIFICATE, archiveRoot, LAST_COLLECTED_DAY, Map.of(), progress -> {
+			}, () -> false);
+
+			assertTrue(log.has(Level.INFO, requests.get(0).id()), "the range must be recorded");
+			assertTrue(log.has(Level.INFO, "APPROVED"), "the answer must be recorded");
+			assertTrue(log.records().stream().noneMatch(entry -> entry.getMessage().contains(CERTIFICATE.password())));
+		}
 	}
 
 	@Test

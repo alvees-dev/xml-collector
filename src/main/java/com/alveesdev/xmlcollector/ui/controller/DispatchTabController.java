@@ -7,6 +7,8 @@ import java.time.YearMonth;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import com.alveesdev.xmlcollector.application.dispatch.DispatchRequest;
 import com.alveesdev.xmlcollector.application.dispatch.DispatchResult;
@@ -18,6 +20,7 @@ import com.alveesdev.xmlcollector.application.settings.EmailDraft;
 import com.alveesdev.xmlcollector.application.settings.service.SettingsService;
 import com.alveesdev.xmlcollector.domain.service.ArchiveLayout;
 import com.alveesdev.xmlcollector.ui.model.DispatchProgressText;
+import com.alveesdev.xmlcollector.ui.model.FailureText;
 import com.alveesdev.xmlcollector.ui.view.Dialogs;
 import com.alveesdev.xmlcollector.ui.view.ProgressWindow;
 
@@ -29,6 +32,7 @@ import javafx.scene.control.TextField;
 
 public class DispatchTabController {
 
+	private static final Logger LOG = Logger.getLogger(DispatchTabController.class.getName());
 	private static final Locale BRAZIL = Locale.forLanguageTag("pt-BR");
 	private static final double BYTES_PER_MEGABYTE = 1024.0 * 1024.0;
 	private static final double STEP_LABEL_WIDTH = 140;
@@ -151,6 +155,7 @@ public class DispatchTabController {
 		task.setOnFailed(event -> {
 			progressWindow.close();
 			btnSend.setDisable(false);
+			LOG.log(Level.SEVERE, "The dispatch failed", task.getException());
 			Dialogs.error(describeFailure(task.getException()));
 		});
 
@@ -222,6 +227,6 @@ public class DispatchTabController {
 			return error.getMessage();
 		}
 
-		return "Erro inesperado ao enviar o e-mail: " + error.getMessage();
+		return "Erro inesperado ao enviar o e-mail: " + FailureText.of(error);
 	}
 }

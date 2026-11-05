@@ -4,10 +4,13 @@ import java.io.IOException;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.function.Consumer;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import com.alveesdev.xmlcollector.application.collection.CollectionRequest;
 import com.alveesdev.xmlcollector.application.collection.CollectionResult;
 import com.alveesdev.xmlcollector.application.collection.CollectionService;
+import com.alveesdev.xmlcollector.ui.model.FailureText;
 import com.alveesdev.xmlcollector.ui.model.SourceLabels;
 import com.alveesdev.xmlcollector.ui.model.SourceMode;
 import com.alveesdev.xmlcollector.ui.view.Dialogs;
@@ -17,6 +20,7 @@ import javafx.scene.Node;
 
 final class CollectionRunner {
 
+	private static final Logger LOG = Logger.getLogger(CollectionRunner.class.getName());
 	private static final double SOURCE_LABEL_WIDTH = 60;
 
 	private CollectionRunner() {
@@ -48,7 +52,8 @@ final class CollectionRunner {
 		task.setOnFailed(event -> {
 			progressWindow.close();
 			trigger.setDisable(false);
-			Dialogs.error("Erro ao processar o diretório: " + task.getException().getMessage());
+			LOG.log(Level.SEVERE, "The collection failed", task.getException());
+			Dialogs.error("Erro ao processar o diretório: " + FailureText.of(task.getException()));
 		});
 
 		task.setOnCancelled(event -> {
