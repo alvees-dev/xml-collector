@@ -18,6 +18,16 @@ class DispatchProgressTextTest {
 	}
 
 	@Test
+	void anExistingFileShowsOnlyTheEmail() {
+		assertEquals(List.of("Enviando e-mail"), List.copyOf(DispatchProgressText.stepLabelsOfExistingFile(false).values()));
+	}
+
+	@Test
+	void anExistingFileTooLargeForTheEmailAlsoShowsTheDrive() {
+		assertEquals(List.of("Salvando no Google Drive", "Enviando e-mail"), List.copyOf(DispatchProgressText.stepLabelsOfExistingFile(true).values()));
+	}
+
+	@Test
 	void describesEachStage() {
 		assertEquals("Em andamento...", DispatchProgressText.of(Stage.RUNNING));
 		assertEquals("OK", DispatchProgressText.of(Stage.DONE));

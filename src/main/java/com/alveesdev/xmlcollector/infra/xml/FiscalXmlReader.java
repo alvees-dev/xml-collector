@@ -61,7 +61,7 @@ public class FiscalXmlReader implements DocumentReader {
 				return readVoiding(voiding, acceptedModels);
 			}
 
-			return new XmlDocument.Ignored("not an invoice, a cancellation event or a voiding");
+			return new XmlDocument.Ignored("não é nota, evento de cancelamento nem inutilização");
 
 		} catch (XmlFormatException e) {
 			return new XmlDocument.Unreadable(e.getMessage());
@@ -73,13 +73,13 @@ public class FiscalXmlReader implements DocumentReader {
 		String id = invoice.getAttribute("Id").trim();
 
 		if (!id.startsWith(NFE_ID_PREFIX)) {
-			throw new XmlFormatException("infNFe Id attribute is missing or malformed");
+			throw new XmlFormatException("atributo Id de infNFe ausente ou inválido");
 		}
 
 		AccessKey key = toKey(id.substring(NFE_ID_PREFIX.length()));
 
 		if (!isAccepted(key, acceptedModels)) {
-			return new XmlDocument.Ignored("document model " + key.modelCode() + " is not accepted");
+			return new XmlDocument.Ignored("modelo de documento " + key.modelCode() + " não aceito");
 		}
 
 		Element identification = requiredChild(invoice, "ide");
@@ -98,13 +98,13 @@ public class FiscalXmlReader implements DocumentReader {
 		String type = requiredText(info, "tpEvento");
 
 		if (!CANCEL_EVENT_TYPE.equals(type)) {
-			return new XmlDocument.Ignored("event type " + type + " is not a cancellation");
+			return new XmlDocument.Ignored("evento do tipo " + type + " não é cancelamento");
 		}
 
 		AccessKey cancelledKey = toKey(requiredText(info, "chNFe"));
 
 		if (!isAccepted(cancelledKey, acceptedModels)) {
-			return new XmlDocument.Ignored("document model " + cancelledKey.modelCode() + " is not accepted");
+			return new XmlDocument.Ignored("modelo de documento " + cancelledKey.modelCode() + " não aceito");
 		}
 
 		String eventId = toEventId(info.getAttribute("Id").trim(), cancelledKey);
@@ -120,17 +120,17 @@ public class FiscalXmlReader implements DocumentReader {
 		Element environment = child(info, "tpAmb");
 
 		if (environment != null && FiscalEnvironment.HOMOLOGATION.code().equals(environment.getTextContent().trim())) {
-			return new XmlDocument.Ignored("voiding of the homologation environment has no fiscal effect");
+			return new XmlDocument.Ignored("inutilização de homologação não tem efeito fiscal");
 		}
 
 		if (!VoidingReceipt.APPROVED_STATUS.equals(status)) {
-			return new XmlDocument.Ignored("voiding was not approved, status " + status);
+			return new XmlDocument.Ignored("inutilização não aprovada, status " + status);
 		}
 
 		String modelCode = requiredText(info, "mod");
 
 		if (DocumentModel.fromCode(modelCode).filter(acceptedModels::contains).isEmpty()) {
-			return new XmlDocument.Ignored("document model " + modelCode + " is not accepted");
+			return new XmlDocument.Ignored("modelo de documento " + modelCode + " não aceito");
 		}
 
 		int series = requiredInt(info, "serie");
@@ -138,7 +138,7 @@ public class FiscalXmlReader implements DocumentReader {
 		int end = requiredInt(info, "nNFFin");
 
 		if (start > end) {
-			throw new XmlFormatException("voiding range starts after it ends");
+			throw new XmlFormatException("faixa da inutilização começa depois do fim");
 		}
 
 		NumberRange range = new NumberRange(start, end);
@@ -156,14 +156,14 @@ public class FiscalXmlReader implements DocumentReader {
 	private static String toEventId(String id, AccessKey cancelledKey) throws XmlFormatException {
 
 		if (!id.startsWith(EVENT_ID_PREFIX)) {
-			throw new XmlFormatException("infEvento Id attribute is missing or malformed");
+			throw new XmlFormatException("atributo Id de infEvento ausente ou inválido");
 		}
 
 		String eventId = id.substring(EVENT_ID_PREFIX.length());
 		String start = CANCEL_EVENT_TYPE + cancelledKey.value();
 
 		if (!eventId.startsWith(start) || !eventId.substring(start.length()).matches(TWO_DIGITS)) {
-			throw new XmlFormatException("infEvento Id does not match the cancelled access key");
+			throw new XmlFormatException("Id de infEvento não confere com a chave cancelada");
 		}
 
 		return eventId;
@@ -195,7 +195,7 @@ public class FiscalXmlReader implements DocumentReader {
 		Element element = child(parent, tag);
 
 		if (element == null) {
-			throw new XmlFormatException("missing element <" + tag + ">");
+			throw new XmlFormatException("elemento ausente <" + tag + ">");
 		}
 
 		return element;
@@ -205,7 +205,7 @@ public class FiscalXmlReader implements DocumentReader {
 		String text = requiredChild(parent, tag).getTextContent().trim();
 
 		if (text.isEmpty()) {
-			throw new XmlFormatException("empty element <" + tag + ">");
+			throw new XmlFormatException("elemento vazio <" + tag + ">");
 		}
 
 		return text;
@@ -215,7 +215,7 @@ public class FiscalXmlReader implements DocumentReader {
 		String text = requiredText(parent, tag);
 
 		if (!text.matches(pattern)) {
-			throw new XmlFormatException("invalid value in <" + tag + ">: " + text);
+			throw new XmlFormatException("valor inválido em <" + tag + ">: " + text);
 		}
 
 		return text;
@@ -227,7 +227,7 @@ public class FiscalXmlReader implements DocumentReader {
 		try {
 			return Integer.parseInt(text);
 		} catch (NumberFormatException e) {
-			throw new XmlFormatException("invalid number in <" + tag + ">: " + text);
+			throw new XmlFormatException("número inválido em <" + tag + ">: " + text);
 		}
 	}
 
@@ -237,7 +237,7 @@ public class FiscalXmlReader implements DocumentReader {
 		try {
 			return new BigDecimal(text);
 		} catch (NumberFormatException e) {
-			throw new XmlFormatException("invalid value in <" + tag + ">: " + text);
+			throw new XmlFormatException("valor inválido em <" + tag + ">: " + text);
 		}
 	}
 
@@ -247,7 +247,7 @@ public class FiscalXmlReader implements DocumentReader {
 		try {
 			return OffsetDateTime.parse(text);
 		} catch (DateTimeParseException e) {
-			throw new XmlFormatException("invalid date in <" + tag + ">: " + text);
+			throw new XmlFormatException("data inválida em <" + tag + ">: " + text);
 		}
 	}
 }

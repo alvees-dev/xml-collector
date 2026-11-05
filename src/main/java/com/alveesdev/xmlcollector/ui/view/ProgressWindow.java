@@ -52,6 +52,11 @@ public final class ProgressWindow {
 		});
 	}
 
+	public ProgressWindow withDetail(String detail) {
+		controller.showDetail(detail);
+		return this;
+	}
+
 	public void setCancelAction(Runnable cancelAction) {
 		controller.setCancelAction(cancelAction);
 	}

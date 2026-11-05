@@ -7,6 +7,7 @@ import java.util.function.Function;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import com.alveesdev.xmlcollector.application.port.Failures;
 import com.alveesdev.xmlcollector.ui.view.Dialogs;
 import com.alveesdev.xmlcollector.ui.view.ProgressWindow;
 
@@ -35,7 +36,7 @@ final class TaskRunner {
 		try {
 			window = opener.open();
 		} catch (IOException e) {
-			LOG.log(Level.SEVERE, "The progress window could not be opened", e);
+			LOG.log(Level.SEVERE, "A tela de progresso não pôde ser aberta", e);
 			Dialogs.error("Erro ao abrir a tela de progresso: " + e.getMessage());
 			return;
 		}
@@ -48,7 +49,7 @@ final class TaskRunner {
 			trigger.setDisable(false);
 		};
 
-		listen(task, threadName, finish, handlers);
+		listen(task, finish, handlers);
 
 		trigger.setDisable(true);
 		window.show();
@@ -60,7 +61,7 @@ final class TaskRunner {
 
 		Task<T> task = taskOf(work);
 
-		listen(task, threadName, () -> {
+		listen(task, () -> {
 		}, new Handlers<>(onSuccess, onFailure, () -> {
 		}));
 
@@ -77,7 +78,7 @@ final class TaskRunner {
 		};
 	}
 
-	private static <T> void listen(Task<T> task, String threadName, Runnable finish, Handlers<T> handlers) {
+	private static <T> void listen(Task<T> task, Runnable finish, Handlers<T> handlers) {
 
 		task.setOnSucceeded(event -> {
 			finish.run();
@@ -86,7 +87,11 @@ final class TaskRunner {
 
 		task.setOnFailed(event -> {
 			finish.run();
-			LOG.log(Level.WARNING, "The task " + threadName + " failed", task.getException());
+			// The message itself is recorded when it reaches the screen, so this line is only for what the screen leaves out.
+			if (Failures.saysMoreThanItsMessage(task.getException())) {
+				LOG.log(Level.WARNING, "Detalhes da falha", task.getException());
+			}
+
 			handlers.onFailure().accept(task.getException());
 		});
 

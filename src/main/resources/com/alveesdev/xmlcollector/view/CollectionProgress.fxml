@@ -12,6 +12,7 @@
    </padding>
    <children>
       <Label fx:id="lblTitle" styleClass="progress-title" />
+      <Label fx:id="lblDetail" managed="false" visible="false" />
       <ScrollPane fitToWidth="true" hbarPolicy="NEVER" maxHeight="300.0" styleClass="plain-scroll">
          <content>
             <VBox fx:id="sourcesBox" spacing="8.0">

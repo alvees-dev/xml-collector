@@ -44,7 +44,7 @@ class LeftOutFilesLogTest {
 
 			assertTrue(log.has(Level.WARNING, "quebrado.xml"), "the unreadable file must be recorded");
 			assertTrue(log.has(Level.INFO, "configuracao.xml"), "the ignored file must be recorded");
-			assertTrue(log.has(Level.INFO, "not an invoice"), "the reason must be recorded");
+			assertTrue(log.has(Level.INFO, "não é nota"), "the reason must be recorded");
 		}
 	}
 

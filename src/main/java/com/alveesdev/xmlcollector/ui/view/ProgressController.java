@@ -31,6 +31,9 @@ public class ProgressController {
 	private Label lblTitle;
 
 	@FXML
+	private Label lblDetail;
+
+	@FXML
 	private VBox sourcesBox;
 
 	@FXML
@@ -44,6 +47,12 @@ public class ProgressController {
 	public void show(String title, Map<Integer, String> labels, double labelWidth) {
 		lblTitle.setText(title);
 		labels.forEach((index, label) -> addRow(index, label, labelWidth));
+	}
+
+	public void showDetail(String detail) {
+		lblDetail.setText(detail);
+		lblDetail.setManaged(true);
+		lblDetail.setVisible(true);
 	}
 
 	public void setCancelAction(Runnable cancelAction) {
@@ -81,6 +90,11 @@ public class ProgressController {
 	public void update(DispatchProgress progress) {
 
 		SourceRow row = rows.get(progress.step().ordinal());
+
+		// A step that does not apply to this dispatch has no row.
+		if (row == null) {
+			return;
+		}
 
 		row.status().setText(DispatchProgressText.of(progress.stage()));
 

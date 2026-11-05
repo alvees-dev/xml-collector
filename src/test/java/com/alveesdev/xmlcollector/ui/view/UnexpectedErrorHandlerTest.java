@@ -89,7 +89,7 @@ class UnexpectedErrorHandlerTest {
 			assertDoesNotThrow(() -> handler.uncaughtException(THREAD, new IllegalStateException("falhou")));
 
 			assertTrue(log.has(Level.SEVERE, "tela"));
-			assertTrue(log.has(Level.WARNING, "could not be shown"));
+			assertTrue(log.has(Level.WARNING, "não pôde ser mostrado"));
 		}
 	}
 

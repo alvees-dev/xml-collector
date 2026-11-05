@@ -11,8 +11,12 @@ import java.time.format.DateTimeFormatter;
 import java.util.logging.FileHandler;
 import java.util.logging.Formatter;
 import java.util.logging.Handler;
+import java.util.logging.Level;
 import java.util.logging.LogRecord;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
+
+import com.alveesdev.xmlcollector.application.port.Failures;
 
 public final class FileLog {
 
@@ -20,6 +24,7 @@ public final class FileLog {
 	private static final int MAX_BYTES_PER_FILE = 2 * 1024 * 1024;
 	private static final int MAX_FILES = 5;
 	private static final DateTimeFormatter TIME_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+	private static final String REASON_SEPARATOR = " | ";
 
 	private FileLog() {
 	}
@@ -45,9 +50,32 @@ public final class FileLog {
 		@Override
 		public String format(LogRecord entry) {
 			String time = TIME_FORMAT.format(entry.getInstant().atZone(ZoneId.systemDefault()));
-			String line = time + " " + entry.getLevel() + " " + entry.getLoggerName() + ": " + formatMessage(entry) + System.lineSeparator();
+			String line = time + " " + labelOf(entry.getLevel()) + " " + formatMessage(entry);
+			Throwable error = entry.getThrown();
 
-			return entry.getThrown() == null ? line : line + stackOf(entry.getThrown());
+			if (error == null) {
+				return line + System.lineSeparator();
+			}
+
+			return Failures.isDefect(error)
+					? line + System.lineSeparator() + stackOf(error)
+					: line + REASON_SEPARATOR + reasonsOf(error) + System.lineSeparator();
+		}
+
+		private static String labelOf(Level level) {
+			if (level == Level.SEVERE) {
+				return "ERRO";
+			}
+
+			return level == Level.WARNING ? "AVISO" : level.getName();
+		}
+
+		// The name of the exception stays because the message of some is only a path.
+		private static String reasonsOf(Throwable error) {
+			return Failures.chainOf(error)
+					.map(link -> link.getClass().getSimpleName() + ": " + Failures.describe(link).replaceAll("\\R+", " "))
+					.distinct()
+					.collect(Collectors.joining(REASON_SEPARATOR));
 		}
 
 		private static String stackOf(Throwable error) {

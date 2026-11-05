@@ -20,6 +20,19 @@ public final class DispatchProgressText {
 		return labels;
 	}
 
+	// An existing file is not compressed again, and it only goes to the Drive when it does not fit in the e-mail.
+	public static Map<Integer, String> stepLabelsOfExistingFile(boolean throughDrive) {
+		Map<Integer, String> labels = stepLabels();
+
+		labels.remove(DispatchProgress.Step.COMPRESSING.ordinal());
+
+		if (!throughDrive) {
+			labels.remove(DispatchProgress.Step.UPLOADING.ordinal());
+		}
+
+		return labels;
+	}
+
 	public static String of(DispatchProgress.Stage stage) {
 		return switch (stage) {
 			case RUNNING -> "Em andamento...";

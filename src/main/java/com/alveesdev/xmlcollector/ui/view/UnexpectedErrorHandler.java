@@ -34,7 +34,7 @@ public final class UnexpectedErrorHandler implements Thread.UncaughtExceptionHan
 	@Override
 	public void uncaughtException(Thread thread, Throwable error) {
 
-		LOG.log(Level.SEVERE, "Uncaught error in the thread " + thread.getName(), error);
+		LOG.log(Level.SEVERE, "Erro inesperado na thread " + thread.getName(), error);
 
 		// An error of the screen can repeat many times a second, and each one would open a window over the last.
 		if (!showing.compareAndSet(false, true)) {
@@ -45,7 +45,7 @@ public final class UnexpectedErrorHandler implements Thread.UncaughtExceptionHan
 			uiThread.execute(() -> show(error));
 		} catch (RuntimeException e) {
 			showing.set(false);
-			LOG.log(Level.WARNING, "The error could not be shown on the screen", e);
+			LOG.log(Level.WARNING, "O erro não pôde ser mostrado na tela", e);
 		}
 	}
 
@@ -53,7 +53,7 @@ public final class UnexpectedErrorHandler implements Thread.UncaughtExceptionHan
 		try {
 			dialog.accept(FailureText.unexpected(error, logDirectory));
 		} catch (RuntimeException e) {
-			LOG.log(Level.WARNING, "The error could not be shown on the screen", e);
+			LOG.log(Level.WARNING, "O erro não pôde ser mostrado na tela", e);
 		} finally {
 			showing.set(false);
 		}

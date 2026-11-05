@@ -6,17 +6,21 @@ import java.nio.file.Path;
 import java.time.YearMonth;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
+import com.alveesdev.xmlcollector.application.dispatch.DispatchProgress;
 import com.alveesdev.xmlcollector.application.dispatch.DispatchRequest;
 import com.alveesdev.xmlcollector.application.dispatch.DispatchService;
 import com.alveesdev.xmlcollector.application.dispatch.ReportOptions;
+import com.alveesdev.xmlcollector.application.port.DirectoryCompressor.CompressedFile;
 import com.alveesdev.xmlcollector.application.port.DispatchException;
 import com.alveesdev.xmlcollector.application.settings.AppPaths;
 import com.alveesdev.xmlcollector.application.settings.AppSettings;
 import com.alveesdev.xmlcollector.application.settings.EmailDraft;
 import com.alveesdev.xmlcollector.application.settings.service.SettingsService;
 import com.alveesdev.xmlcollector.domain.service.ArchiveLayout;
+import com.alveesdev.xmlcollector.ui.model.ActivityLog;
 import com.alveesdev.xmlcollector.ui.model.DispatchProgressText;
 import com.alveesdev.xmlcollector.ui.model.DispatchText;
 import com.alveesdev.xmlcollector.ui.view.Dialogs;
@@ -31,6 +35,7 @@ import javafx.scene.control.TextField;
 
 public class DispatchTabController {
 
+	private static final String FUNCTION = "Envio";
 	private static final double STEP_LABEL_WIDTH = 140;
 	private static final int LISTED_YEARS = 6;
 
@@ -110,29 +115,30 @@ public class DispatchTabController {
 			return;
 		}
 
-		Optional<Boolean> reuseExistingZip = askAboutExistingZip(monthDirectory);
+		Optional<CompressedFile> existingZip;
 
-		if (reuseExistingZip.isPresent()) {
-			send(monthDirectory, monthLabel, reuseExistingZip.get());
-		}
-	}
-
-	private Optional<Boolean> askAboutExistingZip(Path monthDirectory) {
 		try {
-			if (service.existingZipOf(monthDirectory).isEmpty()) {
-				return Optional.of(false);
-			}
+			existingZip = service.existingZipOf(monthDirectory);
 		} catch (DispatchException e) {
-			Dialogs.error(e.getMessage());
-			return Optional.empty();
+			Dialogs.error(FUNCTION, e.getMessage());
+			return;
 		}
 
-		Dialogs.ExistingZipChoice choice = Dialogs.askAboutExistingZip();
+		if (existingZip.isEmpty()) {
+			send(monthDirectory, monthLabel, false, DispatchProgressText.stepLabels());
+			return;
+		}
 
-		return choice == Dialogs.ExistingZipChoice.CANCEL ? Optional.empty() : Optional.of(choice == Dialogs.ExistingZipChoice.SEND_EXISTING);
+		switch (Dialogs.askAboutExistingZip()) {
+			case REPLACE -> send(monthDirectory, monthLabel, false, DispatchProgressText.stepLabels());
+			case SEND_EXISTING -> send(monthDirectory, monthLabel, true,
+					DispatchProgressText.stepLabelsOfExistingFile(!DispatchService.fitsInMessage(List.of(existingZip.get()))));
+			case CANCEL -> {
+			}
+		}
 	}
 
-	private void send(Path monthDirectory, String monthLabel, boolean reuseExistingZip) {
+	private void send(Path monthDirectory, String monthLabel, boolean reuseExistingZip, Map<Integer, String> steps) {
 
 		updateDraft();
 		saveSettings();
@@ -144,12 +150,24 @@ public class DispatchTabController {
 				List.of(monthDirectory), settings.emailAccount(), draft.recipient().trim(), draft.subject(), draft.body(), reuseExistingZip,
 				new ReportOptions(chkValuesNfce.isSelected(), chkValuesNfeSales.isSelected(), chkValuesNfePurchases.isSelected()));
 
+		ActivityLog.record(DispatchText.started(monthLabel, request.recipient(), reuseExistingZip, request.reports()));
+
 		TaskRunner.withProgress(btnSend, "xml-dispatch",
-				() -> new ProgressWindow(btnSend.getScene().getWindow(), "Enviando arquivo XML de " + monthLabel, DispatchProgressText.stepLabels(), STEP_LABEL_WIDTH),
-				window -> new DispatchTask(service, request, window::update),
-				new TaskRunner.Handlers<>(result -> Dialogs.info(DispatchText.success(monthLabel, request.recipient(), result)),
-						error -> Dialogs.error(DispatchText.failure(error)),
+				() -> new ProgressWindow(btnSend.getScene().getWindow(), "Enviando arquivo XML de " + monthLabel, steps, STEP_LABEL_WIDTH)
+						.withDetail("Destino: " + request.recipient()),
+				window -> new DispatchTask(service, request, progress -> {
+					recordStep(progress);
+					window.update(progress);
+				}),
+				new TaskRunner.Handlers<>(result -> Dialogs.dispatchCompleted(DispatchText.success(monthLabel, request.recipient(), result)),
+						error -> Dialogs.error(FUNCTION, DispatchText.failure(error)),
 						() -> Dialogs.warning("Envio cancelado. O e-mail não foi enviado.")));
+	}
+
+	private static void recordStep(DispatchProgress progress) {
+		if (progress.stage() == DispatchProgress.Stage.RUNNING) {
+			ActivityLog.record(FUNCTION + ": " + DispatchProgressText.stepLabels().get(progress.step().ordinal()));
+		}
 	}
 
 	private void loadMonthChoices() {

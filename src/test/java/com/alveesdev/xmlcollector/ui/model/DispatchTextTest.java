@@ -9,6 +9,7 @@ import java.util.List;
 import org.junit.jupiter.api.Test;
 
 import com.alveesdev.xmlcollector.application.dispatch.DispatchResult;
+import com.alveesdev.xmlcollector.application.dispatch.ReportOptions;
 import com.alveesdev.xmlcollector.application.port.DispatchException;
 
 class DispatchTextTest {
@@ -16,10 +17,10 @@ class DispatchTextTest {
 	private static final long THREE_AND_A_HALF_MEGABYTES = 3_670_016;
 
 	@Test
-	void anAttachedFileShowsTheSizeInTheBrazilianWay() {
+	void anAttachedFileSaysWhatWasSentAndToWhomWithoutItsSize() {
 		DispatchResult result = new DispatchResult(DispatchResult.Method.ATTACHED, List.of(), THREE_AND_A_HALF_MEGABYTES, null, null);
 
-		assertEquals("E-mail enviado para contador@exemplo.com com o XML de Janeiro de 2026 em anexo (3,5 MB).",
+		assertEquals("O arquivo XML de Janeiro de 2026 foi enviado para contador@exemplo.com com Sucesso!",
 				DispatchText.success("Janeiro de 2026", "contador@exemplo.com", result));
 	}
 
@@ -29,8 +30,9 @@ class DispatchTextTest {
 
 		String text = DispatchText.success("Janeiro de 2026", "contador@exemplo.com", result);
 
+		assertTrue(text.startsWith("O arquivo XML de Janeiro de 2026 foi enviado para contador@exemplo.com com Sucesso!"), text);
 		assertTrue(text.contains("passou do limite de 25 MB"), text);
-		assertTrue(text.contains("foi enviado para contador@exemplo.com"), text);
+		assertFalse(text.contains("3,5"), text);
 		assertTrue(text.endsWith("Link: http://exemplo/pasta"), text);
 		assertFalse(text.contains("Atenção"), text);
 	}
@@ -43,6 +45,18 @@ class DispatchTextTest {
 
 		assertTrue(text.contains("Atenção: o arquivo anterior não foi removido"), text);
 		assertTrue(text.endsWith("Motivo: sem permissão"), text);
+	}
+
+	@Test
+	void theStartSaysWhatGoesOutAndToWhom() {
+		assertEquals("Envio iniciado: XML de Janeiro de 2026 para contador@exemplo.com, com um novo arquivo compactado, relatório de valores: NFCe, NFe Compras",
+				DispatchText.started("Janeiro de 2026", "contador@exemplo.com", false, new ReportOptions(true, false, true)));
+	}
+
+	@Test
+	void theStartSaysWhenThereIsNoReportAndTheFileIsReused() {
+		assertEquals("Envio iniciado: XML de Janeiro de 2026 para contador@exemplo.com, usando o arquivo compactado existente, sem relatório de valores",
+				DispatchText.started("Janeiro de 2026", "contador@exemplo.com", true, new ReportOptions(false, false, false)));
 	}
 
 	@Test
