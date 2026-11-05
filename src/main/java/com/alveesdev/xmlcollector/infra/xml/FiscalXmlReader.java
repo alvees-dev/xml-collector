@@ -19,6 +19,7 @@ import com.alveesdev.xmlcollector.domain.model.DocumentModel;
 import com.alveesdev.xmlcollector.domain.model.FiscalEnvironment;
 import com.alveesdev.xmlcollector.domain.model.NumberRange;
 import com.alveesdev.xmlcollector.domain.model.VoidingReceipt;
+import com.alveesdev.xmlcollector.domain.model.VoidingRequest;
 import com.alveesdev.xmlcollector.domain.model.XmlDocument;
 
 public class FiscalXmlReader implements DocumentReader {
@@ -140,10 +141,10 @@ public class FiscalXmlReader implements DocumentReader {
 			throw new XmlFormatException("voiding range starts after it ends");
 		}
 
-		String id = String.format("ID%s%s%s%s%03d%09d%09d",
-				requiredText(info, "cUF"), requiredText(info, "ano"), requiredText(info, "CNPJ"), modelCode, series, start, end);
+		NumberRange range = new NumberRange(start, end);
+		String id = VoidingRequest.idOf(requiredText(info, "cUF"), requiredText(info, "ano"), requiredText(info, "CNPJ"), modelCode, series, range);
 
-		return new XmlDocument.Voiding(id, series, new NumberRange(start, end), requiredDateTime(info, "dhRecbto"));
+		return new XmlDocument.Voiding(id, series, range, requiredDateTime(info, "dhRecbto"));
 	}
 
 	private static boolean isAccepted(AccessKey key, Set<DocumentModel> acceptedModels) {
