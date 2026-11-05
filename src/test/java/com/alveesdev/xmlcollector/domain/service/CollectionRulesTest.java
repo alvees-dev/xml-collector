@@ -85,7 +85,7 @@ class CollectionRulesTest {
 		rules.decide(0, "b.xml", invoice(4, IN_PERIOD));
 
 		XmlDocument.Voiding voiding = new XmlDocument.Voiding(
-				"ID1", 1, new NumberRange(2, 2), AFTER_PERIOD.atTime(12, 0).atOffset(java.time.ZoneOffset.ofHours(-3)));
+				"ID1", "12345678000190", "65", 1, new NumberRange(2, 2), AFTER_PERIOD.atTime(12, 0).atOffset(java.time.ZoneOffset.ofHours(-3)));
 
 		assertSkipped(SkipReason.OUT_OF_PERIOD, rules.decide(0, "inut.xml", voiding));
 		assertEquals(java.util.Map.of(1, java.util.List.of(new NumberRange(3, 3))), rules.missingNumbers(Map.of()));
@@ -97,7 +97,7 @@ class CollectionRulesTest {
 		rules.decide(0, "b.xml", invoice(2, IN_PERIOD));
 
 		XmlDocument.Voiding voiding = new XmlDocument.Voiding(
-				"ID1", 1, new NumberRange(500, 501), IN_PERIOD.atTime(12, 0).atOffset(java.time.ZoneOffset.ofHours(-3)));
+				"ID1", "12345678000190", "65", 1, new NumberRange(500, 501), IN_PERIOD.atTime(12, 0).atOffset(java.time.ZoneOffset.ofHours(-3)));
 
 		assertTrue(rules.decide(0, "inut.xml", voiding) instanceof Store store && store.voiding());
 		assertEquals(java.util.Map.of(1, java.util.List.<NumberRange>of()), rules.missingNumbers(Map.of()));

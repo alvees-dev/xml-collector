@@ -30,10 +30,6 @@ public record ValuesReport(List<Section> sections, int unreadableFiles) {
 			BigDecimal salesValue) {
 	}
 
-	private static final int VOIDING_CNPJ_START = 6;
-	private static final int VOIDING_CNPJ_END = 20;
-	private static final int VOIDING_MODEL_END = 22;
-
 	private record SectionKey(String cnpj, String modelCode, int series) {
 	}
 
@@ -65,7 +61,7 @@ public record ValuesReport(List<Section> sections, int unreadableFiles) {
 				cancelled.add(event.cancelledKey());
 			} else if (document instanceof XmlDocument.Voiding voiding) {
 				if (seenVoidings.add(voiding.id())) {
-					builders.computeIfAbsent(keyOf(voiding), ignored -> new Builder()).voided.add(voiding.range());
+					builders.computeIfAbsent(new SectionKey(voiding.cnpj(), voiding.modelCode(), voiding.series()), ignored -> new Builder()).voided.add(voiding.range());
 				}
 			} else if (document instanceof XmlDocument.Unreadable) {
 				unreadable++;
@@ -84,14 +80,6 @@ public record ValuesReport(List<Section> sections, int unreadableFiles) {
 
 	public BigDecimal totalValue() {
 		return sections.stream().map(Section::salesValue).reduce(BigDecimal.ZERO, BigDecimal::add);
-	}
-
-	// The voiding has no fields for these, but they are part of its id.
-	private static SectionKey keyOf(XmlDocument.Voiding voiding) {
-		String id = voiding.id();
-
-		return new SectionKey(id.substring(VOIDING_CNPJ_START, VOIDING_CNPJ_END), id.substring(VOIDING_CNPJ_END, VOIDING_MODEL_END),
-				voiding.series());
 	}
 
 	private static Section sectionOf(SectionKey key, Builder builder, Set<AccessKey> cancelledKeys) {

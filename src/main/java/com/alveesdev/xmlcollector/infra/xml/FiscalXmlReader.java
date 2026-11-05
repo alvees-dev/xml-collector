@@ -142,9 +142,10 @@ public class FiscalXmlReader implements DocumentReader {
 		}
 
 		NumberRange range = new NumberRange(start, end);
-		String id = VoidingRequest.idOf(requiredText(info, "cUF"), requiredText(info, "ano"), requiredText(info, "CNPJ"), modelCode, series, range);
+		String cnpj = requiredText(info, "CNPJ");
+		String id = VoidingRequest.idOf(requiredText(info, "cUF"), requiredText(info, "ano"), cnpj, modelCode, series, range);
 
-		return new XmlDocument.Voiding(id, series, range, requiredDateTime(info, "dhRecbto"));
+		return new XmlDocument.Voiding(id, cnpj, modelCode, series, range, requiredDateTime(info, "dhRecbto"));
 	}
 
 	private static boolean isAccepted(AccessKey key, Set<DocumentModel> acceptedModels) {

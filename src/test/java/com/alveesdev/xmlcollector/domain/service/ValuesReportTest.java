@@ -109,6 +109,6 @@ class ValuesReportTest {
 	private static XmlDocument.Voiding voiding(int series, int start, int end) {
 		String id = String.format("ID3526%s65%03d%09d%09d", CNPJ, series, start, end);
 
-		return new XmlDocument.Voiding(id, series, new NumberRange(start, end), DAY.atTime(12, 0).atOffset(ZoneOffset.ofHours(-3)));
+		return new XmlDocument.Voiding(id, CNPJ, "65", series, new NumberRange(start, end), DAY.atTime(12, 0).atOffset(ZoneOffset.ofHours(-3)));
 	}
 }
