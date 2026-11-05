@@ -18,8 +18,8 @@ import java.util.function.IntPredicate;
 import org.junit.jupiter.api.Test;
 
 import com.alveesdev.xmlcollector.application.collection.CollectionRequest;
-import com.alveesdev.xmlcollector.application.collection.CollectionResult;
 import com.alveesdev.xmlcollector.application.collection.CollectionResult.SourceResult;
+import com.alveesdev.xmlcollector.application.collection.CollectionResult;
 import com.alveesdev.xmlcollector.application.collection.CollectionSummary;
 import com.alveesdev.xmlcollector.application.collection.CollectionTarget;
 import com.alveesdev.xmlcollector.application.collection.SourceFailure;

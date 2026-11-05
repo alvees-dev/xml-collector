@@ -31,7 +31,7 @@ class CollectionRulesTest {
 	private static final LocalDate BEFORE_PERIOD = FIRST_DAY.minusDays(1);
 	private static final LocalDate AFTER_PERIOD = LAST_DAY.plusDays(1);
 
-	private final CollectionRules rules = new CollectionRules(new DateRange(FIRST_DAY, LAST_DAY));
+	private final CollectionRules rules = new CollectionRules(new DateRange(FIRST_DAY, LAST_DAY), invoice -> true);
 
 	@Test
 	void storesAnInvoiceInThePeriodKeepingItsFileName() {
@@ -88,7 +88,7 @@ class CollectionRulesTest {
 				"ID1", 1, new NumberRange(2, 2), AFTER_PERIOD.atTime(12, 0).atOffset(java.time.ZoneOffset.ofHours(-3)));
 
 		assertSkipped(SkipReason.OUT_OF_PERIOD, rules.decide(0, "inut.xml", voiding));
-		assertEquals(java.util.Map.of(1, java.util.List.of(new NumberRange(3, 3))), rules.missingNumbers());
+		assertEquals(java.util.Map.of(1, java.util.List.of(new NumberRange(3, 3))), rules.missingNumbers(Map.of()));
 	}
 
 	@Test
@@ -100,7 +100,7 @@ class CollectionRulesTest {
 				"ID1", 1, new NumberRange(500, 501), IN_PERIOD.atTime(12, 0).atOffset(java.time.ZoneOffset.ofHours(-3)));
 
 		assertTrue(rules.decide(0, "inut.xml", voiding) instanceof Store store && store.voiding());
-		assertEquals(java.util.Map.of(1, java.util.List.<NumberRange>of()), rules.missingNumbers());
+		assertEquals(java.util.Map.of(1, java.util.List.<NumberRange>of()), rules.missingNumbers(Map.of()));
 	}
 
 	@Test
@@ -165,7 +165,7 @@ class CollectionRulesTest {
 		rules.decide(0, "ruim.xml", new XmlDocument.Unreadable("broken"));
 		rules.decide(0, "b.xml", invoice(4, IN_PERIOD));
 
-		assertEquals(Map.of(1, List.of(new NumberRange(3, 3))), rules.missingNumbers());
+		assertEquals(Map.of(1, List.of(new NumberRange(3, 3))), rules.missingNumbers(Map.of()));
 	}
 
 	@Test
@@ -174,7 +174,7 @@ class CollectionRulesTest {
 		rules.decide(0, "c.xml", invoice(1, 3, IN_PERIOD));
 		rules.decide(1, "b.xml", invoice(1, 2, IN_PERIOD));
 
-		assertEquals(Map.of(1, List.of()), rules.missingNumbers());
+		assertEquals(Map.of(1, List.of()), rules.missingNumbers(Map.of()));
 	}
 
 	@Test
@@ -184,7 +184,7 @@ class CollectionRulesTest {
 		rules.decide(1, "b.xml", invoice(2, 2, IN_PERIOD));
 		rules.decide(1, "c.xml", invoice(2, 3, IN_PERIOD));
 
-		assertEquals(Map.of(2, List.of()), rules.missingNumbers());
+		assertEquals(Map.of(2, List.of()), rules.missingNumbers(Map.of()));
 	}
 
 	@Test
@@ -195,13 +195,13 @@ class CollectionRulesTest {
 		assertInstanceOf(Store.class, rules.decide(1, "e.xml", invoice(2, 2, IN_PERIOD)));
 		rules.decide(1, "f.xml", invoice(2, 3, IN_PERIOD));
 
-		assertEquals(Map.of(1, List.of(new NumberRange(2, 2)), 2, List.of()), rules.missingNumbers());
+		assertEquals(Map.of(1, List.of(new NumberRange(2, 2)), 2, List.of()), rules.missingNumbers(Map.of()));
 	}
 
 	@Test
 	void aSourceWithoutFilesHasNoResults() {
 		assertTrue(rules.entriesOf(5).isEmpty());
-		assertTrue(rules.missingNumbers().isEmpty());
+		assertTrue(rules.missingNumbers(Map.of()).isEmpty());
 	}
 
 	private DocumentEntry onlyEntry(int sourceIndex) {

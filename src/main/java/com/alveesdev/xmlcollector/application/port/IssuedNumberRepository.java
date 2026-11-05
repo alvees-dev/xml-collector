@@ -16,7 +16,5 @@ public interface IssuedNumberRepository {
 
 	Set<Integer> issuedIn(String cnpj, String modelCode, int series, NumberRange range) throws IOException;
 
-	default Optional<IssuedNumber> lastBefore(String cnpj, String modelCode, int series, int number) throws IOException {
-		return Optional.empty();
-	}
+	Optional<IssuedNumber> lastBefore(String cnpj, String modelCode, int series, int number) throws IOException;
 }

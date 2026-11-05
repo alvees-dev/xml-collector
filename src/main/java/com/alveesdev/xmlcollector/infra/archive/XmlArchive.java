@@ -9,10 +9,8 @@ import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
 import java.nio.file.attribute.FileTime;
-import java.util.EnumSet;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 import java.util.stream.Stream;
 
 import com.alveesdev.xmlcollector.application.port.DocumentArchive;
@@ -29,7 +27,6 @@ public class XmlArchive implements DocumentArchive {
 	}
 
 	private static final String TEMP_SUFFIX = ".part";
-	private static final Set<DocumentModel> ALL_MODELS = EnumSet.allOf(DocumentModel.class);
 
 	private final DocumentReader reader;
 
@@ -98,7 +95,7 @@ public class XmlArchive implements DocumentArchive {
 
 		for (Path year : foldersIn(archiveRoot)) {
 			for (Path other : foldersIn(year)) {
-				if (!other.equals(month) && holdsVoiding(other.resolve(DocumentCategory.VOIDED.folderName()), fileName)) {
+				if (!other.equals(month) && Files.exists(other.resolve(DocumentCategory.VOIDED.folderName()).resolve(fileName))) {
 					return true;
 				}
 			}
@@ -128,22 +125,6 @@ public class XmlArchive implements DocumentArchive {
 
 	private static boolean mayBe(String name, String identity, String fileName) {
 		return name.contains(identity) || name.equalsIgnoreCase(fileName);
-	}
-
-	private static boolean holdsVoiding(Path voided, String fileName) throws IOException {
-
-		if (Files.exists(voided.resolve(fileName))) {
-			return true;
-		}
-
-		// Older voidings can still be inside a day folder.
-		for (Path day : foldersIn(voided)) {
-			if (Files.exists(day.resolve(fileName))) {
-				return true;
-			}
-		}
-
-		return false;
 	}
 
 	private static List<Path> foldersIn(Path directory) throws IOException {
@@ -177,7 +158,7 @@ public class XmlArchive implements DocumentArchive {
 
 	private Optional<String> identityOf(Path existing) {
 		try {
-			return reader.read(Files.readAllBytes(existing), ALL_MODELS).identity();
+			return reader.read(Files.readAllBytes(existing), DocumentModel.ALL).identity();
 		} catch (IOException e) {
 			return Optional.empty();
 		}

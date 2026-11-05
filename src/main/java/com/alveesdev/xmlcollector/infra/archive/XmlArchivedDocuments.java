@@ -4,7 +4,6 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.EnumSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
@@ -20,8 +19,6 @@ import com.alveesdev.xmlcollector.domain.model.DocumentModel;
 import com.alveesdev.xmlcollector.domain.model.XmlDocument;
 
 public class XmlArchivedDocuments implements ArchivedDocuments {
-
-	private static final Set<DocumentModel> ALL_MODELS = EnumSet.allOf(DocumentModel.class);
 
 	private final DocumentReader reader;
 
@@ -59,7 +56,7 @@ public class XmlArchivedDocuments implements ArchivedDocuments {
 
 		for (Path file : xmlFilesIn(directory)) {
 			if (!isPurchase(directory, file)) {
-				documents.add(reader.read(Files.readAllBytes(file), ALL_MODELS));
+				documents.add(reader.read(Files.readAllBytes(file), DocumentModel.ALL));
 			}
 		}
 
@@ -73,7 +70,7 @@ public class XmlArchivedDocuments implements ArchivedDocuments {
 
 		for (Path file : xmlFilesIn(directory)) {
 			if (isPurchase(directory, file)) {
-				documents.add(reader.read(Files.readAllBytes(file), ALL_MODELS));
+				documents.add(reader.read(Files.readAllBytes(file), DocumentModel.ALL));
 			}
 		}
 
@@ -101,7 +98,7 @@ public class XmlArchivedDocuments implements ArchivedDocuments {
 
 	private Optional<AccessKey> keyInContentOf(Path file) throws IOException {
 
-		XmlDocument document = reader.read(Files.readAllBytes(file), ALL_MODELS);
+		XmlDocument document = reader.read(Files.readAllBytes(file), DocumentModel.ALL);
 
 		if (document instanceof XmlDocument.Invoice invoice) {
 			return Optional.of(invoice.key());

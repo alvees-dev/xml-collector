@@ -12,6 +12,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CancellationException;
+import java.util.function.Consumer;
 
 import org.junit.jupiter.api.Test;
 
@@ -22,6 +23,8 @@ import com.alveesdev.xmlcollector.application.port.CloudStorage;
 import com.alveesdev.xmlcollector.application.port.DirectoryCompressor;
 import com.alveesdev.xmlcollector.application.port.DispatchException;
 import com.alveesdev.xmlcollector.application.port.EmailMessage;
+import com.alveesdev.xmlcollector.application.port.StubArchivedDocuments;
+import com.alveesdev.xmlcollector.application.port.StubDirectoryCompressor;
 import com.alveesdev.xmlcollector.application.settings.EmailAccount;
 import com.alveesdev.xmlcollector.application.settings.EmailSecurity;
 import com.alveesdev.xmlcollector.domain.TestDocuments;
@@ -29,18 +32,21 @@ import com.alveesdev.xmlcollector.domain.model.XmlDocument;
 
 class DispatchServiceTest {
 
+	private static final Consumer<DispatchProgress> NO_PROGRESS = progress -> {
+	};
+
 	private static final Path MONTH = Path.of("arquivos", "2026", "Janeiro");
 	private static final EmailAccount ACCOUNT = new EmailAccount(
 			"smtp.gmail.com", 587, EmailSecurity.STARTTLS, "envio@exemplo.com", "senha-de-teste");
 
-	private static final DispatchRequest REQUEST = new DispatchRequest(List.of(MONTH), ACCOUNT, "destino@exemplo.com", "Assunto", "");
+	private static final DispatchRequest REQUEST = new DispatchRequest(List.of(MONTH), ACCOUNT, "destino@exemplo.com", "Assunto", "", false, ReportOptions.STANDARD);
 
 	private int uploads;
 	private final List<String> driveFolders = new ArrayList<>();
 	private final List<String> zipNames = new ArrayList<>();
 	private final List<EmailMessage> sent = new ArrayList<>();
 
-	private final DirectoryCompressor compressor = (directory, zipName, extraFiles) -> {
+	private final DirectoryCompressor compressor = (StubDirectoryCompressor) (directory, zipName, extraFiles) -> {
 		zipNames.add(zipName);
 		return Optional.of(new DirectoryCompressor.CompressedFile(directory.resolveSibling(zipName + ".zip"), 10));
 	};
@@ -100,7 +106,7 @@ class DispatchServiceTest {
 	void putsTheValuesReportOfTheMonthInTheZip() throws Exception {
 		List<DirectoryCompressor.ExtraFile> received = new ArrayList<>();
 
-		ArchivedDocuments documents = new ArchivedDocuments() {
+		ArchivedDocuments documents = new StubArchivedDocuments() {
 
 			@Override
 			public Set<String> cnpjsIn(Path directory) {
@@ -113,11 +119,11 @@ class DispatchServiceTest {
 			}
 		};
 
-		new DispatchService(documents, (directory, zipName, extraFiles) -> {
+		new DispatchService(documents, (StubDirectoryCompressor) (directory, zipName, extraFiles) -> {
 			received.addAll(extraFiles);
 			return Optional.of(new DirectoryCompressor.CompressedFile(directory.resolveSibling(zipName + ".zip"), 10));
 		}, (account, message) -> sent.add(message), (accountEmail, folderName, files) -> new CloudStorage.UploadResult("link", null))
-				.dispatch(REQUEST);
+				.dispatch(REQUEST, NO_PROGRESS, () -> false);
 
 		assertEquals(1, received.size());
 		assertEquals("Relatório de valores.txt", received.get(0).name());
@@ -132,7 +138,7 @@ class DispatchServiceTest {
 		List<DirectoryCompressor.ExtraFile> received = new ArrayList<>();
 		int[] reads = {0};
 
-		ArchivedDocuments documents = new ArchivedDocuments() {
+		ArchivedDocuments documents = new StubArchivedDocuments() {
 
 			@Override
 			public Set<String> cnpjsIn(Path directory) {
@@ -146,11 +152,11 @@ class DispatchServiceTest {
 			}
 		};
 
-		new DispatchService(documents, (directory, zipName, extraFiles) -> {
+		new DispatchService(documents, (StubDirectoryCompressor) (directory, zipName, extraFiles) -> {
 			received.addAll(extraFiles);
 			return Optional.of(new DirectoryCompressor.CompressedFile(directory.resolveSibling(zipName + ".zip"), 10));
 		}, (account, message) -> sent.add(message), (accountEmail, folderName, files) -> new CloudStorage.UploadResult("link", null))
-				.dispatch(new DispatchRequest(List.of(MONTH), ACCOUNT, "destino@exemplo.com", "Assunto", "", false, new ReportOptions(false, false, false)));
+				.dispatch(new DispatchRequest(List.of(MONTH), ACCOUNT, "destino@exemplo.com", "Assunto", "", false, new ReportOptions(false, false, false)), NO_PROGRESS, () -> false);
 
 		assertEquals(List.of(), received);
 		assertEquals(0, reads[0]);
@@ -162,7 +168,7 @@ class DispatchServiceTest {
 		List<String> report = new ArrayList<>();
 		int[] purchaseReads = {0};
 
-		ArchivedDocuments documents = new ArchivedDocuments() {
+		ArchivedDocuments documents = new StubArchivedDocuments() {
 
 			@Override
 			public Set<String> cnpjsIn(Path directory) {
@@ -176,36 +182,36 @@ class DispatchServiceTest {
 			}
 		};
 
-		DispatchService service = new DispatchService(documents, (directory, zipName, extraFiles) -> {
+		DispatchService service = new DispatchService(documents, (StubDirectoryCompressor) (directory, zipName, extraFiles) -> {
 			extraFiles.forEach(file -> report.add(new String(file.content(), StandardCharsets.UTF_8)));
 			return Optional.of(new DirectoryCompressor.CompressedFile(directory.resolveSibling(zipName + ".zip"), 10));
 		}, (account, message) -> sent.add(message), (accountEmail, folderName, files) -> new CloudStorage.UploadResult("link", null));
 
-		service.dispatch(REQUEST);
+		service.dispatch(REQUEST, NO_PROGRESS, () -> false);
 		assertEquals(0, purchaseReads[0]);
 
-		service.dispatch(new DispatchRequest(List.of(MONTH), ACCOUNT, "destino@exemplo.com", "Assunto", "", false, new ReportOptions(false, false, true)));
+		service.dispatch(new DispatchRequest(List.of(MONTH), ACCOUNT, "destino@exemplo.com", "Assunto", "", false, new ReportOptions(false, false, true)), NO_PROGRESS, () -> false);
 		assertEquals(1, purchaseReads[0]);
 		assertTrue(report.get(1).contains("Valor total das compras: R$ 10,50"), report.get(1));
 	}
 
 	@Test
 	void namesTheDriveFolderWithTheCnpj() throws Exception {
-		serviceWith(Set.of("12345678000190"), largeCompressor(), null).dispatch(REQUEST);
+		serviceWith(Set.of("12345678000190"), largeCompressor(), null).dispatch(REQUEST, NO_PROGRESS, () -> false);
 
 		assertEquals(List.of("12345678000190"), driveFolders);
 	}
 
 	@Test
 	void namesTheDriveFolderWithEveryCnpjOfTheMonth() throws Exception {
-		serviceWith(Set.of("98765432000110", "12345678000190"), largeCompressor(), null).dispatch(REQUEST);
+		serviceWith(Set.of("98765432000110", "12345678000190"), largeCompressor(), null).dispatch(REQUEST, NO_PROGRESS, () -> false);
 
 		assertEquals(List.of("12345678000190_98765432000110"), driveFolders);
 	}
 
 	@Test
 	void doesNotUploadWithoutACnpjForTheFolder() {
-		assertThrows(DispatchException.class, () -> serviceWith(Set.of(), largeCompressor(), null).dispatch(REQUEST));
+		assertThrows(DispatchException.class, () -> serviceWith(Set.of(), largeCompressor(), null).dispatch(REQUEST, NO_PROGRESS, () -> false));
 
 		assertEquals(0, uploads);
 		assertEquals(List.of(), sent);
@@ -213,14 +219,14 @@ class DispatchServiceTest {
 
 	@Test
 	void aFileWithoutACnpjStillGoesAttachedWhenItFits() throws Exception {
-		serviceWith(Set.of(), compressor, null).dispatch(REQUEST);
+		serviceWith(Set.of(), compressor, null).dispatch(REQUEST, NO_PROGRESS, () -> false);
 
 		assertEquals(1, sent.size());
 	}
 
 	@Test
 	void stillSendsTheEmailWhenThePreviousFileCouldNotBeRemoved() throws Exception {
-		DispatchResult result = serviceWith(Set.of("12345678000190"), largeCompressor(), "sem acesso").dispatch(REQUEST);
+		DispatchResult result = serviceWith(Set.of("12345678000190"), largeCompressor(), "sem acesso").dispatch(REQUEST, NO_PROGRESS, () -> false);
 
 		assertEquals(1, sent.size());
 		assertEquals("sem acesso", result.driveCleanupFailure());
@@ -248,7 +254,7 @@ class DispatchServiceTest {
 		boolean[] cancelled = {false};
 
 		DispatchService service = new DispatchService(
-				directory -> Set.of("12345678000190"),
+				(StubArchivedDocuments) directory -> Set.of("12345678000190"),
 				largeCompressor(),
 				(account, message) -> sent.add(message),
 				(accountEmail, folderName, files) -> {
@@ -264,9 +270,9 @@ class DispatchServiceTest {
 	@Test
 	void doesNotSendOrCompressWithoutASubject() {
 		for (String subject : new String[] {"", "   ", null}) {
-			DispatchRequest request = new DispatchRequest(List.of(MONTH), ACCOUNT, "destino@exemplo.com", subject, "");
+			DispatchRequest request = new DispatchRequest(List.of(MONTH), ACCOUNT, "destino@exemplo.com", subject, "", false, ReportOptions.STANDARD);
 
-			DispatchException error = assertThrows(DispatchException.class, () -> service(compressor).dispatch(request));
+			DispatchException error = assertThrows(DispatchException.class, () -> service(compressor).dispatch(request, NO_PROGRESS, () -> false));
 
 			assertEquals("O Assunto não foi informado", error.getMessage());
 		}
@@ -277,21 +283,21 @@ class DispatchServiceTest {
 
 	@Test
 	void sendsTheSubjectTheUserWrote() throws Exception {
-		service(compressor).dispatch(new DispatchRequest(List.of(MONTH), ACCOUNT, "destino@exemplo.com", "  XML de Janeiro ", ""));
+		service(compressor).dispatch(new DispatchRequest(List.of(MONTH), ACCOUNT, "destino@exemplo.com", "  XML de Janeiro ", "", false, ReportOptions.STANDARD), NO_PROGRESS, () -> false);
 
 		assertEquals("XML de Janeiro", sent.get(0).subject());
 	}
 
 	@Test
 	void usesTheStandardBodyWhenNoneWasWritten() throws Exception {
-		service(compressor).dispatch(REQUEST);
+		service(compressor).dispatch(REQUEST, NO_PROGRESS, () -> false);
 
 		assertEquals("Olá, Prezados\nSegue o arquivo XML\n\nAtenciosamente,", sent.get(0).body());
 	}
 
 	@Test
 	void keepsTheBodyTheUserWrote() throws Exception {
-		service(compressor).dispatch(new DispatchRequest(List.of(MONTH), ACCOUNT, "destino@exemplo.com", "Assunto", "Meu texto"));
+		service(compressor).dispatch(new DispatchRequest(List.of(MONTH), ACCOUNT, "destino@exemplo.com", "Assunto", "Meu texto", false, ReportOptions.STANDARD), NO_PROGRESS, () -> false);
 
 		assertEquals("Meu texto", sent.get(0).body());
 	}
@@ -312,7 +318,7 @@ class DispatchServiceTest {
 	void sendsALargeExistingZipThroughTheDriveInTheFolderOfTheCnpj() throws Exception {
 		Path existingZip = MONTH.resolveSibling("ArquivoXML_12345678000190_Janeiro_2026.zip");
 
-		DispatchResult result = service(compressorWith(existingZip, DispatchService.MAX_MESSAGE_BYTES)).dispatch(reusingTheZip());
+		DispatchResult result = service(compressorWith(existingZip, DispatchService.MAX_MESSAGE_BYTES)).dispatch(reusingTheZip(), NO_PROGRESS, () -> false);
 
 		assertEquals(DispatchResult.Method.DRIVE_LINK, result.method());
 		assertEquals(List.of("12345678000190"), driveFolders);
@@ -321,17 +327,17 @@ class DispatchServiceTest {
 
 	@Test
 	void reportsWhenTheExistingZipIsGone() {
-		assertThrows(DispatchException.class, () -> service(compressor).dispatch(reusingTheZip()));
+		assertThrows(DispatchException.class, () -> service(compressor).dispatch(reusingTheZip(), NO_PROGRESS, () -> false));
 
 		assertEquals(List.of(), sent);
 	}
 
 	private static DispatchRequest reusingTheZip() {
-		return new DispatchRequest(List.of(MONTH), ACCOUNT, "destino@exemplo.com", "Assunto", "", true);
+		return new DispatchRequest(List.of(MONTH), ACCOUNT, "destino@exemplo.com", "Assunto", "", true, ReportOptions.STANDARD);
 	}
 
 	private DirectoryCompressor compressorWith(Path existingZip, long bytes) {
-		return new DirectoryCompressor() {
+		return new StubDirectoryCompressor() {
 
 			@Override
 			public Optional<CompressedFile> compress(Path directory, String zipName, List<ExtraFile> extraFiles) {
@@ -347,7 +353,7 @@ class DispatchServiceTest {
 	}
 
 	private DirectoryCompressor largeCompressor() {
-		return (directory, zipName, extraFiles) -> Optional.of(new DirectoryCompressor.CompressedFile(
+		return (StubDirectoryCompressor) (directory, zipName, extraFiles) -> Optional.of(new DirectoryCompressor.CompressedFile(
 				directory.resolveSibling(zipName + ".zip"), DispatchService.MAX_MESSAGE_BYTES));
 	}
 
@@ -357,7 +363,7 @@ class DispatchServiceTest {
 
 	private DispatchService serviceWith(Set<String> cnpjs, DirectoryCompressor chosen, String cleanupFailure) {
 		return new DispatchService(
-				directory -> cnpjs,
+				(StubArchivedDocuments) directory -> cnpjs,
 				chosen,
 				(account, message) -> sent.add(message),
 				(accountEmail, folderName, files) -> {
@@ -369,11 +375,11 @@ class DispatchServiceTest {
 
 	private void dispatch(Set<String> cnpjs) throws Exception {
 		DispatchService service = new DispatchService(
-				directory -> cnpjs,
+				(StubArchivedDocuments) directory -> cnpjs,
 				compressor,
 				(account, message) -> sent.add(message),
 				(accountEmail, folderName, files) -> new CloudStorage.UploadResult("link", null));
 
-		service.dispatch(REQUEST);
+		service.dispatch(REQUEST, NO_PROGRESS, () -> false);
 	}
 }

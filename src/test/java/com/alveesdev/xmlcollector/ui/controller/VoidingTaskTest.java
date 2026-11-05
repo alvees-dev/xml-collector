@@ -4,7 +4,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 
 import java.nio.file.Path;
-import java.nio.file.attribute.FileTime;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -16,6 +15,7 @@ import java.util.Map;
 import org.junit.jupiter.api.Test;
 
 import com.alveesdev.xmlcollector.application.port.DocumentArchive;
+import com.alveesdev.xmlcollector.application.port.StubDocumentArchive;
 import com.alveesdev.xmlcollector.application.port.VoidingGatewayFactory;
 import com.alveesdev.xmlcollector.application.settings.CertificateSettings;
 import com.alveesdev.xmlcollector.application.voiding.VoidingBatch;
@@ -62,7 +62,7 @@ class VoidingTaskTest {
 
 	private VoidingTask task(com.alveesdev.xmlcollector.application.port.VoidingGateway gateway) {
 		VoidingGatewayFactory gateways = settings -> new VoidingGatewayFactory.Connection(gateway, new VoidingGatewayFactory.CertificateInfo("12345678000190", CLOCK.instant()));
-		DocumentArchive archive = (content, modified, directory, preferredName, canonicalName, identity) -> DocumentArchive.Outcome.COPIED;
+		StubDocumentArchive archive = (content, modified, directory, preferredName, canonicalName, identity) -> DocumentArchive.Outcome.COPIED;
 
 		return new VoidingTask(new VoidingBatch(gateways, archive, CLOCK), List.of(request(1), request(2)), CERTIFICATE, Path.of("arquivo"),
 				LocalDate.of(2026, 1, 31), Map.of());

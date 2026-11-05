@@ -12,6 +12,7 @@ import java.util.Set;
 
 import com.alveesdev.xmlcollector.application.port.CloudStorage;
 import com.alveesdev.xmlcollector.application.port.DispatchException;
+import com.alveesdev.xmlcollector.application.port.Failures;
 import com.google.api.client.auth.oauth2.AuthorizationCodeRequestUrl;
 import com.google.api.client.auth.oauth2.Credential;
 import com.google.api.client.extensions.java6.auth.oauth2.AuthorizationCodeInstalledApp;
@@ -129,7 +130,7 @@ public class GoogleDriveStorage implements CloudStorage {
 			return null;
 
 		} catch (IOException e) {
-			return e.getMessage() == null ? e.getClass().getSimpleName() : e.getMessage();
+			return Failures.describe(e);
 		}
 	}
 

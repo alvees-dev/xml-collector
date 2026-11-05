@@ -2,6 +2,8 @@ package com.alveesdev.xmlcollector.ui.model;
 
 import java.nio.file.Path;
 
+import com.alveesdev.xmlcollector.application.port.Failures;
+
 public final class FailureText {
 
 	public static final String NO_DESCRIPTION = "Ocorreu um erro sem descrição.";
@@ -10,9 +12,7 @@ public final class FailureText {
 	}
 
 	public static String of(Throwable error) {
-		String message = error.getMessage();
-
-		return message == null || message.isBlank() ? error.getClass().getSimpleName() : message;
+		return Failures.describe(error);
 	}
 
 	public static String orNoDescription(String message) {

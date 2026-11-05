@@ -1,4 +1,4 @@
-package com.alveesdev.xmlcollector.application.settings;
+package com.alveesdev.xmlcollector.application.settings.service;
 
 import java.util.ArrayList;
 import java.util.List;

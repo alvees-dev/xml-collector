@@ -16,8 +16,8 @@ import org.junit.jupiter.api.Test;
 
 import com.alveesdev.xmlcollector.application.collection.CollectionResult;
 import com.alveesdev.xmlcollector.application.collection.CollectionSummary;
-import com.alveesdev.xmlcollector.application.collection.SourceFailure;
 import com.alveesdev.xmlcollector.application.collection.SourceFailure.Reason;
+import com.alveesdev.xmlcollector.application.collection.SourceFailure;
 import com.alveesdev.xmlcollector.domain.model.XmlDocument;
 
 class CollectionSummaryTextTest {

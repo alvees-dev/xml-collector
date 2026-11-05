@@ -119,8 +119,6 @@ public final class VoidingText {
 	}
 
 	private static String rangeLabel(VoidingRequest request) {
-		NumberRange range = request.range();
-		String numbers = range.size() == 1 ? String.valueOf(range.start()) : range.start() + " a " + range.end();
-		return "Série " + request.series() + ": " + numbers;
+		return "Série " + request.series() + ": " + request.range().text();
 	}
 }

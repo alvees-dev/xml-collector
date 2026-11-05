@@ -11,11 +11,7 @@ public interface ArchivedDocuments {
 
 	Set<String> cnpjsIn(Path directory) throws IOException;
 
-	default List<XmlDocument> documentsOfTheCompanyIn(Path directory) throws IOException {
-		return List.of();
-	}
+	List<XmlDocument> documentsOfTheCompanyIn(Path directory) throws IOException;
 
-	default List<XmlDocument> purchasesIn(Path directory) throws IOException {
-		return List.of();
-	}
+	List<XmlDocument> purchasesIn(Path directory) throws IOException;
 }

@@ -10,6 +10,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.alveesdev.xmlcollector.application.port.DocumentArchive;
+import com.alveesdev.xmlcollector.application.port.Failures;
 import com.alveesdev.xmlcollector.application.port.VoidingException;
 import com.alveesdev.xmlcollector.application.port.VoidingGateway;
 import com.alveesdev.xmlcollector.domain.model.FiscalEnvironment;
@@ -64,7 +65,7 @@ public class VoidingService {
 			archive.store(receipt.xml().getBytes(StandardCharsets.UTF_8), FileTime.from(clock.instant()), directory, name, name, request.id());
 			return null;
 		} catch (IOException e) {
-			return e.getMessage() == null ? e.getClass().getSimpleName() : e.getMessage();
+			return Failures.describe(e);
 		}
 	}
 }

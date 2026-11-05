@@ -15,8 +15,8 @@ import com.alveesdev.xmlcollector.application.dispatch.DispatchProgress.Stage;
 import com.alveesdev.xmlcollector.application.dispatch.DispatchProgress.Step;
 import com.alveesdev.xmlcollector.application.port.ArchivedDocuments;
 import com.alveesdev.xmlcollector.application.port.CloudStorage;
-import com.alveesdev.xmlcollector.application.port.DirectoryCompressor;
 import com.alveesdev.xmlcollector.application.port.DirectoryCompressor.CompressedFile;
+import com.alveesdev.xmlcollector.application.port.DirectoryCompressor;
 import com.alveesdev.xmlcollector.application.port.DispatchException;
 import com.alveesdev.xmlcollector.application.port.EmailMessage;
 import com.alveesdev.xmlcollector.application.port.EmailSender;
@@ -44,11 +44,6 @@ public class DispatchService {
 		this.compressor = compressor;
 		this.emailSender = emailSender;
 		this.cloudStorage = cloudStorage;
-	}
-
-	public DispatchResult dispatch(DispatchRequest request) throws DispatchException {
-		return dispatch(request, progress -> {
-		}, () -> false);
 	}
 
 	public DispatchResult dispatch(DispatchRequest request, Consumer<DispatchProgress> listener, BooleanSupplier cancelled)

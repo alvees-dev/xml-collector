@@ -43,14 +43,10 @@ public class MissingTableModel {
 
 		missingBySeries.forEach((series, ranges) -> {
 			headers.add("SERIE " + series);
-			columns.add(ranges.stream().map(MissingTableModel::formatRange).toList());
+			columns.add(ranges.stream().map(NumberRange::text).toList());
 		});
 
 		return build(headers, columns, true);
-	}
-
-	private static String formatRange(NumberRange range) {
-		return range.size() == 1 ? String.valueOf(range.start()) : range.start() + " a " + range.end();
 	}
 
 	private static MissingTableModel build(List<String> headers, List<List<String>> columns, boolean seriesBased) {

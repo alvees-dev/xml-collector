@@ -19,7 +19,7 @@ import com.alveesdev.xmlcollector.application.collection.CollectionService;
 import com.alveesdev.xmlcollector.application.collection.CollectionTarget;
 import com.alveesdev.xmlcollector.application.settings.AppPaths;
 import com.alveesdev.xmlcollector.application.settings.AppSettings;
-import com.alveesdev.xmlcollector.application.settings.SearchModelCatalog;
+import com.alveesdev.xmlcollector.application.settings.service.SearchModelCatalog;
 import com.alveesdev.xmlcollector.application.settings.service.SettingsService;
 import com.alveesdev.xmlcollector.domain.model.DateRange;
 import com.alveesdev.xmlcollector.domain.model.DocumentCategory;

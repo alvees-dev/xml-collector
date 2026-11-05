@@ -6,7 +6,6 @@ import java.util.Map;
 
 import com.alveesdev.xmlcollector.application.collection.CollectionProgress;
 import com.alveesdev.xmlcollector.application.dispatch.DispatchProgress;
-import com.alveesdev.xmlcollector.ui.controller.ProgressController;
 
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;

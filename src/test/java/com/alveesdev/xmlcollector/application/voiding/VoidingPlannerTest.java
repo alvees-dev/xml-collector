@@ -16,7 +16,7 @@ import org.junit.jupiter.api.Test;
 import com.alveesdev.xmlcollector.application.collection.CollectionResult;
 import com.alveesdev.xmlcollector.application.collection.CollectionSummary;
 import com.alveesdev.xmlcollector.application.collection.SourceFailure;
-import com.alveesdev.xmlcollector.application.port.IssuedNumberRepository;
+import com.alveesdev.xmlcollector.application.port.StubIssuedNumberRepository;
 import com.alveesdev.xmlcollector.application.port.VoidingException;
 import com.alveesdev.xmlcollector.domain.model.IssuedNumber;
 import com.alveesdev.xmlcollector.domain.model.NumberRange;
@@ -31,7 +31,7 @@ class VoidingPlannerTest {
 
 	private Set<Integer> issued = Set.of();
 
-	private final VoidingPlanner planner = new VoidingPlanner(new IssuedNumberRepository() {
+	private final VoidingPlanner planner = new VoidingPlanner(new StubIssuedNumberRepository() {
 
 		@Override
 		public void initialize() {
@@ -76,7 +76,7 @@ class VoidingPlannerTest {
 
 	@Test
 	void refusesWhenTheHistoryCannotBeRead() {
-		VoidingPlanner failing = new VoidingPlanner(new IssuedNumberRepository() {
+		VoidingPlanner failing = new VoidingPlanner(new StubIssuedNumberRepository() {
 
 			@Override
 			public void initialize() {

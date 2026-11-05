@@ -1,4 +1,4 @@
-package com.alveesdev.xmlcollector.ui.controller;
+package com.alveesdev.xmlcollector.ui.view;
 
 import java.util.HashMap;
 import java.util.Map;

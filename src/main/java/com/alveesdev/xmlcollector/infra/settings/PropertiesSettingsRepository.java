@@ -27,7 +27,6 @@ public final class PropertiesSettingsRepository implements SettingsRepository {
 
 	private static final String PDV_DIRECTORIES_PREFIX = "directories.pdv.";
 	private static final String NFE_DIRECTORIES_PREFIX = "directories.nfe.";
-	private static final String LEGACY_NFE_SALES_DIRECTORIES_PREFIX = "directories.nfe.sales.";
 	private static final String PDV_TYPE_KEY = "search.pdvType";
 	private static final String PDV_MODEL_KEY = "search.pdvModel";
 	private static final String NFE_MODEL_KEY = "search.nfeModel";
@@ -46,30 +45,26 @@ public final class PropertiesSettingsRepository implements SettingsRepository {
 	private static final String CERTIFICATE_ENVIRONMENT_KEY = "certificate.environment";
 
 	private final Path file;
-	private final Path legacyEmailFile;
 	private final EmailAccount defaultAccount;
 
-	public PropertiesSettingsRepository(Path file, Path legacyEmailFile, EmailAccount defaultAccount) {
+	public PropertiesSettingsRepository(Path file, EmailAccount defaultAccount) {
 		this.file = file;
-		this.legacyEmailFile = legacyEmailFile;
 		this.defaultAccount = defaultAccount;
 	}
 
 	@Override
 	public AppSettings load() throws IOException {
 		AppSettings defaults = AppSettings.defaults().withEmailAccount(defaultAccount);
-		Path source = Files.isRegularFile(file) ? file : legacyEmailFile;
 
-		if (!Files.isRegularFile(source)) {
+		if (!Files.isRegularFile(file)) {
 			return defaults;
 		}
 
-		Properties properties = read(source);
+		Properties properties = read(file);
 
 		return new AppSettings(
 				readDirectories(properties, PDV_DIRECTORIES_PREFIX, defaults.pdvDirectories()),
-				readDirectories(properties, NFE_DIRECTORIES_PREFIX,
-						readDirectories(properties, LEGACY_NFE_SALES_DIRECTORIES_PREFIX, defaults.nfeDirectories())),
+				readDirectories(properties, NFE_DIRECTORIES_PREFIX, defaults.nfeDirectories()),
 				parsePdvType(properties.getProperty(PDV_TYPE_KEY), defaults.pdvType()),
 				properties.getProperty(PDV_MODEL_KEY, defaults.pdvModelId()),
 				properties.getProperty(NFE_MODEL_KEY, defaults.nfeModelId()),
@@ -126,8 +121,6 @@ public final class PropertiesSettingsRepository implements SettingsRepository {
 		} catch (AtomicMoveNotSupportedException e) {
 			Files.move(temp, file, StandardCopyOption.REPLACE_EXISTING);
 		}
-
-		Files.deleteIfExists(legacyEmailFile);
 	}
 
 	private static Properties read(Path source) throws IOException {

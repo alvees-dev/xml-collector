@@ -11,4 +11,8 @@ public record NumberRange(int start, int end) {
 	public int size() {
 		return end - start + 1;
 	}
+
+	public String text() {
+		return start == end ? String.valueOf(start) : start + " a " + end;
+	}
 }

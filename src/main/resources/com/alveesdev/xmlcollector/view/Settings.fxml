@@ -265,7 +265,7 @@
             <Insets right="10.0" />
          </padding>
          <children>
-            <Button fx:id="btnSave" mnemonicParsing="false" onAction="#onSave" text="Salvar" />
+            <Button mnemonicParsing="false" onAction="#onSave" text="Salvar" />
             <Button fx:id="btnCancel" mnemonicParsing="false" onAction="#onCancel" text="Cancelar" />
          </children>
       </HBox>

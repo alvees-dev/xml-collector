@@ -17,14 +17,9 @@ public interface DocumentArchive {
 	Outcome store(byte[] content, FileTime sourceModified, Path directory, String preferredName,
 			String canonicalName, String identity) throws IOException;
 
-	default void requireWritable(Path directory) throws IOException {
-	}
+	void requireWritable(Path directory) throws IOException;
 
-	default boolean holdsVoidingInAnotherMonth(Path archiveRoot, Path month, String fileName) throws IOException {
-		return false;
-	}
+	boolean holdsVoidingInAnotherMonth(Path archiveRoot, Path month, String fileName) throws IOException;
 
-	default Optional<Path> findDocument(Path month, String identity, String fileName) throws IOException {
-		return Optional.empty();
-	}
+	Optional<Path> findDocument(Path month, String identity, String fileName) throws IOException;
 }

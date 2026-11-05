@@ -50,10 +50,6 @@ public final class CollectionRules {
 	private final Map<Integer, List<NumberRange>> outOfPeriodBySeries = new HashMap<>();
 	private final Map<Integer, List<Accepted>> acceptedBySource = new HashMap<>();
 
-	public CollectionRules(DateRange period) {
-		this(period, invoice -> true);
-	}
-
 	public CollectionRules(DateRange period, Predicate<XmlDocument.Invoice> invoiceFilter) {
 		this.period = period;
 		this.invoiceFilter = invoiceFilter;
@@ -92,10 +88,6 @@ public final class CollectionRules {
 		}
 
 		return entries;
-	}
-
-	public SortedMap<Integer, List<NumberRange>> missingNumbers() {
-		return missingNumbers(Map.of());
 	}
 
 	public SortedMap<Integer, List<NumberRange>> missingNumbers(Map<Integer, List<NumberRange>> gapsBeforeTheFirst) {

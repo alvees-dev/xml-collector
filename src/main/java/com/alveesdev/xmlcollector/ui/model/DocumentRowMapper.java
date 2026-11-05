@@ -45,7 +45,6 @@ public final class DocumentRowMapper {
 		return switch (status) {
 			case AUTHORIZED -> "Autorizada";
 			case CANCELLED -> "Cancelada";
-			case VOIDED -> "Inutilizada";
 			case ERROR -> "Erro na Leitura";
 		};
 	}

@@ -260,7 +260,7 @@ class CollectionAndDispatchFlowTest {
 		EmailAccount account = new EmailAccount("smtp.exemplo.com", 587, EmailSecurity.STARTTLS, "envio@exemplo.com", "senha-de-teste");
 
 		return new DispatchRequest(List.of(ArchiveLayout.monthDirectory(archiveRoot, JANUARY_DAY)), account, "contador@exemplo.com", "XML de janeiro",
-				"Segue o arquivo.", false);
+				"Segue o arquivo.", false, ReportOptions.STANDARD);
 	}
 
 	private static Map<Integer, DocumentStatus> statusOfSeries(int series, CollectionResult result) {

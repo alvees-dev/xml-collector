@@ -4,8 +4,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import org.junit.jupiter.api.Test;
 
-import com.alveesdev.xmlcollector.application.collection.CollectionProgress;
 import com.alveesdev.xmlcollector.application.collection.CollectionProgress.Stage;
+import com.alveesdev.xmlcollector.application.collection.CollectionProgress;
 
 class SourceProgressTextTest {
 
