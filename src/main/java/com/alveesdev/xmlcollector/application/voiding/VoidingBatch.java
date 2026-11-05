@@ -18,6 +18,7 @@ import com.alveesdev.xmlcollector.application.port.VoidingException;
 import com.alveesdev.xmlcollector.application.port.VoidingGatewayFactory;
 import com.alveesdev.xmlcollector.application.settings.CertificateSettings;
 import com.alveesdev.xmlcollector.application.voiding.VoidingProgress.Stage;
+import com.alveesdev.xmlcollector.domain.model.FiscalEnvironment;
 import com.alveesdev.xmlcollector.domain.model.VoidingRequest;
 import com.alveesdev.xmlcollector.domain.service.ArchiveLayout;
 
@@ -112,7 +113,7 @@ public class VoidingBatch {
 			} catch (VoidingException | RuntimeException e) {
 				// The answer is unknown, so nothing else goes out until someone checks the Sefaz, and what was already answered is kept.
 				stopped = true;
-				LOG.log(Level.WARNING, "No known answer for the voiding " + request.id(), e);
+				LOG.log(Level.WARNING, "Sem resposta conhecida para a inutilização " + request.id(), e);
 				record(outcomes, new VoidingOutcome(request, Stage.FAILED, Failures.describe(e)), settings);
 				listener.accept(new VoidingProgress(index, Stage.FAILED));
 			}
@@ -127,12 +128,26 @@ public class VoidingBatch {
 
 		boolean clean = outcome.stage() == Stage.APPROVED && outcome.archiveFailure() == null && outcome.pdvFailures().isEmpty();
 
-		LOG.log(clean ? Level.INFO : Level.WARNING, "Voiding " + outcome.request().id() + " in " + settings.environment() + ": " + outcome.stage()
-				+ ", detail: " + outcome.detail() + ", archive failure: " + outcome.archiveFailure() + ", PDV failures: " + outcome.pdvFailures());
+		String environment = settings.environment() == FiscalEnvironment.PRODUCTION ? "produção" : "homologação";
+		String archiveFailure = outcome.archiveFailure() == null ? "" : ", falha ao arquivar: " + outcome.archiveFailure();
+		String pdvFailures = outcome.pdvFailures().isEmpty() ? "" : ", falha nas pastas de PDV: " + outcome.pdvFailures();
+
+		LOG.log(clean ? Level.INFO : Level.WARNING, "Inutilização " + outcome.request().id() + " em " + environment + ": " + answerOf(outcome.stage())
+				+ ", " + outcome.detail() + archiveFailure + pdvFailures);
 
 		if (outcome.unsavedXml() != null) {
-			LOG.severe("Approved voiding " + outcome.request().id() + " was not saved anywhere, its XML follows: " + outcome.unsavedXml());
+			LOG.severe("Inutilização aprovada " + outcome.request().id() + " não foi salva em nenhum lugar, o XML dela segue: " + outcome.unsavedXml());
 		}
+	}
+
+	private static String answerOf(Stage stage) {
+		return switch (stage) {
+			case SENDING -> "enviando";
+			case APPROVED -> "aprovada";
+			case REJECTED -> "recusada";
+			case FAILED -> "sem resposta conhecida";
+			case NOT_SENT -> "não enviada";
+		};
 	}
 
 	private static void requireSameCompany(VoidingGatewayFactory.CertificateInfo certificate, List<VoidingRequest> requests)

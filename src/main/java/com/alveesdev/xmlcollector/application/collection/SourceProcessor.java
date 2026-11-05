@@ -208,8 +208,8 @@ class SourceProcessor {
 	// The screen only counts these files, so this is the one place that says which file it was and why.
 	private static void logIfLeftOut(ReadFile file) {
 		switch (file.document()) {
-			case XmlDocument.Unreadable unreadable -> LOG.warning("Unreadable file " + file.source().path() + ": " + unreadable.reason());
-			case XmlDocument.Ignored ignored -> LOG.info("Ignored file " + file.source().path() + ": " + ignored.reason());
+			case XmlDocument.Unreadable unreadable -> LOG.warning("Arquivo com erro de leitura: " + file.source().path() + ": " + unreadable.reason());
+			case XmlDocument.Ignored ignored -> LOG.info("Arquivo ignorado: " + file.source().path() + ": " + ignored.reason());
 			case XmlDocument.Invoice _, XmlDocument.CancelEvent _, XmlDocument.Voiding _ -> {
 			}
 		}
@@ -305,7 +305,7 @@ class SourceProcessor {
 					null);
 		} catch (IOException e) {
 			String reason = Failures.describe(e);
-			LOG.log(Level.WARNING, "File not stored: " + job.sourceName(), e);
+			LOG.log(Level.WARNING, "Arquivo não gravado: " + job.sourceName(), e);
 			return new StoreResult(null, new CopyFailure(job.sourceName(), reason));
 		}
 	}

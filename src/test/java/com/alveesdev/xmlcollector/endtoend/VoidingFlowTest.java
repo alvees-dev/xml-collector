@@ -131,7 +131,7 @@ class VoidingFlowTest {
 			}, () -> false);
 
 			assertTrue(log.has(Level.INFO, requests.get(0).id()), "the range must be recorded");
-			assertTrue(log.has(Level.INFO, "APPROVED"), "the answer must be recorded");
+			assertTrue(log.has(Level.INFO, "aprovada"), "the answer must be recorded");
 			assertTrue(log.records().stream().noneMatch(entry -> entry.getMessage().contains(CERTIFICATE.password())));
 		}
 	}

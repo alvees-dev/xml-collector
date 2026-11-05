@@ -106,7 +106,7 @@ public class CollectionService {
 					issuedNumbers.saveAll(processor.issuedNumbers());
 
 				} catch (IOException e) {
-					LOG.log(Level.WARNING, "The history of numbers could not be updated", e);
+					LOG.log(Level.WARNING, "O histórico de números não pôde ser atualizado", e);
 					historyFailure = Failures.describe(e);
 				}
 			}
