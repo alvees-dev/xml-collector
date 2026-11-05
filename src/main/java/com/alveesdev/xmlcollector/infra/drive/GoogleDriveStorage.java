@@ -59,34 +59,37 @@ public class GoogleDriveStorage implements CloudStorage {
 		}
 
 		try {
-			Drive drive = createDrive(accountEmail);
-
-			File root = findOrCreateFolder(drive, ROOT_FOLDER_NAME, DRIVE_ROOT);
-			File folder = findOrCreateFolder(drive, folderName, root.getId());
-			Set<String> uploaded = new HashSet<>();
-
-			for (Path file : files) {
-				File metadata = new File();
-				metadata.setName(file.getFileName().toString());
-				metadata.setParents(List.of(folder.getId()));
-
-				FileContent content = new FileContent(ZIP_MIME_TYPE, file.toFile());
-				uploaded.add(drive.files().create(metadata, content).setFields("id").execute().getId());
-			}
-
-			Permission anyoneWithLink = new Permission();
-			anyoneWithLink.setType("anyone");
-			anyoneWithLink.setRole("reader");
-			drive.permissions().create(folder.getId(), anyoneWithLink).execute();
-
-			String link = folder.getWebViewLink() != null ? folder.getWebViewLink() : FOLDER_LINK_PREFIX + folder.getId();
-
-			// Only now, so a failed upload never leaves the folder without its previous file.
-			return new UploadResult(link, removeOthers(drive, folder.getId(), uploaded));
+			return replaceInFolder(createDrive(accountEmail), folderName, files);
 
 		} catch (IOException | GeneralSecurityException e) {
 			throw new DispatchException("Falha ao enviar os arquivos para o Google Drive: " + e.getMessage(), e);
 		}
+	}
+
+	static UploadResult replaceInFolder(Drive drive, String folderName, List<Path> files) throws IOException {
+
+		File root = findOrCreateFolder(drive, ROOT_FOLDER_NAME, DRIVE_ROOT);
+		File folder = findOrCreateFolder(drive, folderName, root.getId());
+		Set<String> uploaded = new HashSet<>();
+
+		for (Path file : files) {
+			File metadata = new File();
+			metadata.setName(file.getFileName().toString());
+			metadata.setParents(List.of(folder.getId()));
+
+			FileContent content = new FileContent(ZIP_MIME_TYPE, file.toFile());
+			uploaded.add(drive.files().create(metadata, content).setFields("id").execute().getId());
+		}
+
+		Permission anyoneWithLink = new Permission();
+		anyoneWithLink.setType("anyone");
+		anyoneWithLink.setRole("reader");
+		drive.permissions().create(folder.getId(), anyoneWithLink).execute();
+
+		String link = folder.getWebViewLink() != null ? folder.getWebViewLink() : FOLDER_LINK_PREFIX + folder.getId();
+
+		// Only now, so a failed upload never leaves the folder without its previous file.
+		return new UploadResult(link, removeOthers(drive, folder.getId(), uploaded));
 	}
 
 	private static File findOrCreateFolder(Drive drive, String folderName, String parentId) throws IOException {
@@ -147,7 +150,7 @@ public class GoogleDriveStorage implements CloudStorage {
 		return value.replace("\\", "\\\\").replace("'", "\\'");
 	}
 
-	private Drive createDrive(String accountEmail) throws IOException, GeneralSecurityException {
+	Drive createDrive(String accountEmail) throws IOException, GeneralSecurityException {
 
 		NetHttpTransport transport = GoogleNetHttpTransport.newTrustedTransport();
 		JsonFactory jsonFactory = GsonFactory.getDefaultInstance();
