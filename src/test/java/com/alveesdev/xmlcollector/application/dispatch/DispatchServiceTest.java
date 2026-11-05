@@ -292,7 +292,7 @@ class DispatchServiceTest {
 	void usesTheStandardBodyWhenNoneWasWritten() throws Exception {
 		service(compressor).dispatch(REQUEST, NO_PROGRESS, () -> false);
 
-		assertEquals("Olá, Prezados\nSegue o arquivo XML\n\nAtenciosamente,", sent.get(0).body());
+		assertEquals("Olá, prezados.\n\nSegue o arquivo XML.\nAtenciosamente,", sent.get(0).body());
 	}
 
 	@Test
