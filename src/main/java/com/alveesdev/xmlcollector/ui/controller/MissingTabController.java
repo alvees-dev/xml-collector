@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Consumer;
+import java.util.logging.Level;
 
 import com.alveesdev.xmlcollector.application.collection.CollectionRequest;
 import com.alveesdev.xmlcollector.application.collection.CollectionResult;
@@ -30,6 +31,7 @@ import com.alveesdev.xmlcollector.domain.model.NumberRange;
 import com.alveesdev.xmlcollector.domain.model.PdvSearchModel;
 import com.alveesdev.xmlcollector.domain.model.XmlDocument;
 import com.alveesdev.xmlcollector.domain.service.ArchiveLayout;
+import com.alveesdev.xmlcollector.ui.model.ActivityLog;
 import com.alveesdev.xmlcollector.ui.model.FailureText;
 import com.alveesdev.xmlcollector.ui.model.MissingTableModel;
 import com.alveesdev.xmlcollector.ui.model.SourceMode;
@@ -49,6 +51,7 @@ import javafx.stage.FileChooser;
 
 public class MissingTabController {
 
+	private static final String VOIDING = "Inutilização";
 	private static final double COLUMN_WIDTH = 110;
 
 	private final CollectionService collectionService;
@@ -208,6 +211,8 @@ public class MissingTabController {
 			return;
 		}
 
+		ActivityLog.record("Inutilização solicitada: " + VoidingText.ranges(wanted));
+
 		CertificateSettings certificate = settings.certificate();
 		String voidingFolder = searchModels.pdvModel(settings.pdvModelId()).voidingFolder();
 		List<String> pdvDirectories = settings.pdvDirectories();
@@ -216,35 +221,39 @@ public class MissingTabController {
 		TaskRunner.withProgress(trigger, "xml-voiding-checks",
 				() -> new ProgressWindow(trigger.getScene().getWindow(), "Conferindo certificado e pastas..."),
 				window -> TaskRunner.taskOf(() -> voidingPreparation.prepare(session, wanted, certificate, pdvDirectories, voidingFolder, paths.xmlArchiveDir())),
-				new TaskRunner.Handlers<>(plan -> confirmAndSend(trigger, plan, certificate), MissingTabController::showCheckFailure, () -> {
-				}));
+				new TaskRunner.Handlers<>(plan -> confirmAndSend(trigger, plan, certificate), MissingTabController::showCheckFailure,
+						() -> ActivityLog.record(VOIDING + ": cancelada antes do envio")));
 	}
 
 	private static void showCheckFailure(Throwable error) {
 		if (error instanceof VoidingException) {
-			Dialogs.warning(error.getMessage());
+			Dialogs.warning(VOIDING, error.getMessage());
 		} else {
-			Dialogs.error(FailureText.of(error));
+			Dialogs.error(VOIDING, FailureText.of(error));
 		}
 	}
 
 	private void confirmAndSend(Node trigger, VoidingPreparation.Plan plan, CertificateSettings certificate) {
 
 		if (!session.searchedAll() && !Dialogs.confirmVoidingWithoutSearch()) {
+			ActivityLog.record(VOIDING + ": cancelada antes do envio");
 			return;
 		}
 
 		if (!Dialogs.confirmVoiding(plan.requests(), certificate.environment())) {
+			ActivityLog.record(VOIDING + ": cancelada antes do envio");
 			return;
 		}
+
+		ActivityLog.record(VOIDING + ": enviando para a Sefaz em " + VoidingText.environment(certificate.environment()));
 
 		// The month of the collection, so the file goes out with the documents of the gaps it closes.
 		TaskRunner.withProgress(trigger, "xml-voiding",
 				() -> new ProgressWindow(trigger.getScene().getWindow(), "Inutilização em andamento..."),
 				window -> new VoidingTask(voidingBatch, plan.requests(), certificate, paths.xmlArchiveDir(), session.lastCollectedDay(), plan.pdvFolders()),
 				new TaskRunner.Handlers<>(outcomes -> showVoided(outcomes, certificate.environment()),
-						error -> Dialogs.error(FailureText.of(error)), () -> {
-						}));
+						error -> Dialogs.error(VOIDING, FailureText.of(error)),
+						() -> ActivityLog.record(Level.WARNING, VOIDING + ": interrompida, confira na Sefaz o que já foi enviado")));
 	}
 
 	private void showVoided(List<VoidingOutcome> outcomes, FiscalEnvironment environment) {
@@ -273,6 +282,7 @@ public class MissingTabController {
 
 		try {
 			Files.writeString(file.toPath(), outcome.unsavedXml());
+			ActivityLog.record("XML da inutilização salvo em " + file);
 		} catch (IOException e) {
 			Dialogs.error(VoidingText.unsavedXml(outcome, FailureText.of(e)));
 		}
@@ -293,6 +303,8 @@ public class MissingTabController {
 			Dialogs.warning("O modelo de busca selecionado não tem pasta para procurar notas faltantes.");
 			return;
 		}
+
+		ActivityLog.record("Busca de notas faltantes solicitada: " + VoidingText.ranges(wanted));
 
 		DateRange period = session.searchPeriod(wanted);
 

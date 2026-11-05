@@ -35,7 +35,7 @@ public class Main extends Application {
             open(stage, paths);
         } catch (Exception e) {
             // An error here would close the program without a word, because the packaged program has no console.
-            LOG.log(Level.SEVERE, "The program could not open", e);
+            LOG.log(Level.SEVERE, "O programa não pôde ser aberto", e);
             Dialogs.error(FailureText.unexpected(e, paths.logsDir()));
             Platform.exit();
         }
@@ -61,14 +61,14 @@ public class Main extends Application {
         try {
             context.issuedNumbers().initialize();
         } catch (IOException e) {
-            LOG.log(Level.WARNING, "The history database could not be prepared", e);
+            LOG.log(Level.WARNING, "O banco de histórico não pôde ser preparado", e);
             Dialogs.warning(e.getMessage());
         }
 
         try {
             context.settings().load();
         } catch (IOException e) {
-            LOG.log(Level.WARNING, "The settings could not be read", e);
+            LOG.log(Level.WARNING, "As configurações não puderam ser lidas", e);
             Dialogs.warning("Não foi possível ler as configurações: " + e.getMessage());
         }
 
@@ -86,13 +86,18 @@ public class Main extends Application {
         stage.show();
     }
 
+    @Override
+    public void stop() {
+        LOG.info("Programa encerrado");
+    }
+
     private static void startLog(AppPaths paths) {
         try {
             FileLog.start(paths.logsDir());
-            LOG.info("Started on Java " + Runtime.version());
+            LOG.info("Programa iniciado");
         } catch (IOException e) {
             // The program works without the file, and this message still reaches the console during development.
-            LOG.log(Level.WARNING, "The log file could not be opened", e);
+            LOG.log(Level.WARNING, "O arquivo de log não pôde ser aberto", e);
         }
     }
 

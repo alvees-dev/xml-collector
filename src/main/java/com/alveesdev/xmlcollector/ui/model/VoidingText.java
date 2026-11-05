@@ -1,6 +1,9 @@
 package com.alveesdev.xmlcollector.ui.model;
 
 import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
+import java.util.stream.Collectors;
 
 import com.alveesdev.xmlcollector.application.voiding.VoidingOutcome;
 import com.alveesdev.xmlcollector.application.voiding.VoidingProgress.Stage;
@@ -19,6 +22,12 @@ public final class VoidingText {
 
 	public static String environment(FiscalEnvironment environment) {
 		return environment == FiscalEnvironment.PRODUCTION ? "Produção" : "Homologação";
+	}
+
+	public static String ranges(Map<Integer, List<NumberRange>> bySeries) {
+		return new TreeMap<>(bySeries).entrySet().stream()
+				.map(series -> "série " + series.getKey() + ": " + series.getValue().stream().map(NumberRange::text).collect(Collectors.joining(", ")))
+				.collect(Collectors.joining("; "));
 	}
 
 	public static String confirmation(List<VoidingRequest> requests, FiscalEnvironment environment) {

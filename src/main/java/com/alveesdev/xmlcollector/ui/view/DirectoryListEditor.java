@@ -3,10 +3,12 @@ package com.alveesdev.xmlcollector.ui.view;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Function;
+import java.util.logging.Level;
 
 import com.alveesdev.xmlcollector.application.connection.DirectoryTarget;
 import com.alveesdev.xmlcollector.application.connection.DirectoryTestResult;
 import com.alveesdev.xmlcollector.application.connection.DirectoryTester;
+import com.alveesdev.xmlcollector.ui.model.ActivityLog;
 import com.alveesdev.xmlcollector.ui.model.DirectoryTestText;
 
 import javafx.application.Platform;
@@ -125,11 +127,17 @@ public class DirectoryListEditor {
 			Platform.runLater(() -> {
 				row.testButton().setDisable(false);
 				showStatus(row, DirectoryTestText.of(result), List.of(styleOf(result)));
+				recordTest(target, result);
 			});
 		}, "directory-test-row");
 
 		thread.setDaemon(true);
 		thread.start();
+	}
+
+	private void recordTest(DirectoryTarget target, DirectoryTestResult result) {
+		ActivityLog.record(result.status() == DirectoryTestResult.Status.OK ? Level.INFO : Level.WARNING,
+				"Testar diretório " + labelPrefix + " " + target.directory() + ": " + DirectoryTestText.of(result));
 	}
 
 	private static void showStatus(Row row, String text, List<String> styles) {

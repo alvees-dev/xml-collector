@@ -19,20 +19,25 @@ public class CollectionTask extends Task<CollectionResult> {
 	private final CollectionService service;
 	private final CollectionRequest request;
 	private final Consumer<CollectionProgress> onProgress;
+	private final Consumer<CollectionProgress> onEveryEvent;
 
 	// One entry per source, so a burst of file events reaches the screen as its latest state.
 	private final Map<Integer, CollectionProgress> pending = new ConcurrentHashMap<>();
 	private final AtomicBoolean deliveryScheduled = new AtomicBoolean();
 
-	public CollectionTask(CollectionService service, CollectionRequest request, Consumer<CollectionProgress> onProgress) {
+	public CollectionTask(CollectionService service, CollectionRequest request, Consumer<CollectionProgress> onProgress, Consumer<CollectionProgress> onEveryEvent) {
 		this.service = service;
 		this.request = request;
 		this.onProgress = onProgress;
+		this.onEveryEvent = onEveryEvent;
 	}
 
 	@Override
 	protected CollectionResult call() {
-		return service.collect(request, this::publishProgress, this::isCancelled);
+		return service.collect(request, progress -> {
+			onEveryEvent.accept(progress);
+			publishProgress(progress);
+		}, this::isCancelled);
 	}
 
 	private void publishProgress(CollectionProgress progress) {

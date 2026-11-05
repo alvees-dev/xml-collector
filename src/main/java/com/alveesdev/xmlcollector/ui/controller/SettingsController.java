@@ -3,7 +3,10 @@ package com.alveesdev.xmlcollector.ui.controller;
 import java.io.IOException;
 
 import com.alveesdev.xmlcollector.application.settings.AppSettings;
+import com.alveesdev.xmlcollector.application.settings.service.SearchModelCatalog;
 import com.alveesdev.xmlcollector.application.settings.service.SettingsService;
+import com.alveesdev.xmlcollector.ui.model.ActivityLog;
+import com.alveesdev.xmlcollector.ui.model.SettingsChanges;
 import com.alveesdev.xmlcollector.ui.view.Dialogs;
 
 import javafx.fxml.FXML;
@@ -13,6 +16,7 @@ import javafx.stage.Stage;
 public class SettingsController {
 
 	private final SettingsService settingsService;
+	private final SearchModelCatalog searchModels;
 
 	@FXML
 	private Button btnCancel;
@@ -35,8 +39,9 @@ public class SettingsController {
 	@FXML
 	private CertificateTabController certificateTabController;
 
-	public SettingsController(SettingsService settingsService) {
+	public SettingsController(SettingsService settingsService, SearchModelCatalog searchModels) {
 		this.settingsService = settingsService;
+		this.searchModels = searchModels;
 	}
 
 	@FXML
@@ -81,15 +86,26 @@ public class SettingsController {
 
 		try {
 			settingsService.save(settings);
+			recordSaved(current, settings);
 		} catch (IOException e) {
-			Dialogs.warning("Não foi possível salvar as configurações: " + e.getMessage());
+			Dialogs.warning("Salvar configurações", "Não foi possível salvar as configurações: " + e.getMessage());
 		}
 
 		closeWindow();
 	}
 
+	private void recordSaved(AppSettings before, AppSettings after) {
+		SettingsChanges.between(before, after,
+				id -> searchModels.pdvModel(id).name(),
+				id -> searchModels.nfeModel(id).name())
+				.forEach(ActivityLog::record);
+
+		ActivityLog.record("Salvar configurações: configurações salvas com sucesso");
+	}
+
 	@FXML
 	private void onCancel() {
+		ActivityLog.record("Configurações fechadas sem salvar");
 		closeWindow();
 	}
 

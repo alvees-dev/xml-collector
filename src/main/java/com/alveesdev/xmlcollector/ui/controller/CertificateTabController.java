@@ -23,7 +23,8 @@ import javafx.stage.FileChooser;
 
 public class CertificateTabController {
 
-	private static final DateTimeFormatter VALIDITY_FORMAT = DateTimeFormatter.ofPattern("dd/MM/yyyy").withZone(ZoneId.systemDefault());
+	private static final String CHECK = "Conferir certificado";
+	private static final DateTimeFormatter VALIDITY_FORMAT =DateTimeFormatter.ofPattern("dd/MM/yyyy").withZone(ZoneId.systemDefault());
 
 	private final VoidingBatch voidingBatch;
 
@@ -85,7 +86,7 @@ public class CertificateTabController {
 		TaskRunner.inBackground("xml-certificate-check", () -> voidingBatch.checkCertificate(settings),
 				certificate -> {
 					trigger.setDisable(false);
-					Dialogs.info("Certificado válido.\n\nCNPJ: " + certificate.cnpj()
+					Dialogs.info(CHECK, "Certificado válido.\n\nCNPJ: " + certificate.cnpj()
 							+ "\nVálido até: " + VALIDITY_FORMAT.format(certificate.validUntil()));
 				},
 				error -> {
@@ -96,9 +97,9 @@ public class CertificateTabController {
 
 	private static void showCertificateFailure(Throwable error) {
 		if (error instanceof VoidingException) {
-			Dialogs.warning(error.getMessage());
+			Dialogs.warning(CHECK, error.getMessage());
 		} else {
-			Dialogs.error(FailureText.of(error));
+			Dialogs.error(CHECK, FailureText.of(error));
 		}
 	}
 

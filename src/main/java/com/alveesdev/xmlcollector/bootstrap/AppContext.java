@@ -104,7 +104,7 @@ public final class AppContext {
 		}
 
 		if (type == SettingsController.class) {
-			return new SettingsController(settingsService);
+			return new SettingsController(settingsService, searchModels);
 		}
 
 		if (type == ModelsTabController.class) {
