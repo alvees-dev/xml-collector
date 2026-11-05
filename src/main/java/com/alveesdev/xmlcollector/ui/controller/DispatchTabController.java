@@ -6,12 +6,14 @@ import java.nio.file.Path;
 import java.time.YearMonth;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import com.alveesdev.xmlcollector.application.dispatch.DispatchProgress;
 import com.alveesdev.xmlcollector.application.dispatch.DispatchRequest;
 import com.alveesdev.xmlcollector.application.dispatch.DispatchService;
 import com.alveesdev.xmlcollector.application.dispatch.ReportOptions;
+import com.alveesdev.xmlcollector.application.port.DirectoryCompressor.CompressedFile;
 import com.alveesdev.xmlcollector.application.port.DispatchException;
 import com.alveesdev.xmlcollector.application.settings.AppPaths;
 import com.alveesdev.xmlcollector.application.settings.AppSettings;
@@ -113,29 +115,30 @@ public class DispatchTabController {
 			return;
 		}
 
-		Optional<Boolean> reuseExistingZip = askAboutExistingZip(monthDirectory);
+		Optional<CompressedFile> existingZip;
 
-		if (reuseExistingZip.isPresent()) {
-			send(monthDirectory, monthLabel, reuseExistingZip.get());
-		}
-	}
-
-	private Optional<Boolean> askAboutExistingZip(Path monthDirectory) {
 		try {
-			if (service.existingZipOf(monthDirectory).isEmpty()) {
-				return Optional.of(false);
-			}
+			existingZip = service.existingZipOf(monthDirectory);
 		} catch (DispatchException e) {
 			Dialogs.error(FUNCTION, e.getMessage());
-			return Optional.empty();
+			return;
 		}
 
-		Dialogs.ExistingZipChoice choice = Dialogs.askAboutExistingZip();
+		if (existingZip.isEmpty()) {
+			send(monthDirectory, monthLabel, false, DispatchProgressText.stepLabels());
+			return;
+		}
 
-		return choice == Dialogs.ExistingZipChoice.CANCEL ? Optional.empty() : Optional.of(choice == Dialogs.ExistingZipChoice.SEND_EXISTING);
+		switch (Dialogs.askAboutExistingZip()) {
+			case REPLACE -> send(monthDirectory, monthLabel, false, DispatchProgressText.stepLabels());
+			case SEND_EXISTING -> send(monthDirectory, monthLabel, true,
+					DispatchProgressText.stepLabelsOfExistingFile(!DispatchService.fitsInMessage(List.of(existingZip.get()))));
+			case CANCEL -> {
+			}
+		}
 	}
 
-	private void send(Path monthDirectory, String monthLabel, boolean reuseExistingZip) {
+	private void send(Path monthDirectory, String monthLabel, boolean reuseExistingZip, Map<Integer, String> steps) {
 
 		updateDraft();
 		saveSettings();
@@ -150,7 +153,8 @@ public class DispatchTabController {
 		ActivityLog.record(DispatchText.started(monthLabel, request.recipient(), reuseExistingZip, request.reports()));
 
 		TaskRunner.withProgress(btnSend, "xml-dispatch",
-				() -> new ProgressWindow(btnSend.getScene().getWindow(), "Enviando arquivo XML de " + monthLabel, DispatchProgressText.stepLabels(), STEP_LABEL_WIDTH),
+				() -> new ProgressWindow(btnSend.getScene().getWindow(), "Enviando arquivo XML de " + monthLabel, steps, STEP_LABEL_WIDTH)
+						.withDetail("Destino: " + request.recipient()),
 				window -> new DispatchTask(service, request, progress -> {
 					recordStep(progress);
 					window.update(progress);
