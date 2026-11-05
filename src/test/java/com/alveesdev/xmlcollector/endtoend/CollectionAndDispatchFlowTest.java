@@ -307,4 +307,34 @@ class CollectionAndDispatchFlowTest {
 		}
 	}
 
+
+	@Test
+	void aFileMadeToLookLikeAVoidingCannotWriteOutsideTheArchive() throws IOException {
+		writeInvoice(firstPdv, 1, 1, JANUARY_DAY);
+
+		String malicious = SyntheticXml.voiding(1, new NumberRange(5, 5), JANUARY_DAY).replace(CNPJ, "..\\..\\..\\..\\fora");
+		Files.writeString(firstPdv.resolve("inutilizacao.xml"), malicious);
+
+		CollectionResult result = collect(JANUARY);
+
+		assertEquals(1, result.summary().errors());
+		assertEquals(1, result.summary().copied());
+		assertEquals(List.of(), filesEndingWith(root, "-procInutNFe.xml"));
+	}
+
+	@Test
+	void aFileWithAnInvalidCharacterInTheCnpjDoesNotStopTheCollection() throws IOException {
+		writeInvoice(firstPdv, 1, 1, JANUARY_DAY);
+		Files.writeString(firstPdv.resolve("inutilizacao.xml"), SyntheticXml.voiding(1, new NumberRange(5, 5), JANUARY_DAY).replace(CNPJ, "1234567800:190"));
+
+		CollectionResult result = collect(JANUARY);
+
+		assertEquals(1, result.summary().errors());
+		assertEquals(1, result.summary().copied());
+	}
+
+	private static List<Path> filesEndingWith(Path directory, String suffix) throws IOException {
+		return filesIn(directory).stream().filter(file -> file.getFileName().toString().endsWith(suffix)).toList();
+	}
+
 }

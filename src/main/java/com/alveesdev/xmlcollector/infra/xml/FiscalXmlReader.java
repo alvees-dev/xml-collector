@@ -27,7 +27,7 @@ public class FiscalXmlReader implements DocumentReader {
 	private static final String CANCEL_EVENT_TYPE = "110111";
 	private static final String NFE_ID_PREFIX = "NFe";
 	private static final String EVENT_ID_PREFIX = "ID";
-	private static final String EVENT_SEQUENCE_PATTERN = "[0-9]{2}";
+	private static final String TWO_DIGITS = "[0-9]{2}";
 
 	private final XmlDocumentLoader loader = new XmlDocumentLoader();
 
@@ -142,8 +142,9 @@ public class FiscalXmlReader implements DocumentReader {
 		}
 
 		NumberRange range = new NumberRange(start, end);
-		String cnpj = requiredText(info, "CNPJ");
-		String id = VoidingRequest.idOf(requiredText(info, "cUF"), requiredText(info, "ano"), cnpj, modelCode, series, range);
+		// These become part of a file name, so a file made to look like a voiding cannot choose where it is written.
+		String cnpj = requiredMatching(info, "CNPJ", AccessKey.CNPJ_PATTERN);
+		String id = VoidingRequest.idOf(requiredMatching(info, "cUF", TWO_DIGITS), requiredMatching(info, "ano", TWO_DIGITS), cnpj, modelCode, series, range);
 
 		return new XmlDocument.Voiding(id, cnpj, modelCode, series, range, requiredDateTime(info, "dhRecbto"));
 	}
@@ -161,7 +162,7 @@ public class FiscalXmlReader implements DocumentReader {
 		String eventId = id.substring(EVENT_ID_PREFIX.length());
 		String start = CANCEL_EVENT_TYPE + cancelledKey.value();
 
-		if (!eventId.startsWith(start) || !eventId.substring(start.length()).matches(EVENT_SEQUENCE_PATTERN)) {
+		if (!eventId.startsWith(start) || !eventId.substring(start.length()).matches(TWO_DIGITS)) {
 			throw new XmlFormatException("infEvento Id does not match the cancelled access key");
 		}
 
@@ -205,6 +206,16 @@ public class FiscalXmlReader implements DocumentReader {
 
 		if (text.isEmpty()) {
 			throw new XmlFormatException("empty element <" + tag + ">");
+		}
+
+		return text;
+	}
+
+	private static String requiredMatching(Element parent, String tag, String pattern) throws XmlFormatException {
+		String text = requiredText(parent, tag);
+
+		if (!text.matches(pattern)) {
+			throw new XmlFormatException("invalid value in <" + tag + ">: " + text);
 		}
 
 		return text;
