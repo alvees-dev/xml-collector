@@ -14,4 +14,8 @@ public interface ArchivedDocuments {
 	default List<XmlDocument> documentsOfTheCompanyIn(Path directory) throws IOException {
 		return List.of();
 	}
+
+	default List<XmlDocument> purchasesIn(Path directory) throws IOException {
+		return List.of();
+	}
 }
