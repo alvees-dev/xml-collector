@@ -13,6 +13,8 @@ import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.function.Consumer;
 import java.util.function.IntPredicate;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import com.alveesdev.xmlcollector.application.collection.CollectionRequest;
 import com.alveesdev.xmlcollector.application.collection.CollectionResult;
@@ -38,6 +40,7 @@ import com.alveesdev.xmlcollector.domain.model.SeriesOwner;
 import com.alveesdev.xmlcollector.domain.model.VoidingRequest;
 import com.alveesdev.xmlcollector.domain.model.XmlDocument;
 import com.alveesdev.xmlcollector.domain.service.MissingNumberFinder;
+import com.alveesdev.xmlcollector.ui.model.FailureText;
 import com.alveesdev.xmlcollector.ui.model.MissingTableModel;
 import com.alveesdev.xmlcollector.ui.model.SourceMode;
 import com.alveesdev.xmlcollector.ui.view.Dialogs;
@@ -54,6 +57,7 @@ import javafx.scene.control.TextField;
 
 public class MissingTabController {
 
+	private static final Logger LOG = Logger.getLogger(MissingTabController.class.getName());
 	private static final double COLUMN_WIDTH = 110;
 	private static final int MAX_LISTED_PROBLEMS = 15;
 
@@ -303,7 +307,8 @@ public class MissingTabController {
 		task.setOnFailed(event -> {
 			progressWindow.close();
 			trigger.setDisable(false);
-			Dialogs.error(task.getException().getMessage());
+			LOG.log(Level.SEVERE, "The voiding failed", task.getException());
+			Dialogs.error(FailureText.of(task.getException()));
 		});
 
 		progressWindow.show();
