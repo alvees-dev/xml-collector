@@ -354,7 +354,11 @@ public class SettingsController {
 		lblEnvironmentHint.setText(production
 				? "Produção inutiliza de verdade, e isso não pode ser desfeito."
 				: "Homologação é só um teste, sem efeito fiscal.");
-		lblEnvironmentHint.setStyle(production ? "-fx-text-fill: #c62828; -fx-font-weight: bold;" : "");
+		lblEnvironmentHint.getStyleClass().setAll("label");
+
+		if (production) {
+			lblEnvironmentHint.getStyleClass().add("text-danger");
+		}
 	}
 
 	private CertificateSettings readCertificate() {

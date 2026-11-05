@@ -15,7 +15,7 @@
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.VBox?>
 
-<VBox maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="500.0" prefWidth="385.0" style="-fx-border-color: #808080; -fx-border-width: 1;" xmlns="http://javafx.com/javafx/26" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.alveesdev.xmlcollector.ui.controller.SettingsController">
+<VBox maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="500.0" prefWidth="385.0" styleClass="settings-frame" stylesheets="@app.css" xmlns="http://javafx.com/javafx/26" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.alveesdev.xmlcollector.ui.controller.SettingsController">
    <fx:define>
       <ToggleGroup fx:id="organizeGroup" />
    </fx:define>
@@ -100,8 +100,8 @@
                                                   <Insets right="10.0" />
                                                </HBox.margin>
                                             </Label>
-                                            <Button maxHeight="24.0" maxWidth="24.0" minHeight="24.0" minWidth="24.0" mnemonicParsing="false" onAction="#onAddPdv" prefHeight="24.0" prefWidth="24.0" style="-fx-background-radius: 50; -fx-border-radius: 50; -fx-border-width: 0; -fx-padding: -8 1 0 0; -fx-font-size: 25; -fx-font-weight: bold; -fx-cursor: hand; -fx-alignment: center; -fx-content-display: center;" text="+" />
-                                            <Button maxHeight="24.0" maxWidth="24.0" minHeight="24.0" minWidth="24.0" mnemonicParsing="false" onAction="#onRemovePdv" prefHeight="24.0" prefWidth="24.0" style="-fx-background-radius: 50; -fx-border-radius: 50; -fx-border-width: 0; -fx-padding: -8 0 0 0; -fx-font-size: 25; -fx-font-weight: bold; -fx-cursor: hand; -fx-alignment: center; -fx-content-display: center;" text="-" />
+                                            <Button maxHeight="24.0" maxWidth="24.0" minHeight="24.0" minWidth="24.0" mnemonicParsing="false" onAction="#onAddPdv" prefHeight="24.0" prefWidth="24.0" styleClass="round-button, round-button-add" text="+" />
+                                            <Button maxHeight="24.0" maxWidth="24.0" minHeight="24.0" minWidth="24.0" mnemonicParsing="false" onAction="#onRemovePdv" prefHeight="24.0" prefWidth="24.0" styleClass="round-button, round-button-remove" text="-" />
                                             <Button mnemonicParsing="false" onAction="#onTestAllPdv" text="Testar Todos">
                                                    <HBox.margin>
                                                       <Insets left="50.0" />
@@ -110,7 +110,7 @@
                                          </children>
                                       </HBox>
                                       <Separator prefWidth="383.0" />
-                                      <ScrollPane fx:id="pdvScrollPane" fitToWidth="true" hbarPolicy="NEVER" style="-fx-background-color: transparent; -fx-padding: 0;" VBox.vgrow="ALWAYS">
+                                      <ScrollPane fx:id="pdvScrollPane" fitToWidth="true" hbarPolicy="NEVER" styleClass="plain-scroll" VBox.vgrow="ALWAYS">
                                          <content>
                                             <VBox fx:id="pdvListBox" />
                                          </content>
@@ -133,8 +133,8 @@
                                                       <Insets right="10.0" />
                                                    </HBox.margin>
                                                 </Label>
-                                                <Button maxHeight="24.0" maxWidth="24.0" minHeight="24.0" minWidth="24.0" mnemonicParsing="false" onAction="#onAddNfe" prefHeight="24.0" prefWidth="24.0" style="-fx-background-radius: 50; -fx-border-radius: 50; -fx-border-width: 0; -fx-padding: -8 1 0 0; -fx-font-size: 25; -fx-font-weight: bold; -fx-cursor: hand; -fx-alignment: center; -fx-content-display: center;" text="+" />
-                                                <Button maxHeight="24.0" maxWidth="24.0" minHeight="24.0" minWidth="24.0" mnemonicParsing="false" onAction="#onRemoveNfe" prefHeight="24.0" prefWidth="24.0" style="-fx-background-radius: 50; -fx-border-radius: 50; -fx-border-width: 0; -fx-padding: -8 0 0 0; -fx-font-size: 25; -fx-font-weight: bold; -fx-cursor: hand; -fx-alignment: center; -fx-content-display: center;" text="-" />
+                                                <Button maxHeight="24.0" maxWidth="24.0" minHeight="24.0" minWidth="24.0" mnemonicParsing="false" onAction="#onAddNfe" prefHeight="24.0" prefWidth="24.0" styleClass="round-button, round-button-add" text="+" />
+                                                <Button maxHeight="24.0" maxWidth="24.0" minHeight="24.0" minWidth="24.0" mnemonicParsing="false" onAction="#onRemoveNfe" prefHeight="24.0" prefWidth="24.0" styleClass="round-button, round-button-remove" text="-" />
                                                 <Button mnemonicParsing="false" onAction="#onTestAllNfe" text="Testar Todos">
                                                    <HBox.margin>
                                                       <Insets left="50.0" />
@@ -143,7 +143,7 @@
                                              </children>
                                           </HBox>
                                           <Separator prefWidth="383.0" />
-                                          <ScrollPane fx:id="nfeScrollPane" fitToWidth="true" hbarPolicy="NEVER" style="-fx-background-color: transparent; -fx-padding: 0;" VBox.vgrow="ALWAYS">
+                                          <ScrollPane fx:id="nfeScrollPane" fitToWidth="true" hbarPolicy="NEVER" styleClass="plain-scroll" VBox.vgrow="ALWAYS">
                                              <content>
                                                 <VBox fx:id="nfeListBox" />
                                              </content>
