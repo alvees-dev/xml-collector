@@ -10,6 +10,8 @@ import org.junit.jupiter.api.Test;
 class AccessKeyTest {
 
 	private static final String KEY = "35" + "26" + "01" + "12345678000190" + "65" + "007" + "000000123" + "1" + "000000456";
+	private static final String ALPHANUMERIC_CNPJ = "12ABC34501DE35";
+	private static final String ALPHANUMERIC_KEY = "35" + "26" + "01" + ALPHANUMERIC_CNPJ + "65" + "007" + "000000123" + "1" + "000000456";
 
 	@Test
 	void splitsTheKeyIntoItsParts() {
@@ -42,14 +44,6 @@ class AccessKeyTest {
 		assertThrows(IllegalArgumentException.class, () -> new AccessKey(KEY + "0"));
 	}
 
-	// Pins the current behavior: the alphanumeric CNPJ is a planned change that will replace this test.
-	@Test
-	void refusesAKeyWithLetters() {
-		String withLetters = KEY.substring(0, 6) + "ABCDEFGH000190" + KEY.substring(20);
-
-		assertThrows(IllegalArgumentException.class, () -> new AccessKey(withLetters));
-	}
-
 	@Test
 	void findsTheKeyInsideAFileName() {
 		assertEquals(Optional.of(new AccessKey(KEY)), AccessKey.findIn("NFe" + KEY + "-nfe.xml"));
@@ -65,4 +59,39 @@ class AccessKeyTest {
 	void findsNothingInATextWithoutAKey() {
 		assertEquals(Optional.empty(), AccessKey.findIn("nota-" + KEY.substring(1) + ".xml"));
 	}
+
+	@Test
+	void aKeyCanHaveAnAlphanumericCnpj() {
+		AccessKey key = new AccessKey(ALPHANUMERIC_KEY);
+
+		assertEquals(ALPHANUMERIC_CNPJ, key.cnpj());
+		assertEquals(7, key.series());
+		assertEquals(123, key.number());
+	}
+
+	@Test
+	void findsAnAlphanumericKeyInsideAFileName() {
+		assertEquals(Optional.of(new AccessKey(ALPHANUMERIC_KEY)), AccessKey.findIn("NFe" + ALPHANUMERIC_KEY + "-nfe.xml"));
+		assertEquals(Optional.of(new AccessKey(ALPHANUMERIC_KEY)), AccessKey.findIn("NFE" + ALPHANUMERIC_KEY + "-NFE.XML"));
+	}
+
+	@Test
+	void theCheckDigitsOfTheCnpjStayNumeric() {
+		String withLetters = "352601" + "12ABC34501DEAB" + KEY.substring(20);
+
+		assertThrows(IllegalArgumentException.class, () -> new AccessKey(withLetters));
+	}
+
+	@Test
+	void lettersOnlyGoInTheCnpj() {
+		assertThrows(IllegalArgumentException.class, () -> new AccessKey("A" + KEY.substring(1)));
+		assertThrows(IllegalArgumentException.class, () -> new AccessKey(KEY.substring(0, 25) + "A" + KEY.substring(26)));
+		assertThrows(IllegalArgumentException.class, () -> new AccessKey(KEY.substring(0, 43) + "A"));
+	}
+
+	@Test
+	void lettersOfTheCnpjAreCapital() {
+		assertThrows(IllegalArgumentException.class, () -> new AccessKey(ALPHANUMERIC_KEY.toLowerCase()));
+	}
+
 }

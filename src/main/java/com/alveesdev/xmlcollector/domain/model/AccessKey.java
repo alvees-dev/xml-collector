@@ -6,8 +6,11 @@ import java.util.regex.Pattern;
 
 public record AccessKey(String value) {
 
-	private static final int LENGTH = 44;
-	private static final Pattern KEY_IN_TEXT = Pattern.compile("(?<![0-9])[0-9]{44}(?![0-9])");
+	// Since the alphanumeric CNPJ, the first twelve characters of a CNPJ can be capital letters. Everything else stays numeric.
+	public static final String CNPJ_PATTERN = "[0-9A-Z]{12}[0-9]{2}";
+
+	private static final String KEY_PATTERN = "[0-9]{6}" + CNPJ_PATTERN + "[0-9]{24}";
+	private static final Pattern KEY_IN_TEXT = Pattern.compile("(?<![0-9])" + KEY_PATTERN + "(?![0-9])");
 	private static final int UF_END = 2;
 	private static final int YEAR_END = 4;
 	private static final int CENTURY = 2000;
@@ -19,7 +22,7 @@ public record AccessKey(String value) {
 	private static final int NUMBER_END = 34;
 
 	public AccessKey {
-		if (value == null || value.length() != LENGTH || !value.chars().allMatch(Character::isDigit)) {
+		if (value == null || !value.matches(KEY_PATTERN)) {
 			throw new IllegalArgumentException("Invalid access key: " + value);
 		}
 	}

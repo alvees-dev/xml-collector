@@ -282,4 +282,29 @@ class CollectionAndDispatchFlowTest {
 
 		return new String(file.getInputStream(entry).readAllBytes(), StandardCharsets.UTF_8);
 	}
+
+	@Test
+	void aCompanyWithAnAlphanumericCnpjIsCollectedAndSent() throws Exception {
+		String cnpj = "12ABC34501DE35";
+		writeNfe(firstPdv, cnpj, 1, JANUARY_DAY);
+		writeNfe(firstPdv, cnpj, 2, JANUARY_DAY);
+
+		CollectionResult result = collection.collect(new CollectionRequest(List.of(firstPdv.toString()), DocumentCategory.NFE_SALES, JANUARY,
+				OrganizeMode.SINGLE_FOLDER, archiveRoot, List.of(), CollectionTarget.ALL, SeparationMode.ALL_TOGETHER), progress -> {
+				}, () -> false);
+
+		assertEquals(0, result.summary().errors());
+		assertEquals(2, result.summary().copied());
+
+		dispatchService().dispatch(dispatchRequestWith(new ReportOptions(false, true, false)), progress -> {
+		}, () -> false);
+
+		Path zip = emails.get(0).attachments().get(0);
+		assertEquals("ArquivoXML_" + cnpj + "_Janeiro_2026.zip", zip.getFileName().toString());
+
+		try (ZipFile file = new ZipFile(zip.toFile())) {
+			assertTrue(textOf(file, "Janeiro_2026/" + ValuesReportText.FILE_NAME).contains("Valor total das vendas: R$ 21,00"));
+		}
+	}
+
 }

@@ -27,7 +27,7 @@ public class FiscalXmlReader implements DocumentReader {
 	private static final String CANCEL_EVENT_TYPE = "110111";
 	private static final String NFE_ID_PREFIX = "NFe";
 	private static final String EVENT_ID_PREFIX = "ID";
-	private static final int EVENT_ID_DIGITS = 52;
+	private static final String EVENT_SEQUENCE_PATTERN = "[0-9]{2}";
 
 	private final XmlDocumentLoader loader = new XmlDocumentLoader();
 
@@ -158,17 +158,14 @@ public class FiscalXmlReader implements DocumentReader {
 			throw new XmlFormatException("infEvento Id attribute is missing or malformed");
 		}
 
-		String digits = id.substring(EVENT_ID_PREFIX.length());
+		String eventId = id.substring(EVENT_ID_PREFIX.length());
+		String start = CANCEL_EVENT_TYPE + cancelledKey.value();
 
-		boolean valid = digits.length() == EVENT_ID_DIGITS
-				&& digits.chars().allMatch(Character::isDigit)
-				&& digits.startsWith(CANCEL_EVENT_TYPE + cancelledKey.value());
-
-		if (!valid) {
+		if (!eventId.startsWith(start) || !eventId.substring(start.length()).matches(EVENT_SEQUENCE_PATTERN)) {
 			throw new XmlFormatException("infEvento Id does not match the cancelled access key");
 		}
 
-		return digits;
+		return eventId;
 	}
 
 	private static AccessKey toKey(String text) throws XmlFormatException {
