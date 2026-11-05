@@ -20,6 +20,7 @@ public record AppSettings(
 ) {
 
 	private static final List<String> ONE_EMPTY_DIRECTORY = List.of("");
+	private static final String DEFAULT_PDV_MODEL_ID = "pdv-1";
 
 	public AppSettings {
 		pdvDirectories = List.copyOf(pdvDirectories);
@@ -31,9 +32,9 @@ public record AppSettings(
 				ONE_EMPTY_DIRECTORY,
 				ONE_EMPTY_DIRECTORY,
 				PdvType.PDV,
+				DEFAULT_PDV_MODEL_ID,
 				"",
-				"",
-				OrganizeMode.SINGLE_FOLDER,
+				OrganizeMode.BY_DAY,
 				SeparationMode.ALL_TOGETHER,
 				DefaultEmailAccount.get(),
 				EmailDraft.empty(),
