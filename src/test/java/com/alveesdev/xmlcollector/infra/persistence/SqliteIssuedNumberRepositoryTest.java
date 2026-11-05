@@ -48,12 +48,12 @@ class SqliteIssuedNumberRepositoryTest {
 		LocalDate date = LocalDate.of(2025, 12, 31);
 
 		repository.saveAll(List.of(
-				new IssuedNumber(CNPJ, NFCE, 1, 5),
+				new IssuedNumber(CNPJ, NFCE, 1, 5, null),
 				new IssuedNumber(CNPJ, NFCE, 1, 9, date),
-				new IssuedNumber(CNPJ, NFCE, 1, 20),
-				new IssuedNumber(CNPJ, NFCE, 2, 15),
-				new IssuedNumber(CNPJ, NFE, 1, 15),
-				new IssuedNumber(OTHER_CNPJ, NFCE, 1, 15)));
+				new IssuedNumber(CNPJ, NFCE, 1, 20, null),
+				new IssuedNumber(CNPJ, NFCE, 2, 15, null),
+				new IssuedNumber(CNPJ, NFE, 1, 15, null),
+				new IssuedNumber(OTHER_CNPJ, NFCE, 1, 15, null)));
 
 		assertEquals(Optional.of(new IssuedNumber(CNPJ, NFCE, 1, 9, date)), repository.lastBefore(CNPJ, NFCE, 1, 12));
 		assertEquals(Optional.empty(), repository.lastBefore(CNPJ, NFCE, 1, 5));
@@ -63,9 +63,9 @@ class SqliteIssuedNumberRepositoryTest {
 	void collectingAgainFillsInTheMissingDateAndKeepsAnExistingOne() throws Exception {
 		LocalDate date = LocalDate.of(2025, 12, 31);
 
-		repository.saveAll(List.of(new IssuedNumber(CNPJ, NFCE, 1, 5)));
+		repository.saveAll(List.of(new IssuedNumber(CNPJ, NFCE, 1, 5, null)));
 		repository.saveAll(List.of(new IssuedNumber(CNPJ, NFCE, 1, 5, date)));
-		repository.saveAll(List.of(new IssuedNumber(CNPJ, NFCE, 1, 5)));
+		repository.saveAll(List.of(new IssuedNumber(CNPJ, NFCE, 1, 5, null)));
 
 		assertEquals(Optional.of(new IssuedNumber(CNPJ, NFCE, 1, 5, date)), repository.lastBefore(CNPJ, NFCE, 1, 6));
 	}
@@ -87,14 +87,14 @@ class SqliteIssuedNumberRepositoryTest {
 			statement.execute("INSERT INTO issued_numbers VALUES ('" + CNPJ + "', '" + NFCE + "', 1, 5)");
 		}
 
-		assertEquals(Optional.of(new IssuedNumber(CNPJ, NFCE, 1, 5)), repository.lastBefore(CNPJ, NFCE, 1, 6));
+		assertEquals(Optional.of(new IssuedNumber(CNPJ, NFCE, 1, 5, null)), repository.lastBefore(CNPJ, NFCE, 1, 6));
 	}
 
 	@Test
 	void createsTheDatabaseAndStoresTheNumbers() throws Exception {
-		repository.saveAll(List.of(new IssuedNumber(CNPJ, NFCE, 1, 2)));
+		repository.saveAll(List.of(new IssuedNumber(CNPJ, NFCE, 1, 2, null)));
 
-		assertEquals(List.of(new IssuedNumber(CNPJ, NFCE, 1, 2)), stored());
+		assertEquals(List.of(new IssuedNumber(CNPJ, NFCE, 1, 2, null)), stored());
 	}
 
 	@Test
@@ -107,11 +107,11 @@ class SqliteIssuedNumberRepositoryTest {
 
 	@Test
 	void initializingAgainKeepsWhatWasSaved() throws Exception {
-		repository.saveAll(List.of(new IssuedNumber(CNPJ, NFCE, 1, 2)));
+		repository.saveAll(List.of(new IssuedNumber(CNPJ, NFCE, 1, 2, null)));
 
 		new SqliteIssuedNumberRepository(file).initialize();
 
-		assertEquals(List.of(new IssuedNumber(CNPJ, NFCE, 1, 2)), stored());
+		assertEquals(List.of(new IssuedNumber(CNPJ, NFCE, 1, 2, null)), stored());
 	}
 
 	@Test
@@ -124,27 +124,27 @@ class SqliteIssuedNumberRepositoryTest {
 	@Test
 	void findsTheIssuedNumbersOfARangeOnlyInThatCnpjModelAndSeries() throws Exception {
 		repository.saveAll(List.of(
-				new IssuedNumber(CNPJ, NFCE, 1, 5),
-				new IssuedNumber(CNPJ, NFCE, 1, 9),
-				new IssuedNumber(CNPJ, NFCE, 2, 6),
-				new IssuedNumber(CNPJ, NFE, 1, 6),
-				new IssuedNumber(OTHER_CNPJ, NFCE, 1, 6)));
+				new IssuedNumber(CNPJ, NFCE, 1, 5, null),
+				new IssuedNumber(CNPJ, NFCE, 1, 9, null),
+				new IssuedNumber(CNPJ, NFCE, 2, 6, null),
+				new IssuedNumber(CNPJ, NFE, 1, 6, null),
+				new IssuedNumber(OTHER_CNPJ, NFCE, 1, 6, null)));
 
 		assertEquals(java.util.Set.of(5), repository.issuedIn(CNPJ, NFCE, 1, new com.alveesdev.xmlcollector.domain.model.NumberRange(4, 8)));
 	}
 
 	@Test
 	void keepsWhatWasSavedBefore() throws Exception {
-		repository.saveAll(List.of(new IssuedNumber(CNPJ, NFCE, 1, 1)));
-		new SqliteIssuedNumberRepository(file).saveAll(List.of(new IssuedNumber(CNPJ, NFCE, 1, 2)));
+		repository.saveAll(List.of(new IssuedNumber(CNPJ, NFCE, 1, 1, null)));
+		new SqliteIssuedNumberRepository(file).saveAll(List.of(new IssuedNumber(CNPJ, NFCE, 1, 2, null)));
 
-		assertEquals(List.of(new IssuedNumber(CNPJ, NFCE, 1, 1), new IssuedNumber(CNPJ, NFCE, 1, 2)), stored());
+		assertEquals(List.of(new IssuedNumber(CNPJ, NFCE, 1, 1, null), new IssuedNumber(CNPJ, NFCE, 1, 2, null)), stored());
 	}
 
 	@Test
 	void collectingTheSameNumberAgainDoesNotDuplicateIt() throws Exception {
-		repository.saveAll(List.of(new IssuedNumber(CNPJ, NFCE, 1, 1)));
-		repository.saveAll(List.of(new IssuedNumber(CNPJ, NFCE, 1, 1), new IssuedNumber(CNPJ, NFCE, 1, 2)));
+		repository.saveAll(List.of(new IssuedNumber(CNPJ, NFCE, 1, 1, null)));
+		repository.saveAll(List.of(new IssuedNumber(CNPJ, NFCE, 1, 1, null), new IssuedNumber(CNPJ, NFCE, 1, 2, null)));
 
 		assertEquals(2, stored().size());
 	}
@@ -152,10 +152,10 @@ class SqliteIssuedNumberRepositoryTest {
 	@Test
 	void treatsTheSameNumberInAnotherSeriesCnpjOrModelAsDifferent() throws Exception {
 		List<IssuedNumber> numbers = List.of(
-				new IssuedNumber(CNPJ, NFE, 1, 1),
-				new IssuedNumber(CNPJ, NFCE, 1, 1),
-				new IssuedNumber(CNPJ, NFCE, 2, 1),
-				new IssuedNumber(OTHER_CNPJ, NFCE, 1, 1));
+				new IssuedNumber(CNPJ, NFE, 1, 1, null),
+				new IssuedNumber(CNPJ, NFCE, 1, 1, null),
+				new IssuedNumber(CNPJ, NFCE, 2, 1, null),
+				new IssuedNumber(OTHER_CNPJ, NFCE, 1, 1, null));
 
 		repository.saveAll(numbers);
 
@@ -167,7 +167,7 @@ class SqliteIssuedNumberRepositoryTest {
 		List<IssuedNumber> numbers = new ArrayList<>();
 
 		for (int number = 1; number <= 5000; number++) {
-			numbers.add(new IssuedNumber(CNPJ, NFCE, 1, number));
+			numbers.add(new IssuedNumber(CNPJ, NFCE, 1, number, null));
 		}
 
 		repository.saveAll(numbers);
@@ -186,7 +186,7 @@ class SqliteIssuedNumberRepositoryTest {
 	void reportsAFailureAsIOException() throws Exception {
 		Files.createDirectories(file);
 
-		assertThrows(IOException.class, () -> repository.saveAll(List.of(new IssuedNumber(CNPJ, NFCE, 1, 1))));
+		assertThrows(IOException.class, () -> repository.saveAll(List.of(new IssuedNumber(CNPJ, NFCE, 1, 1, null))));
 	}
 
 	private List<IssuedNumber> stored() throws SQLException {
@@ -198,7 +198,7 @@ class SqliteIssuedNumberRepositoryTest {
 						"SELECT cnpj, model, series, number FROM issued_numbers ORDER BY cnpj, model, series, number")) {
 
 			while (rows.next()) {
-				numbers.add(new IssuedNumber(rows.getString(1), rows.getString(2), rows.getInt(3), rows.getInt(4)));
+				numbers.add(new IssuedNumber(rows.getString(1), rows.getString(2), rows.getInt(3), rows.getInt(4), null));
 			}
 		}
 

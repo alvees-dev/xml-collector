@@ -8,6 +8,7 @@ import java.util.List;
 import org.junit.jupiter.api.Test;
 
 import com.alveesdev.xmlcollector.application.dispatch.DispatchRequest;
+import com.alveesdev.xmlcollector.application.dispatch.ReportOptions;
 
 class EmailAccountTest {
 
@@ -25,7 +26,7 @@ class EmailAccountTest {
 	@Test
 	void whatCarriesTheAccountDoesNotShowThePasswordEither() {
 		String settings = AppSettings.defaults().withEmailAccount(ACCOUNT).toString();
-		String request = new DispatchRequest(List.of(), ACCOUNT, "contador@exemplo.com", "Assunto", "Corpo", false).toString();
+		String request = new DispatchRequest(List.of(), ACCOUNT, "contador@exemplo.com", "Assunto", "Corpo", false, ReportOptions.STANDARD).toString();
 
 		assertFalse(settings.contains(PASSWORD), settings);
 		assertFalse(request.contains(PASSWORD), request);

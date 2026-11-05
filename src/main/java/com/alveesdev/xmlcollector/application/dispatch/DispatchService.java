@@ -46,11 +46,6 @@ public class DispatchService {
 		this.cloudStorage = cloudStorage;
 	}
 
-	public DispatchResult dispatch(DispatchRequest request) throws DispatchException {
-		return dispatch(request, progress -> {
-		}, () -> false);
-	}
-
 	public DispatchResult dispatch(DispatchRequest request, Consumer<DispatchProgress> listener, BooleanSupplier cancelled)
 			throws DispatchException {
 

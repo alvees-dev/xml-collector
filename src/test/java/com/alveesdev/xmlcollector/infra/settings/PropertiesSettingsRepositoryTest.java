@@ -16,11 +16,11 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 import com.alveesdev.xmlcollector.application.settings.AppSettings;
+import com.alveesdev.xmlcollector.application.settings.CertificateSettings;
 import com.alveesdev.xmlcollector.application.settings.DefaultEmailAccount;
 import com.alveesdev.xmlcollector.application.settings.EmailAccount;
 import com.alveesdev.xmlcollector.application.settings.EmailDraft;
 import com.alveesdev.xmlcollector.application.settings.EmailSecurity;
-import com.alveesdev.xmlcollector.application.settings.CertificateSettings;
 import com.alveesdev.xmlcollector.domain.model.FiscalEnvironment;
 import com.alveesdev.xmlcollector.domain.model.OrganizeMode;
 import com.alveesdev.xmlcollector.domain.model.PdvType;

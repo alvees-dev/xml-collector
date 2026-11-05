@@ -49,6 +49,9 @@ import com.alveesdev.xmlcollector.domain.model.XmlDocument;
 
 class CollectionServiceTest {
 
+	private static final ProgressListener NO_PROGRESS = progress -> {
+	};
+
 	private static final LocalDate IN_PERIOD = LocalDate.of(2026, 1, 15);
 	private static final LocalDate AFTER_PERIOD = LocalDate.of(2026, 2, 15);
 	private static final DateRange JANUARY = new DateRange(LocalDate.of(2026, 1, 1), LocalDate.of(2026, 1, 31));
@@ -162,7 +165,7 @@ class CollectionServiceTest {
 
 	@Test
 	void aNumberSavedWithoutADateIsNotComparedYet() {
-		issuedNumbers.saved.add(new IssuedNumber(key(1, 1).cnpj(), key(1, 1).modelCode(), 1, 50));
+		issuedNumbers.saved.add(new IssuedNumber(key(1, 1).cnpj(), key(1, 1).modelCode(), 1, 50, null));
 		sources.add("pdv1", "a.xml", invoice(1, 100, IN_PERIOD));
 
 		assertEquals(Map.of(1, List.of()), collect("pdv1").missingBySeries());
@@ -208,7 +211,7 @@ class CollectionServiceTest {
 
 		CollectionResult result = service.collect(new CollectionRequest(List.of("pdv1"), DocumentCategory.NFCE, JANUARY,
 				OrganizeMode.SINGLE_FOLDER, ARCHIVE, List.of(), new CollectionTarget(index -> true, name -> true, invoice -> true),
-				SeparationMode.ALL_TOGETHER));
+				SeparationMode.ALL_TOGETHER), NO_PROGRESS, () -> false);
 
 		assertEquals(Map.of(1, List.of()), result.missingBySeries());
 	}
@@ -333,7 +336,7 @@ class CollectionServiceTest {
 	void readsOnlyTheModelsOfTheCategoryAndStoresInItsFolder() {
 		sources.add("nfe", "a.xml", invoice(1, IN_PERIOD));
 
-		service.collect(request(DocumentCategory.NFE_SALES, "nfe"));
+		service.collect(request(DocumentCategory.NFE_SALES, "nfe"), NO_PROGRESS, () -> false);
 
 		assertEquals(Set.of(Set.of(DocumentModel.NFE)), sources.requestedModels);
 		assertEquals(ARCHIVE.resolve("2026").resolve("Janeiro").resolve("NFe_Vendas"), archive.stored.get(0).directory());
@@ -343,8 +346,8 @@ class CollectionServiceTest {
 	void doesNotSaveTheNumbersOfAnNfeCollection() {
 		sources.add("nfe", "a.xml", invoice(1, IN_PERIOD));
 
-		service.collect(request(DocumentCategory.NFE_SALES, "nfe"));
-		service.collect(request(DocumentCategory.NFE_PURCHASES, "nfe"));
+		service.collect(request(DocumentCategory.NFE_SALES, "nfe"), NO_PROGRESS, () -> false);
+		service.collect(request(DocumentCategory.NFE_PURCHASES, "nfe"), NO_PROGRESS, () -> false);
 
 		assertEquals(Set.of(), issuedNumbers.saved);
 	}
@@ -381,7 +384,7 @@ class CollectionServiceTest {
 		sources.add("pdv1", "a.xml", invoice(1, IN_PERIOD));
 
 		assertThrows(CancellationException.class,
-				() -> service.collect(request("pdv1"), ProgressListener.NONE, () -> true));
+				() -> service.collect(request("pdv1"), NO_PROGRESS, () -> true));
 		assertEquals(Set.of(), issuedNumbers.saved);
 	}
 
@@ -427,7 +430,7 @@ class CollectionServiceTest {
 
 		service.collect(new CollectionRequest(
 				List.of("pdv1", "pdv2"), DocumentCategory.NFCE, JANUARY, OrganizeMode.SINGLE_FOLDER, ARCHIVE, List.of(),
-				new CollectionTarget(index -> index == 1, name -> true, invoice -> true)), events::add, () -> false);
+				new CollectionTarget(index -> index == 1, name -> true, invoice -> true), SeparationMode.ALL_TOGETHER), events::add, () -> false);
 
 		assertEquals(Set.of(1), events.stream().map(CollectionProgress::sourceIndex).collect(java.util.stream.Collectors.toSet()));
 	}
@@ -445,7 +448,7 @@ class CollectionServiceTest {
 		sources.add("pdv1", "a.xml", invoice(1, IN_PERIOD));
 
 		assertThrows(CancellationException.class,
-				() -> service.collect(request("pdv1"), ProgressListener.NONE, () -> true));
+				() -> service.collect(request("pdv1"), NO_PROGRESS, () -> true));
 	}
 
 	@Test
@@ -455,7 +458,7 @@ class CollectionServiceTest {
 
 		CollectionResult result = service.collect(new CollectionRequest(
 				List.of("pdv1"), DocumentCategory.NFCE, JANUARY, OrganizeMode.SINGLE_FOLDER, ARCHIVE,
-				List.of("enviados"), CollectionTarget.ALL));
+				List.of("enviados"), CollectionTarget.ALL, SeparationMode.ALL_TOGETHER), NO_PROGRESS, () -> false);
 
 		assertEquals("a.xml", onlyEntry(result).fileName());
 	}
@@ -467,7 +470,7 @@ class CollectionServiceTest {
 
 		CollectionResult result = service.collect(new CollectionRequest(
 				List.of("pdv1"), DocumentCategory.NFCE, JANUARY, OrganizeMode.SINGLE_FOLDER, ARCHIVE,
-				List.of("enviados", "contingencia"), CollectionTarget.ALL), events::add, () -> false);
+				List.of("enviados", "contingencia"), CollectionTarget.ALL, SeparationMode.ALL_TOGETHER), events::add, () -> false);
 
 		assertEquals(1, result.entries().size());
 		assertEquals(
@@ -483,7 +486,7 @@ class CollectionServiceTest {
 
 		CollectionResult result = service.collect(new CollectionRequest(
 				List.of("pdv1"), DocumentCategory.NFCE, JANUARY, OrganizeMode.SINGLE_FOLDER, ARCHIVE,
-				List.of("enviados", "contingencia"), CollectionTarget.ALL), events::add, () -> false);
+				List.of("enviados", "contingencia"), CollectionTarget.ALL, SeparationMode.ALL_TOGETHER), events::add, () -> false);
 
 		assertEquals(
 				List.of(new SourceFailure(0, SourceFailure.Reason.NO_MODEL_FOLDER,
@@ -496,7 +499,7 @@ class CollectionServiceTest {
 	void reportsARootWithoutAnyFolderOfTheModel() {
 		CollectionResult result = service.collect(new CollectionRequest(
 				List.of("pdv1"), DocumentCategory.NFCE, JANUARY, OrganizeMode.SINGLE_FOLDER, ARCHIVE,
-				List.of("enviados"), CollectionTarget.ALL));
+				List.of("enviados"), CollectionTarget.ALL, SeparationMode.ALL_TOGETHER), NO_PROGRESS, () -> false);
 
 		assertEquals(SourceFailure.Reason.NO_MODEL_FOLDER, result.failures().get(0).reason());
 	}
@@ -505,7 +508,7 @@ class CollectionServiceTest {
 	void reportsAnInaccessibleRootOfAModel() {
 		CollectionResult result = service.collect(new CollectionRequest(
 				List.of("sem-acesso"), DocumentCategory.NFCE, JANUARY, OrganizeMode.SINGLE_FOLDER, ARCHIVE,
-				List.of("enviados"), CollectionTarget.ALL));
+				List.of("enviados"), CollectionTarget.ALL, SeparationMode.ALL_TOGETHER), NO_PROGRESS, () -> false);
 
 		assertEquals(SourceFailure.Reason.INACCESSIBLE, result.failures().get(0).reason());
 	}
@@ -517,7 +520,7 @@ class CollectionServiceTest {
 
 		CollectionResult result = service.collect(new CollectionRequest(
 				List.of("pdv1"), DocumentCategory.NFCE, JANUARY, OrganizeMode.SINGLE_FOLDER, ARCHIVE,
-				List.of(), CollectionTarget.missing(Map.of(1, List.of(new NumberRange(2, 2))), index -> true, "")));
+				List.of(), CollectionTarget.missing(Map.of(1, List.of(new NumberRange(2, 2))), index -> true, ""), SeparationMode.ALL_TOGETHER), NO_PROGRESS, () -> false);
 
 		assertEquals("b.xml", onlyEntry(result).fileName());
 		assertEquals(1, archive.stored.size());
@@ -530,7 +533,7 @@ class CollectionServiceTest {
 
 		CollectionResult result = service.collect(new CollectionRequest(
 				List.of("pdv1", "", "pdv2"), DocumentCategory.NFCE, JANUARY, OrganizeMode.SINGLE_FOLDER, ARCHIVE,
-				List.of(), CollectionTarget.missing(Map.of(2, List.of(new NumberRange(15, 15))), index -> index == 2, "")));
+				List.of(), CollectionTarget.missing(Map.of(2, List.of(new NumberRange(15, 15))), index -> index == 2, ""), SeparationMode.ALL_TOGETHER), NO_PROGRESS, () -> false);
 
 		assertEquals("b.xml", onlyEntry(result).fileName());
 		assertEquals(List.of(), result.failures());
@@ -547,7 +550,7 @@ class CollectionServiceTest {
 
 		CollectionResult result = service.collect(new CollectionRequest(
 				List.of("pdv1"), DocumentCategory.NFCE, JANUARY, OrganizeMode.SINGLE_FOLDER, ARCHIVE,
-				List.of(), CollectionTarget.missing(Map.of(1, List.of(new NumberRange(10, 10))), index -> true, "")));
+				List.of(), CollectionTarget.missing(Map.of(1, List.of(new NumberRange(10, 10))), index -> true, ""), SeparationMode.ALL_TOGETHER), NO_PROGRESS, () -> false);
 
 		assertEquals(wanted, onlyEntry(result).fileName());
 		assertEquals(Set.of(Path.of("pdv1", wanted).toString(), Path.of("pdv1", "sem-chave.xml").toString()), Set.copyOf(sources.reads));
@@ -562,7 +565,7 @@ class CollectionServiceTest {
 
 		CollectionResult result = service.collect(new CollectionRequest(
 				List.of("pdv1"), DocumentCategory.NFCE, JANUARY, OrganizeMode.SINGLE_FOLDER, ARCHIVE,
-				List.of(), CollectionTarget.missing(Map.of(1, List.of(new NumberRange(10, 10))), index -> true, "-nfe.xml")));
+				List.of(), CollectionTarget.missing(Map.of(1, List.of(new NumberRange(10, 10))), index -> true, "-nfe.xml"), SeparationMode.ALL_TOGETHER), NO_PROGRESS, () -> false);
 
 		assertEquals(wanted, onlyEntry(result).fileName());
 		assertEquals(List.of(Path.of("pdv1", wanted).toString()), sources.reads);
@@ -632,7 +635,7 @@ class CollectionServiceTest {
 
 		service.collect(new CollectionRequest(
 				List.of("", "pdv2"), DocumentCategory.NFCE, JANUARY, OrganizeMode.SINGLE_FOLDER, ARCHIVE,
-				List.of(), CollectionTarget.ALL, SeparationMode.BY_PDV));
+				List.of(), CollectionTarget.ALL, SeparationMode.BY_PDV), NO_PROGRESS, () -> false);
 
 		assertEquals(ARCHIVE.resolve("2026").resolve("Janeiro").resolve("PDV2"), archive.stored.get(0).directory());
 	}
@@ -696,7 +699,7 @@ class CollectionServiceTest {
 		List<String> directories = sources.directories.keySet().stream().toList();
 
 		service.collect(new CollectionRequest(
-				directories, DocumentCategory.NFCE, JANUARY, organize, ARCHIVE, List.of(), CollectionTarget.ALL, separation));
+				directories, DocumentCategory.NFCE, JANUARY, organize, ARCHIVE, List.of(), CollectionTarget.ALL, separation), NO_PROGRESS, () -> false);
 	}
 
 	private Map<String, Path> storedDirectories() {
@@ -706,7 +709,7 @@ class CollectionServiceTest {
 	}
 
 	private CollectionResult collect(String... directories) {
-		return service.collect(request(directories));
+		return service.collect(request(directories), NO_PROGRESS, () -> false);
 	}
 
 	private static CollectionRequest request(String... directories) {
@@ -714,7 +717,7 @@ class CollectionServiceTest {
 	}
 
 	private static CollectionRequest request(DocumentCategory category, String... directories) {
-		return new CollectionRequest(List.of(directories), category, JANUARY, OrganizeMode.SINGLE_FOLDER, ARCHIVE);
+		return new CollectionRequest(List.of(directories), category, JANUARY, OrganizeMode.SINGLE_FOLDER, ARCHIVE, List.of(), CollectionTarget.ALL, SeparationMode.ALL_TOGETHER);
 	}
 
 	private static IssuedNumber issued(int series, int number, LocalDate date) {

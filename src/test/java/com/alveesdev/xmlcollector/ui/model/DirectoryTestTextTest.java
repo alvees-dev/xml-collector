@@ -6,8 +6,8 @@ import java.util.List;
 
 import org.junit.jupiter.api.Test;
 
-import com.alveesdev.xmlcollector.application.connection.DirectoryTestResult;
 import com.alveesdev.xmlcollector.application.connection.DirectoryTestResult.Outcome;
+import com.alveesdev.xmlcollector.application.connection.DirectoryTestResult;
 
 class DirectoryTestTextTest {
 

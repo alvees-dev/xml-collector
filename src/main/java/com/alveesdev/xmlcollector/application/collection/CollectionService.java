@@ -66,10 +66,6 @@ public class CollectionService {
 		return archive.findDocument(ArchiveLayout.monthDirectory(archiveRoot, entry.invoice().date()), entry.invoice().key().value(), entry.fileName());
 	}
 
-	public CollectionResult collect(CollectionRequest request) {
-		return collect(request, ProgressListener.NONE, () -> false);
-	}
-
 	public CollectionResult collect(CollectionRequest request, ProgressListener listener, BooleanSupplier cancelled) {
 
 		List<SourceFailure> failures = new ArrayList<>();
