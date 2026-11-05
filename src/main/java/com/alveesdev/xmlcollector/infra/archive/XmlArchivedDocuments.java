@@ -98,16 +98,10 @@ public class XmlArchivedDocuments implements ArchivedDocuments {
 
 	private Optional<AccessKey> keyInContentOf(Path file) throws IOException {
 
-		XmlDocument document = reader.read(Files.readAllBytes(file), DocumentModel.ALL);
-
-		if (document instanceof XmlDocument.Invoice invoice) {
-			return Optional.of(invoice.key());
-		}
-
-		if (document instanceof XmlDocument.CancelEvent event) {
-			return Optional.of(event.cancelledKey());
-		}
-
-		return Optional.empty();
+		return switch (reader.read(Files.readAllBytes(file), DocumentModel.ALL)) {
+			case XmlDocument.Invoice invoice -> Optional.of(invoice.key());
+			case XmlDocument.CancelEvent event -> Optional.of(event.cancelledKey());
+			case XmlDocument.Voiding _, XmlDocument.Ignored _, XmlDocument.Unreadable _ -> Optional.empty();
+		};
 	}
 }

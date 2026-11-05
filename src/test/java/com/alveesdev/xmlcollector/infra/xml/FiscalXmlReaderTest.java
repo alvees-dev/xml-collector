@@ -88,6 +88,8 @@ class FiscalXmlReaderTest {
 
 		assertEquals(1, voiding.series());
 		assertEquals("ID35261234567800019065001000000002000000003", voiding.id());
+		assertEquals("12345678000190", voiding.cnpj());
+		assertEquals("65", voiding.modelCode());
 	}
 
 	private static String voidingXml(String status, String model) {

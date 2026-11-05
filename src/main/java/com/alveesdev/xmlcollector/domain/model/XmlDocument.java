@@ -43,6 +43,8 @@ public sealed interface XmlDocument {
 
 	record Voiding(
 			String id,
+			String cnpj,
+			String modelCode,
 			int series,
 			NumberRange range,
 			OffsetDateTime receivedAt) implements XmlDocument {

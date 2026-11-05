@@ -176,9 +176,10 @@ class SourceProcessor {
 			byte[] content = sourceFiles.read(source);
 			XmlDocument document = reader.read(content, request.category().models());
 
-			boolean needsStoring = document instanceof XmlDocument.Invoice
-					|| document instanceof XmlDocument.CancelEvent
-					|| document instanceof XmlDocument.Voiding;
+			boolean needsStoring = switch (document) {
+				case XmlDocument.Invoice _, XmlDocument.CancelEvent _, XmlDocument.Voiding _ -> true;
+				case XmlDocument.Ignored _, XmlDocument.Unreadable _ -> false;
+			};
 
 			return new ReadFile(source, fileName, document, needsStoring ? content : null);
 
@@ -197,15 +198,16 @@ class SourceProcessor {
 
 			CollectionRules.Decision decision = rules.decide(sourceIndex, file.fileName(), file.document());
 
-			if (decision instanceof CollectionRules.Store store) {
-				// A gap voided after its collection stays in the collected month, even with a date of the next one.
-				if (heldInAnotherMonth(store)) {
-					counters.alreadyExisting++;
-				} else {
-					jobs.add(job(sourceIndex, file, store));
+			switch (decision) {
+				case CollectionRules.Store store -> {
+					// A gap voided after its collection stays in the collected month, even with a date of the next one.
+					if (heldInAnotherMonth(store)) {
+						counters.alreadyExisting++;
+					} else {
+						jobs.add(job(sourceIndex, file, store));
+					}
 				}
-			} else if (decision instanceof CollectionRules.Skip skip) {
-				count(skip.reason());
+				case CollectionRules.Skip skip -> count(skip.reason());
 			}
 		}
 
@@ -214,10 +216,11 @@ class SourceProcessor {
 
 	// The screen only counts these files, so this is the one place that says which file it was and why.
 	private static void logIfLeftOut(ReadFile file) {
-		if (file.document() instanceof XmlDocument.Unreadable unreadable) {
-			LOG.warning("Unreadable file " + file.source().path() + ": " + unreadable.reason());
-		} else if (file.document() instanceof XmlDocument.Ignored ignored) {
-			LOG.info("Ignored file " + file.source().path() + ": " + ignored.reason());
+		switch (file.document()) {
+			case XmlDocument.Unreadable unreadable -> LOG.warning("Unreadable file " + file.source().path() + ": " + unreadable.reason());
+			case XmlDocument.Ignored ignored -> LOG.info("Ignored file " + file.source().path() + ": " + ignored.reason());
+			case XmlDocument.Invoice _, XmlDocument.CancelEvent _, XmlDocument.Voiding _ -> {
+			}
 		}
 	}
 

@@ -40,6 +40,9 @@ public final class CollectionRules {
 	private record Accepted(String fileName, XmlDocument.Invoice invoice) {
 	}
 
+	private record SeriesKey(String cnpj, String modelCode, int series) {
+	}
+
 	private final DateRange period;
 	private final Predicate<XmlDocument.Invoice> invoiceFilter;
 	private final Set<AccessKey> seenKeys = new HashSet<>();
@@ -57,24 +60,16 @@ public final class CollectionRules {
 
 	public Decision decide(int sourceIndex, String fileName, XmlDocument document) {
 
-		if (document instanceof XmlDocument.Invoice invoice) {
-			return decideInvoice(sourceIndex, fileName, invoice);
-		}
-
-		if (document instanceof XmlDocument.CancelEvent event) {
-			return decideCancelEvent(event);
-		}
-
-		if (document instanceof XmlDocument.Voiding voiding) {
-			return decideVoiding(voiding);
-		}
-
-		if (document instanceof XmlDocument.Ignored) {
-			return new Skip(SkipReason.IGNORED);
-		}
-
-		accepted(sourceIndex).add(new Accepted(fileName, null));
-		return new Skip(SkipReason.UNREADABLE);
+		return switch (document) {
+			case XmlDocument.Invoice invoice -> decideInvoice(sourceIndex, fileName, invoice);
+			case XmlDocument.CancelEvent event -> decideCancelEvent(event);
+			case XmlDocument.Voiding voiding -> decideVoiding(voiding);
+			case XmlDocument.Ignored _ -> new Skip(SkipReason.IGNORED);
+			case XmlDocument.Unreadable _ -> {
+				accepted(sourceIndex).add(new Accepted(fileName, null));
+				yield new Skip(SkipReason.UNREADABLE);
+			}
+		};
 	}
 
 	public List<DocumentEntry> entriesOf(int sourceIndex) {
@@ -108,10 +103,10 @@ public final class CollectionRules {
 
 	public List<IssuedNumber> firstIssuedNumbers() {
 
-		Map<List<Object>, IssuedNumber> first = new HashMap<>();
+		Map<SeriesKey, IssuedNumber> first = new HashMap<>();
 
 		for (IssuedNumber issued : issuedNumbers()) {
-			first.merge(List.of(issued.cnpj(), issued.modelCode(), issued.series()), issued,
+			first.merge(new SeriesKey(issued.cnpj(), issued.modelCode(), issued.series()), issued,
 					(one, other) -> one.number() <= other.number() ? one : other);
 		}
 

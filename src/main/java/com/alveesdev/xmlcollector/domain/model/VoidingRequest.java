@@ -58,7 +58,11 @@ public record VoidingRequest(
 	}
 
 	public String id() {
-		return String.format("ID%s%s%s%s%03d%09d%09d",
-				ufCode, shortYear(), cnpj, model.code(), series, range.start(), range.end());
+		return idOf(ufCode, shortYear(), cnpj, model.code(), series, range);
+	}
+
+	// The same id comes back in the answer of the Sefaz, so a request and a stored file must build it in the same way.
+	public static String idOf(String ufCode, String shortYear, String cnpj, String modelCode, int series, NumberRange range) {
+		return String.format("ID%s%s%s%s%03d%09d%09d", ufCode, shortYear, cnpj, modelCode, series, range.start(), range.end());
 	}
 }

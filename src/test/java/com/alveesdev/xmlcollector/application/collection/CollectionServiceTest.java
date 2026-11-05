@@ -582,7 +582,7 @@ class CollectionServiceTest {
 		sources.add("pdv1", "a.xml", invoice(1, 1, IN_PERIOD));
 		sources.add("pdv1", "b.xml", invoice(1, 5, IN_PERIOD));
 		sources.add("pdv1", "inut.xml", new XmlDocument.Voiding(
-				"ID1", 1, new NumberRange(2, 3), IN_PERIOD.atTime(12, 0).atOffset(java.time.ZoneOffset.ofHours(-3))));
+				"ID1", "12345678000190", "65", 1, new NumberRange(2, 3), IN_PERIOD.atTime(12, 0).atOffset(java.time.ZoneOffset.ofHours(-3))));
 
 		CollectionResult result = collect("pdv1");
 
@@ -614,7 +614,7 @@ class CollectionServiceTest {
 		sources.add("pdv1", "a.xml", invoice(1, IN_PERIOD));
 		sources.add("pdv2", "b.xml", invoice(2, IN_PERIOD));
 		sources.add("pdv2", "inut.xml", new XmlDocument.Voiding(
-				"ID1", 1, new NumberRange(5, 5), IN_PERIOD.atTime(12, 0).atOffset(java.time.ZoneOffset.ofHours(-3))));
+				"ID1", "12345678000190", "65", 1, new NumberRange(5, 5), IN_PERIOD.atTime(12, 0).atOffset(java.time.ZoneOffset.ofHours(-3))));
 
 		collectBy(SeparationMode.BY_PDV, OrganizeMode.SINGLE_FOLDER);
 
@@ -651,7 +651,7 @@ class CollectionServiceTest {
 	@Test
 	void aVoidingHasNoDayFolderWhenOrganizedByDay() {
 		sources.add("pdv1", "inut.xml", new XmlDocument.Voiding(
-				"ID1", 1, new NumberRange(5, 5), IN_PERIOD.atTime(12, 0).atOffset(java.time.ZoneOffset.ofHours(-3))));
+				"ID1", "12345678000190", "65", 1, new NumberRange(5, 5), IN_PERIOD.atTime(12, 0).atOffset(java.time.ZoneOffset.ofHours(-3))));
 
 		collectBy(SeparationMode.ALL_TOGETHER, OrganizeMode.BY_DAY);
 
@@ -661,7 +661,7 @@ class CollectionServiceTest {
 	@Test
 	void aVoidingHasNoDayFolderInsideAPdv() {
 		sources.add("pdv1", "inut.xml", new XmlDocument.Voiding(
-				"ID1", 1, new NumberRange(5, 5), IN_PERIOD.atTime(12, 0).atOffset(java.time.ZoneOffset.ofHours(-3))));
+				"ID1", "12345678000190", "65", 1, new NumberRange(5, 5), IN_PERIOD.atTime(12, 0).atOffset(java.time.ZoneOffset.ofHours(-3))));
 
 		collectBy(SeparationMode.BY_PDV, OrganizeMode.BY_DAY);
 
@@ -674,7 +674,7 @@ class CollectionServiceTest {
 		sources.add("pdv1", "a.xml", invoice(1, 1, IN_PERIOD));
 		sources.add("pdv1", "b.xml", invoice(1, 3, IN_PERIOD));
 		sources.add("pdv1", "inut.xml", new XmlDocument.Voiding(
-				"ID1", 1, new NumberRange(2, 2), IN_PERIOD.atTime(12, 0).atOffset(java.time.ZoneOffset.ofHours(-3))));
+				"ID1", "12345678000190", "65", 1, new NumberRange(2, 2), IN_PERIOD.atTime(12, 0).atOffset(java.time.ZoneOffset.ofHours(-3))));
 
 		CollectionResult result = collect("pdv1");
 
@@ -724,7 +724,7 @@ class CollectionServiceTest {
 	private static XmlDocument.Voiding voiding(int series, int start, int end) {
 		String id = String.format("ID3526%s65%03d%09d%09d", key(series, start).cnpj(), series, start, end);
 
-		return new XmlDocument.Voiding(id, series, new NumberRange(start, end), IN_PERIOD.atTime(12, 0).atOffset(ZoneOffset.ofHours(-3)));
+		return new XmlDocument.Voiding(id, key(series, start).cnpj(), "65", series, new NumberRange(start, end), IN_PERIOD.atTime(12, 0).atOffset(ZoneOffset.ofHours(-3)));
 	}
 
 	private static DocumentEntry onlyEntry(CollectionResult result) {
