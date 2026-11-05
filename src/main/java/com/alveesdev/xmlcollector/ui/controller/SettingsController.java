@@ -6,8 +6,6 @@ import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.function.Function;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import java.util.stream.Stream;
 
 import com.alveesdev.xmlcollector.application.connection.DirectoryTarget;
@@ -48,7 +46,6 @@ import javafx.util.StringConverter;
 
 public class SettingsController {
 
-	private static final Logger LOG = Logger.getLogger(SettingsController.class.getName());
 	private static final DateTimeFormatter VALIDITY_FORMAT = DateTimeFormatter.ofPattern("dd/MM/yyyy").withZone(ZoneId.systemDefault());
 
 	private final SettingsService settingsService;
@@ -169,7 +166,7 @@ public class SettingsController {
 		trigger.setDisable(true);
 
 		// The certificate can be on a network folder, which may take long to answer.
-		BackgroundWork.start("xml-certificate-check", () -> voidingBatch.checkCertificate(settings),
+		TaskRunner.inBackground("xml-certificate-check", () -> voidingBatch.checkCertificate(settings),
 				certificate -> {
 					trigger.setDisable(false);
 					Dialogs.info("Certificado válido.\n\nCNPJ: " + certificate.cnpj()
@@ -182,14 +179,11 @@ public class SettingsController {
 	}
 
 	private static void showCertificateFailure(Throwable error) {
-
 		if (error instanceof VoidingException) {
 			Dialogs.warning(error.getMessage());
-			return;
+		} else {
+			Dialogs.error(FailureText.of(error));
 		}
-
-		LOG.log(Level.SEVERE, "The certificate could not be checked", error);
-		Dialogs.error(FailureText.of(error));
 	}
 
 	@FXML

@@ -34,9 +34,11 @@ public class VoidingTask extends Task<List<VoidingOutcome>> {
 		this.pdvFolders = pdvFolders;
 	}
 
-	// A request on its way cannot be called back, so stopping only prevents the next ones and its answer is still shown.
-	public void requestStop() {
+	// A request on its way cannot be called back, so cancelling only prevents the next ones and the answers are still shown.
+	@Override
+	public boolean cancel(boolean mayInterruptIfRunning) {
 		stopRequested.set(true);
+		return false;
 	}
 
 	@Override

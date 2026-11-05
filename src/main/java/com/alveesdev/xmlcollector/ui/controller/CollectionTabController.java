@@ -10,8 +10,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.BiConsumer;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import java.util.stream.Stream;
 
 import com.alveesdev.xmlcollector.application.collection.CollectedDocuments;
@@ -55,7 +53,6 @@ import javafx.scene.input.DataFormat;
 
 public class CollectionTabController {
 
-	private static final Logger LOG = Logger.getLogger(CollectionTabController.class.getName());
 	private static final List<String> COLUMN_PROPERTIES = List.of("number", "series", "totalValue", "emissionDate", "accessKey", "status");
 
 	private final CollectionService collectionService;
@@ -178,16 +175,13 @@ public class CollectionTabController {
 
 	// Finding the file reads the documents of the whole month.
 	private void openFolderOf(DocumentEntry entry) {
-		BackgroundWork.start("xml-open-folder", () -> showInExplorer(entry),
+		TaskRunner.inBackground("xml-open-folder", () -> showInExplorer(entry),
 				found -> {
 					if (!found) {
 						Dialogs.warning("O arquivo da nota não foi encontrado em:\n" + paths.xmlArchiveDir());
 					}
 				},
-				error -> {
-					LOG.log(Level.WARNING, "The folder of a note could not be opened", error);
-					Dialogs.error("Não foi possível abrir o diretório da nota: " + FailureText.of(error));
-				});
+				error -> Dialogs.error("Não foi possível abrir o diretório da nota: " + FailureText.of(error)));
 	}
 
 	private boolean showInExplorer(DocumentEntry entry) throws IOException {

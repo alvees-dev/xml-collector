@@ -1,12 +1,9 @@
 package com.alveesdev.xmlcollector.ui.controller;
 
-import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Consumer;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 import com.alveesdev.xmlcollector.application.collection.CollectionRequest;
 import com.alveesdev.xmlcollector.application.collection.CollectionResult;
@@ -37,7 +34,6 @@ import com.alveesdev.xmlcollector.ui.view.ProgressWindow;
 
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
-import javafx.concurrent.Task;
 import javafx.fxml.FXML;
 import javafx.scene.Node;
 import javafx.scene.control.Button;
@@ -47,7 +43,6 @@ import javafx.scene.control.TextField;
 
 public class MissingTabController {
 
-	private static final Logger LOG = Logger.getLogger(MissingTabController.class.getName());
 	private static final double COLUMN_WIDTH = 110;
 
 	private final CollectionService collectionService;
@@ -211,47 +206,20 @@ public class MissingTabController {
 		String voidingFolder = searchModels.pdvModel(settings.pdvModelId()).voidingFolder();
 		List<String> pdvDirectories = settings.pdvDirectories();
 
-		Optional<ProgressWindow> window = openProgress(trigger, "Conferindo certificado e pastas...");
-
-		if (window.isEmpty()) {
-			return;
-		}
-
-		ProgressWindow progressWindow = window.get();
-		trigger.setDisable(true);
-
 		// A network folder that does not answer can hold this for a long time, and nothing has gone out yet.
-		Task<VoidingPreparation.Plan> task = BackgroundWork.start("xml-voiding-checks",
-				() -> voidingPreparation.prepare(session, wanted, certificate, pdvDirectories, voidingFolder),
-				plan -> {
-					progressWindow.close();
-					trigger.setDisable(false);
-					confirmAndSend(trigger, plan, certificate);
-				},
-				error -> {
-					progressWindow.close();
-					trigger.setDisable(false);
-					showCheckFailure(error);
-				});
-
-		task.setOnCancelled(event -> {
-			progressWindow.close();
-			trigger.setDisable(false);
-		});
-
-		progressWindow.setCancelAction(task::cancel);
-		progressWindow.show();
+		TaskRunner.withProgress(trigger, "xml-voiding-checks",
+				() -> new ProgressWindow(trigger.getScene().getWindow(), "Conferindo certificado e pastas..."),
+				window -> TaskRunner.taskOf(() -> voidingPreparation.prepare(session, wanted, certificate, pdvDirectories, voidingFolder)),
+				new TaskRunner.Handlers<>(plan -> confirmAndSend(trigger, plan, certificate), MissingTabController::showCheckFailure, () -> {
+				}));
 	}
 
 	private static void showCheckFailure(Throwable error) {
-
 		if (error instanceof VoidingException) {
 			Dialogs.warning(error.getMessage());
-			return;
+		} else {
+			Dialogs.error(FailureText.of(error));
 		}
-
-		LOG.log(Level.SEVERE, "The checks before the voiding failed", error);
-		Dialogs.error(FailureText.of(error));
 	}
 
 	private void confirmAndSend(Node trigger, VoidingPreparation.Plan plan, CertificateSettings certificate) {
@@ -264,48 +232,13 @@ public class MissingTabController {
 			return;
 		}
 
-		Optional<ProgressWindow> window = openProgress(trigger, "Inutilização em andamento...");
-
-		if (window.isEmpty()) {
-			return;
-		}
-
-		ProgressWindow progressWindow = window.get();
-
 		// The month of the collection, so the file goes out with the documents of the gaps it closes.
-		VoidingTask task = new VoidingTask(voidingBatch, plan.requests(), certificate, paths.xmlArchiveDir(),
-				session.lastCollectedDay(), plan.pdvFolders());
-		progressWindow.setCancelAction(task::requestStop);
-
-		trigger.setDisable(true);
-
-		task.setOnSucceeded(event -> {
-			progressWindow.close();
-			trigger.setDisable(false);
-			showVoided(task.getValue(), certificate.environment());
-		});
-
-		task.setOnFailed(event -> {
-			progressWindow.close();
-			trigger.setDisable(false);
-			LOG.log(Level.SEVERE, "The voiding failed", task.getException());
-			Dialogs.error(FailureText.of(task.getException()));
-		});
-
-		progressWindow.show();
-
-		Thread thread = new Thread(task, "xml-voiding");
-		thread.setDaemon(true);
-		thread.start();
-	}
-
-	private static Optional<ProgressWindow> openProgress(Node trigger, String title) {
-		try {
-			return Optional.of(new ProgressWindow(trigger.getScene().getWindow(), title));
-		} catch (IOException e) {
-			Dialogs.error("Erro ao abrir a tela de progresso: " + e.getMessage());
-			return Optional.empty();
-		}
+		TaskRunner.withProgress(trigger, "xml-voiding",
+				() -> new ProgressWindow(trigger.getScene().getWindow(), "Inutilização em andamento..."),
+				window -> new VoidingTask(voidingBatch, plan.requests(), certificate, paths.xmlArchiveDir(), session.lastCollectedDay(), plan.pdvFolders()),
+				new TaskRunner.Handlers<>(outcomes -> showVoided(outcomes, certificate.environment()),
+						error -> Dialogs.error(FailureText.of(error)), () -> {
+						}));
 	}
 
 	private void showVoided(List<VoidingOutcome> outcomes, FiscalEnvironment environment) {
