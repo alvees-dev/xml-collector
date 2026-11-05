@@ -66,6 +66,20 @@ public class XmlArchivedDocuments implements ArchivedDocuments {
 		return documents;
 	}
 
+	@Override
+	public List<XmlDocument> purchasesIn(Path directory) throws IOException {
+
+		List<XmlDocument> documents = new ArrayList<>();
+
+		for (Path file : xmlFilesIn(directory)) {
+			if (isPurchase(directory, file)) {
+				documents.add(reader.read(Files.readAllBytes(file), ALL_MODELS));
+			}
+		}
+
+		return documents;
+	}
+
 	private static boolean isPurchase(Path directory, Path file) {
 		for (Path folder : directory.relativize(file)) {
 			if (folder.toString().equalsIgnoreCase(DocumentCategory.NFE_PURCHASES.folderName())) {

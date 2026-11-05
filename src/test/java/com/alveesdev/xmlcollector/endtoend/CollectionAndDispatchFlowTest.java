@@ -4,8 +4,10 @@ import static com.alveesdev.xmlcollector.endtoend.SyntheticXml.CNPJ;
 import static com.alveesdev.xmlcollector.endtoend.SyntheticXml.NFCE;
 import static com.alveesdev.xmlcollector.endtoend.SyntheticXml.writeCancellation;
 import static com.alveesdev.xmlcollector.endtoend.SyntheticXml.writeInvoice;
+import static com.alveesdev.xmlcollector.endtoend.SyntheticXml.writeNfe;
 import static com.alveesdev.xmlcollector.endtoend.SyntheticXml.writeVoiding;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -35,6 +37,7 @@ import com.alveesdev.xmlcollector.application.collection.CollectionTarget;
 import com.alveesdev.xmlcollector.application.dispatch.DispatchRequest;
 import com.alveesdev.xmlcollector.application.dispatch.DispatchResult;
 import com.alveesdev.xmlcollector.application.dispatch.DispatchService;
+import com.alveesdev.xmlcollector.application.dispatch.ReportOptions;
 import com.alveesdev.xmlcollector.application.dispatch.ValuesReportText;
 import com.alveesdev.xmlcollector.application.port.DocumentReader;
 import com.alveesdev.xmlcollector.application.port.EmailMessage;
@@ -159,6 +162,40 @@ class CollectionAndDispatchFlowTest {
 	}
 
 	@Test
+	void theCheckedKindsChooseWhatGoesInTheReport() throws Exception {
+		writeAMonthOfNotes();
+		collect(JANUARY);
+		writeNfeOfTheMonth();
+
+		dispatchService().dispatch(dispatchRequestWith(new ReportOptions(true, true, true)), progress -> {
+		}, () -> false);
+
+		try (ZipFile file = new ZipFile(emails.get(0).attachments().get(0).toFile())) {
+			String report = textOf(file, "Janeiro_2026/" + ValuesReportText.FILE_NAME);
+
+			assertTrue(report.contains("- NFC-e - Série 1"), report);
+			assertTrue(report.contains("NF-e - VENDAS\r\nValor total das vendas: R$ 21,00"), report);
+			assertTrue(report.contains("NF-e - COMPRAS\r\nValor total das compras: R$ 31,50"), report);
+			assertTrue(report.contains("TOTAL DO MÊS\r\nTotal de vendas: 7 notas\r\nValor total das vendas: R$ 73,50"), report);
+			assertFalse(report.contains("- NF-e - Série"), report);
+		}
+	}
+
+	@Test
+	void nothingCheckedSendsTheFilesWithoutTheReport() throws Exception {
+		writeAMonthOfNotes();
+		collect(JANUARY);
+
+		dispatchService().dispatch(dispatchRequestWith(new ReportOptions(false, false, false)), progress -> {
+		}, () -> false);
+
+		try (ZipFile file = new ZipFile(emails.get(0).attachments().get(0).toFile())) {
+			assertNull(file.getEntry("Janeiro_2026/" + ValuesReportText.FILE_NAME));
+			assertEquals(STORED_FILES, file.stream().filter(entry -> entry.getName().endsWith(".xml")).count());
+		}
+	}
+
+	@Test
 	void theNextMonthFindsTheGapAgainstTheHistory() throws IOException {
 		writeInvoice(firstPdv, 1, 1, JANUARY_DAY);
 		writeInvoice(firstPdv, 1, 2, JANUARY_DAY);
@@ -186,6 +223,22 @@ class CollectionAndDispatchFlowTest {
 
 		writeInvoice(secondPdv, 2, 1, JANUARY_DAY);
 		writeInvoice(secondPdv, 2, 2, JANUARY_DAY);
+	}
+
+	private void writeNfeOfTheMonth() throws IOException {
+		Path month = ArchiveLayout.monthDirectory(archiveRoot, JANUARY_DAY);
+
+		writeNfe(month.resolve("NFe_Vendas"), CNPJ, 1, JANUARY_DAY);
+		writeNfe(month.resolve("NFe_Vendas"), CNPJ, 2, JANUARY_DAY);
+		writeNfe(month.resolve("NFe_Compras"), "98765432000110", 7, JANUARY_DAY);
+		writeNfe(month.resolve("NFe_Compras"), "98765432000110", 8, JANUARY_DAY);
+		writeNfe(month.resolve("NFe_Compras"), "11222333000181", 9, JANUARY_DAY);
+	}
+
+	private DispatchRequest dispatchRequestWith(ReportOptions reports) {
+		DispatchRequest request = dispatchRequest();
+
+		return new DispatchRequest(request.monthDirectories(), request.account(), request.recipient(), request.subject(), request.body(), false, reports);
 	}
 
 	private CollectionResult collect(DateRange period) {

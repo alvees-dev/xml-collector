@@ -6,13 +6,11 @@ import java.nio.file.Path;
 import java.time.YearMonth;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Locale;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import java.util.Optional;
 
 import com.alveesdev.xmlcollector.application.dispatch.DispatchRequest;
-import com.alveesdev.xmlcollector.application.dispatch.DispatchResult;
 import com.alveesdev.xmlcollector.application.dispatch.DispatchService;
+import com.alveesdev.xmlcollector.application.dispatch.ReportOptions;
 import com.alveesdev.xmlcollector.application.port.DispatchException;
 import com.alveesdev.xmlcollector.application.settings.AppPaths;
 import com.alveesdev.xmlcollector.application.settings.AppSettings;
@@ -20,21 +18,19 @@ import com.alveesdev.xmlcollector.application.settings.EmailDraft;
 import com.alveesdev.xmlcollector.application.settings.service.SettingsService;
 import com.alveesdev.xmlcollector.domain.service.ArchiveLayout;
 import com.alveesdev.xmlcollector.ui.model.DispatchProgressText;
-import com.alveesdev.xmlcollector.ui.model.FailureText;
+import com.alveesdev.xmlcollector.ui.model.DispatchText;
 import com.alveesdev.xmlcollector.ui.view.Dialogs;
 import com.alveesdev.xmlcollector.ui.view.ProgressWindow;
 
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
+import javafx.scene.control.CheckBox;
 import javafx.scene.control.ChoiceBox;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
 
 public class DispatchTabController {
 
-	private static final Logger LOG = Logger.getLogger(DispatchTabController.class.getName());
-	private static final Locale BRAZIL = Locale.forLanguageTag("pt-BR");
-	private static final double BYTES_PER_MEGABYTE = 1024.0 * 1024.0;
 	private static final double STEP_LABEL_WIDTH = 140;
 	private static final int LISTED_YEARS = 6;
 
@@ -56,6 +52,15 @@ public class DispatchTabController {
 
 	@FXML
 	private ChoiceBox<String> choiceMonth;
+
+	@FXML
+	private CheckBox chkValuesNfce;
+
+	@FXML
+	private CheckBox chkValuesNfeSales;
+
+	@FXML
+	private CheckBox chkValuesNfePurchases;
 
 	@FXML
 	private Button btnSend;
@@ -105,22 +110,29 @@ public class DispatchTabController {
 			return;
 		}
 
-		boolean reuseExistingZip = false;
+		Optional<Boolean> reuseExistingZip = askAboutExistingZip(monthDirectory);
 
+		if (reuseExistingZip.isPresent()) {
+			send(monthDirectory, monthLabel, reuseExistingZip.get());
+		}
+	}
+
+	private Optional<Boolean> askAboutExistingZip(Path monthDirectory) {
 		try {
-			if (service.existingZipOf(monthDirectory).isPresent()) {
-				Dialogs.ExistingZipChoice choice = Dialogs.askAboutExistingZip();
-
-				if (choice == Dialogs.ExistingZipChoice.CANCEL) {
-					return;
-				}
-
-				reuseExistingZip = choice == Dialogs.ExistingZipChoice.SEND_EXISTING;
+			if (service.existingZipOf(monthDirectory).isEmpty()) {
+				return Optional.of(false);
 			}
 		} catch (DispatchException e) {
 			Dialogs.error(e.getMessage());
-			return;
+			return Optional.empty();
 		}
+
+		Dialogs.ExistingZipChoice choice = Dialogs.askAboutExistingZip();
+
+		return choice == Dialogs.ExistingZipChoice.CANCEL ? Optional.empty() : Optional.of(choice == Dialogs.ExistingZipChoice.SEND_EXISTING);
+	}
+
+	private void send(Path monthDirectory, String monthLabel, boolean reuseExistingZip) {
 
 		updateDraft();
 		saveSettings();
@@ -129,47 +141,15 @@ public class DispatchTabController {
 		EmailDraft draft = settings.emailDraft();
 
 		DispatchRequest request = new DispatchRequest(
-				List.of(monthDirectory), settings.emailAccount(), draft.recipient().trim(), draft.subject(), draft.body(), reuseExistingZip);
+				List.of(monthDirectory), settings.emailAccount(), draft.recipient().trim(), draft.subject(), draft.body(), reuseExistingZip,
+				new ReportOptions(chkValuesNfce.isSelected(), chkValuesNfeSales.isSelected(), chkValuesNfePurchases.isSelected()));
 
-		ProgressWindow progressWindow;
-
-		try {
-			progressWindow = new ProgressWindow(btnSend.getScene().getWindow(), "Enviando arquivo XML de " + monthLabel,
-					DispatchProgressText.stepLabels(), STEP_LABEL_WIDTH);
-		} catch (IOException e) {
-			Dialogs.error("Erro ao abrir a tela de progresso: " + e.getMessage());
-			return;
-		}
-
-		DispatchTask task = new DispatchTask(service, request, progressWindow::update);
-		progressWindow.setCancelAction(task::cancel);
-
-		btnSend.setDisable(true);
-
-		task.setOnSucceeded(event -> {
-			progressWindow.close();
-			btnSend.setDisable(false);
-			Dialogs.info(describeSuccess(monthLabel, request.recipient(), task.getValue()));
-		});
-
-		task.setOnFailed(event -> {
-			progressWindow.close();
-			btnSend.setDisable(false);
-			LOG.log(Level.SEVERE, "The dispatch failed", task.getException());
-			Dialogs.error(describeFailure(task.getException()));
-		});
-
-		task.setOnCancelled(event -> {
-			progressWindow.close();
-			btnSend.setDisable(false);
-			Dialogs.warning("Envio cancelado. O e-mail não foi enviado.");
-		});
-
-		progressWindow.show();
-
-		Thread thread = new Thread(task, "xml-dispatch");
-		thread.setDaemon(true);
-		thread.start();
+		TaskRunner.withProgress(btnSend, "xml-dispatch",
+				() -> new ProgressWindow(btnSend.getScene().getWindow(), "Enviando arquivo XML de " + monthLabel, DispatchProgressText.stepLabels(), STEP_LABEL_WIDTH),
+				window -> new DispatchTask(service, request, window::update),
+				new TaskRunner.Handlers<>(result -> Dialogs.info(DispatchText.success(monthLabel, request.recipient(), result)),
+						error -> Dialogs.error(DispatchText.failure(error)),
+						() -> Dialogs.warning("Envio cancelado. O e-mail não foi enviado.")));
 	}
 
 	private void loadMonthChoices() {
@@ -201,32 +181,4 @@ public class DispatchTabController {
 		}
 	}
 
-	private static String describeSuccess(String monthLabel, String recipient, DispatchResult result) {
-
-		String size = String.format(BRAZIL, "%.1f MB", result.totalZipBytes() / BYTES_PER_MEGABYTE);
-
-		if (result.method() == DispatchResult.Method.ATTACHED) {
-			return "E-mail enviado para " + recipient + " com o XML de " + monthLabel
-					+ " em anexo (" + size + ").";
-		}
-
-		String success = "O Arquivo XML de " + monthLabel + " (" + size + ") passou do limite de 25 MB e foi salvo no Google Drive."
-				+ "\nO link para acessar a pasta foi enviado para " + recipient + "."
-				+ "\n\nLink: " + result.driveLink();
-
-		if (result.driveCleanupFailure() == null) {
-			return success;
-		}
-
-		return success + "\n\nAtenção: o arquivo anterior não foi removido da pasta e continua ocupando espaço. "
-				+ "\nMotivo: " + result.driveCleanupFailure();
-	}
-
-	private static String describeFailure(Throwable error) {
-		if (error instanceof DispatchException) {
-			return error.getMessage();
-		}
-
-		return "Erro inesperado ao enviar o e-mail: " + FailureText.of(error);
-	}
 }

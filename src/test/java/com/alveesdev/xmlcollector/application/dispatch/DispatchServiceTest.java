@@ -128,6 +128,68 @@ class DispatchServiceTest {
 	}
 
 	@Test
+	void withNothingCheckedTheZipGoesWithoutTheReport() throws Exception {
+		List<DirectoryCompressor.ExtraFile> received = new ArrayList<>();
+		int[] reads = {0};
+
+		ArchivedDocuments documents = new ArchivedDocuments() {
+
+			@Override
+			public Set<String> cnpjsIn(Path directory) {
+				return Set.of("12345678000190");
+			}
+
+			@Override
+			public List<XmlDocument> documentsOfTheCompanyIn(Path directory) {
+				reads[0]++;
+				return List.of();
+			}
+		};
+
+		new DispatchService(documents, (directory, zipName, extraFiles) -> {
+			received.addAll(extraFiles);
+			return Optional.of(new DirectoryCompressor.CompressedFile(directory.resolveSibling(zipName + ".zip"), 10));
+		}, (account, message) -> sent.add(message), (accountEmail, folderName, files) -> new CloudStorage.UploadResult("link", null))
+				.dispatch(new DispatchRequest(List.of(MONTH), ACCOUNT, "destino@exemplo.com", "Assunto", "", false, new ReportOptions(false, false, false)));
+
+		assertEquals(List.of(), received);
+		assertEquals(0, reads[0]);
+		assertEquals(1, sent.size());
+	}
+
+	@Test
+	void thePurchasesAreOnlyReadWhenChecked() throws Exception {
+		List<String> report = new ArrayList<>();
+		int[] purchaseReads = {0};
+
+		ArchivedDocuments documents = new ArchivedDocuments() {
+
+			@Override
+			public Set<String> cnpjsIn(Path directory) {
+				return Set.of("12345678000190");
+			}
+
+			@Override
+			public List<XmlDocument> purchasesIn(Path directory) {
+				purchaseReads[0]++;
+				return List.of(TestDocuments.invoice(7, LocalDate.of(2026, 1, 15)));
+			}
+		};
+
+		DispatchService service = new DispatchService(documents, (directory, zipName, extraFiles) -> {
+			extraFiles.forEach(file -> report.add(new String(file.content(), StandardCharsets.UTF_8)));
+			return Optional.of(new DirectoryCompressor.CompressedFile(directory.resolveSibling(zipName + ".zip"), 10));
+		}, (account, message) -> sent.add(message), (accountEmail, folderName, files) -> new CloudStorage.UploadResult("link", null));
+
+		service.dispatch(REQUEST);
+		assertEquals(0, purchaseReads[0]);
+
+		service.dispatch(new DispatchRequest(List.of(MONTH), ACCOUNT, "destino@exemplo.com", "Assunto", "", false, new ReportOptions(false, false, true)));
+		assertEquals(1, purchaseReads[0]);
+		assertTrue(report.get(1).contains("Valor total das compras: R$ 10,50"), report.get(1));
+	}
+
+	@Test
 	void namesTheDriveFolderWithTheCnpj() throws Exception {
 		serviceWith(Set.of("12345678000190"), largeCompressor(), null).dispatch(REQUEST);
 
