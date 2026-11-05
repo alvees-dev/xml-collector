@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.ChoiceBox?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.RadioButton?>
+<?import javafx.scene.control.ToggleGroup?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.VBox?>
+
+<VBox spacing="10.0" xmlns="http://javafx.com/javafx/26" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.alveesdev.xmlcollector.ui.controller.OrganizeTabController">
+   <fx:define>
+      <ToggleGroup fx:id="organizeGroup" />
+   </fx:define>
+   <padding>
+      <Insets left="15.0" top="40.0" />
+   </padding>
+   <children>
+      <HBox alignment="CENTER_LEFT" spacing="20.0">
+         <children>
+            <VBox alignment="CENTER">
+               <children>
+                  <Label text="Modelos" />
+                  <Label text="de Separação" />
+               </children>
+            </VBox>
+            <ChoiceBox fx:id="choiceSeparation" prefWidth="150.0" />
+         </children>
+      </HBox>
+      <RadioButton fx:id="radioByDay" mnemonicParsing="false" text="Separado Por Dia" toggleGroup="$organizeGroup">
+         <VBox.margin>
+            <Insets top="25.0" />
+         </VBox.margin>
+      </RadioButton>
+      <RadioButton fx:id="radioSingleFolder" mnemonicParsing="false" text="Diretório Único" toggleGroup="$organizeGroup" />
+   </children>
+</VBox>

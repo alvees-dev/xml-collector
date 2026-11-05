@@ -117,14 +117,14 @@ public class DirectoryListEditor {
 		DirectoryTarget target = targets.apply(row.field().getText().trim());
 
 		row.testButton().setDisable(true);
-		showStatus(row, DirectoryTestText.RUNNING, "");
+		showStatus(row, DirectoryTestText.RUNNING, List.of());
 
 		Thread thread = new Thread(() -> {
 			DirectoryTestResult result = tester.test(target);
 
 			Platform.runLater(() -> {
 				row.testButton().setDisable(false);
-				showStatus(row, DirectoryTestText.of(result), styleOf(result));
+				showStatus(row, DirectoryTestText.of(result), List.of(styleOf(result)));
 			});
 		}, "directory-test-row");
 
@@ -132,17 +132,18 @@ public class DirectoryListEditor {
 		thread.start();
 	}
 
-	private static void showStatus(Row row, String text, String style) {
+	private static void showStatus(Row row, String text, List<String> styles) {
 		row.status().setText(text);
-		row.status().setStyle(style);
+		row.status().getStyleClass().setAll("label");
+		row.status().getStyleClass().addAll(styles);
 		row.status().setVisible(true);
 	}
 
 	private static String styleOf(DirectoryTestResult result) {
 		return switch (result.status()) {
-			case OK -> "-fx-text-fill: #2e7d32;";
-			case WARNING -> "-fx-text-fill: #e65100;";
-			case FAILED -> "-fx-text-fill: #c62828; -fx-font-weight: bold;";
+			case OK -> "test-ok";
+			case WARNING -> "test-warning";
+			case FAILED -> "text-danger";
 		};
 	}
 }

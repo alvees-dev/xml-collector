@@ -4,8 +4,6 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.attribute.FileTime;
 import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -13,11 +11,8 @@ import java.util.Set;
 import java.util.SortedMap;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CancellationException;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Future;
 import java.util.function.BooleanSupplier;
-import java.util.function.Consumer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -54,12 +49,8 @@ class SourceProcessor {
 			String canonicalName,
 			String identity) {
 
-		String preferredKey() {
-			return key(directory.resolve(preferredName));
-		}
-
-		String canonicalKey() {
-			return key(directory.resolve(canonicalName));
+		List<String> targets() {
+			return List.of(key(directory.resolve(preferredName)), key(directory.resolve(canonicalName)));
 		}
 
 		private static String key(Path path) {
@@ -86,7 +77,7 @@ class SourceProcessor {
 	private final SourceFiles sourceFiles;
 	private final DocumentReader reader;
 	private final DocumentArchive archive;
-	private final ExecutorService executor;
+	private final ParallelTasks parallel;
 
 	private final CollectionRules rules;
 	private final Counters counters = new Counters();
@@ -97,7 +88,7 @@ class SourceProcessor {
 		this.sourceFiles = sourceFiles;
 		this.reader = reader;
 		this.archive = archive;
-		this.executor = executor;
+		this.parallel = new ParallelTasks(executor);
 		this.rules = new CollectionRules(request.period(), request.target().invoice());
 	}
 
@@ -160,7 +151,7 @@ class SourceProcessor {
 
 		List<ReadFile> results = new ArrayList<>();
 
-		awaitAll(submitAll(tasks), result -> {
+		parallel.runAll(tasks, result -> {
 			results.add(result);
 			onFileDone.run();
 		});
@@ -275,7 +266,7 @@ class SourceProcessor {
 		StoreResult[] results = new StoreResult[jobs.size()];
 		List<Callable<Void>> tasks = new ArrayList<>();
 
-		for (List<Integer> group : groupByTargetFile(jobs)) {
+		for (List<Integer> group : TargetFileGroups.of(jobs.stream().map(StoreJob::targets).toList())) {
 			tasks.add(() -> {
 				for (int index : group) {
 					throwIfCancelled(cancelled);
@@ -285,7 +276,7 @@ class SourceProcessor {
 			});
 		}
 
-		awaitAll(submitAll(tasks), ignored -> {
+		parallel.runAll(tasks, ignored -> {
 		});
 
 		for (StoreResult result : results) {
@@ -316,77 +307,6 @@ class SourceProcessor {
 			String reason = Failures.describe(e);
 			LOG.log(Level.WARNING, "File not stored: " + job.sourceName(), e);
 			return new StoreResult(null, new CopyFailure(job.sourceName(), reason));
-		}
-	}
-
-	private static List<List<Integer>> groupByTargetFile(List<StoreJob> jobs) {
-
-		int[] parent = new int[jobs.size()];
-		for (int i = 0; i < parent.length; i++) {
-			parent[i] = i;
-		}
-
-		Map<String, Integer> owner = new HashMap<>();
-
-		for (int i = 0; i < jobs.size(); i++) {
-			for (String key : List.of(jobs.get(i).preferredKey(), jobs.get(i).canonicalKey())) {
-				Integer previous = owner.putIfAbsent(key, i);
-
-				if (previous != null) {
-					parent[find(parent, i)] = find(parent, previous);
-				}
-			}
-		}
-
-		Map<Integer, List<Integer>> groups = new LinkedHashMap<>();
-
-		for (int i = 0; i < jobs.size(); i++) {
-			groups.computeIfAbsent(find(parent, i), root -> new ArrayList<>()).add(i);
-		}
-
-		return new ArrayList<>(groups.values());
-	}
-
-	private static int find(int[] parent, int index) {
-		while (parent[index] != index) {
-			parent[index] = parent[parent[index]];
-			index = parent[index];
-		}
-		return index;
-	}
-
-	private <T> List<Future<T>> submitAll(List<Callable<T>> tasks) {
-		List<Future<T>> futures = new ArrayList<>();
-
-		for (Callable<T> task : tasks) {
-			futures.add(executor.submit(task));
-		}
-
-		return futures;
-	}
-
-	private static <T> void awaitAll(List<Future<T>> futures, Consumer<T> onResult) {
-		try {
-			for (Future<T> future : futures) {
-				onResult.accept(future.get());
-			}
-		} catch (InterruptedException e) {
-			Thread.currentThread().interrupt();
-			throw new CancellationException("Coleta cancelada");
-		} catch (ExecutionException e) {
-			Throwable cause = e.getCause();
-
-			if (cause instanceof RuntimeException runtime) {
-				throw runtime;
-			}
-			if (cause instanceof Error error) {
-				throw error;
-			}
-			throw new IllegalStateException(cause);
-		} finally {
-			for (Future<T> future : futures) {
-				future.cancel(true);
-			}
 		}
 	}
 

@@ -20,9 +20,9 @@ import javafx.scene.layout.VBox;
 public class ProgressController {
 
 	private static final double STATUS_LABEL_WIDTH = 130;
-	private static final String DONE_STYLE = "-fx-text-fill: #2e7d32; -fx-font-weight: bold;";
-	private static final String WARNING_STYLE = "-fx-text-fill: #b26a00; -fx-font-weight: bold;";
-	private static final String FAILED_STYLE = "-fx-text-fill: #c62828; -fx-font-weight: bold;";
+	private static final String DONE_STYLE = "progress-done";
+	private static final String WARNING_STYLE = "progress-warning";
+	private static final String FAILED_STYLE = "text-danger";
 
 	private record SourceRow(ProgressBar bar, Label status) {
 	}
@@ -65,15 +65,15 @@ public class ProgressController {
 			case READING -> row.bar().setProgress((double) progress.processed() / Math.max(progress.total(), 1));
 			case DONE -> {
 				row.bar().setProgress(1);
-				row.status().setStyle(DONE_STYLE);
+				row.status().getStyleClass().setAll("label", DONE_STYLE);
 			}
 			case DONE_WITH_WARNING -> {
 				row.bar().setProgress(1);
-				row.status().setStyle(WARNING_STYLE);
+				row.status().getStyleClass().setAll("label", WARNING_STYLE);
 			}
 			case FAILED -> {
 				row.bar().setProgress(0);
-				row.status().setStyle(FAILED_STYLE);
+				row.status().getStyleClass().setAll("label", FAILED_STYLE);
 			}
 		}
 	}
@@ -88,7 +88,7 @@ public class ProgressController {
 			case RUNNING -> row.bar().setProgress(ProgressBar.INDETERMINATE_PROGRESS);
 			case DONE -> {
 				row.bar().setProgress(1);
-				row.status().setStyle(DONE_STYLE);
+				row.status().getStyleClass().setAll("label", DONE_STYLE);
 			}
 			case SKIPPED -> row.bar().setProgress(0);
 		}

@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.ChoiceBox?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.PasswordField?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.VBox?>
+
+<VBox prefHeight="200.0" prefWidth="100.0" xmlns="http://javafx.com/javafx/26" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.alveesdev.xmlcollector.ui.controller.CertificateTabController">
+   <children>
+      <Label text="Certificado A1 (.pfx)">
+         <VBox.margin>
+            <Insets left="25.0" top="30.0" />
+         </VBox.margin>
+      </Label>
+      <HBox spacing="8.0">
+         <VBox.margin>
+            <Insets left="25.0" right="25.0" />
+         </VBox.margin>
+         <children>
+            <TextField fx:id="txtCertificatePath" HBox.hgrow="ALWAYS" />
+            <Button mnemonicParsing="false" onAction="#onBrowseCertificate" text="Procurar" />
+         </children>
+      </HBox>
+      <Label text="Senha">
+         <VBox.margin>
+            <Insets left="25.0" top="10.0" />
+         </VBox.margin>
+      </Label>
+      <PasswordField fx:id="txtCertificatePassword" maxWidth="200.0">
+         <VBox.margin>
+            <Insets left="25.0" />
+         </VBox.margin>
+      </PasswordField>
+      <Label text="Ambiente da inutilização">
+         <VBox.margin>
+            <Insets left="25.0" top="10.0" />
+         </VBox.margin>
+      </Label>
+      <ChoiceBox fx:id="choiceEnvironment" prefWidth="150.0">
+         <VBox.margin>
+            <Insets left="25.0" />
+         </VBox.margin>
+      </ChoiceBox>
+      <Label fx:id="lblEnvironmentHint" maxWidth="330.0" wrapText="true">
+         <VBox.margin>
+            <Insets left="25.0" top="6.0" />
+         </VBox.margin>
+      </Label>
+      <Button mnemonicParsing="false" onAction="#onCheckCertificate" text="Conferir certificado">
+         <VBox.margin>
+            <Insets left="25.0" top="14.0" />
+         </VBox.margin>
+      </Button>
+   </children>
+</VBox>

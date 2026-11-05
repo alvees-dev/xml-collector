@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.ChoiceBox?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.Separator?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.VBox?>
+
+<VBox xmlns="http://javafx.com/javafx/26" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.alveesdev.xmlcollector.ui.controller.ModelsTabController">
+   <children>
+      <HBox alignment="CENTER_LEFT" spacing="20.0">
+         <padding>
+            <Insets bottom="30.0" left="20.0" top="30.0" />
+         </padding>
+         <children>
+            <Label text="Tipo PDV">
+               <HBox.margin>
+                  <Insets left="25.0" />
+               </HBox.margin>
+            </Label>
+            <ChoiceBox fx:id="choicePdvType" prefWidth="100.0">
+               <HBox.margin>
+                  <Insets />
+               </HBox.margin>
+            </ChoiceBox>
+         </children>
+      </HBox>
+      <Separator />
+      <HBox prefHeight="100.0" prefWidth="200.0">
+         <children>
+            <Label text="Modelo de Busca PDV">
+               <HBox.margin>
+                  <Insets left="20.0" top="40.0" />
+               </HBox.margin>
+            </Label>
+            <ChoiceBox fx:id="choicePdvModel" prefWidth="150.0">
+               <HBox.margin>
+                  <Insets left="20.0" top="35.0" />
+               </HBox.margin>
+            </ChoiceBox>
+         </children>
+      </HBox>
+      <Separator />
+      <HBox alignment="CENTER_LEFT" spacing="10.0">
+         <padding>
+            <Insets bottom="15.0" left="20.0" top="10.0" />
+         </padding>
+         <children>
+            <Label text="Modelo de Busca NFe">
+               <HBox.margin>
+                  <Insets top="25.0" />
+               </HBox.margin>
+            </Label>
+            <ChoiceBox fx:id="choiceNfeModel" prefWidth="150.0">
+               <HBox.margin>
+                  <Insets left="15.0" top="25.0" />
+               </HBox.margin>
+            </ChoiceBox>
+         </children>
+      </HBox>
+   </children>
+</VBox>

@@ -65,11 +65,11 @@ public final class PropertiesSettingsRepository implements SettingsRepository {
 		return new AppSettings(
 				readDirectories(properties, PDV_DIRECTORIES_PREFIX, defaults.pdvDirectories()),
 				readDirectories(properties, NFE_DIRECTORIES_PREFIX, defaults.nfeDirectories()),
-				parsePdvType(properties.getProperty(PDV_TYPE_KEY), defaults.pdvType()),
+				parseEnum(PdvType.class, properties.getProperty(PDV_TYPE_KEY), defaults.pdvType()),
 				properties.getProperty(PDV_MODEL_KEY, defaults.pdvModelId()),
 				properties.getProperty(NFE_MODEL_KEY, defaults.nfeModelId()),
-				parseOrganizeMode(properties.getProperty(ORGANIZE_MODE_KEY), defaults.organizeMode()),
-				parseSeparationMode(properties.getProperty(SEPARATION_MODE_KEY), defaults.separationMode()),
+				parseEnum(OrganizeMode.class, properties.getProperty(ORGANIZE_MODE_KEY), defaults.organizeMode()),
+				parseEnum(SeparationMode.class, properties.getProperty(SEPARATION_MODE_KEY), defaults.separationMode()),
 				readEmailAccount(properties),
 				new EmailDraft(
 						properties.getProperty(RECIPIENT_KEY, ""),
@@ -160,19 +160,11 @@ public final class PropertiesSettingsRepository implements SettingsRepository {
 		EmailAccount account = new EmailAccount(
 				properties.getProperty(HOST_KEY, defaultAccount.host()),
 				parsePort(properties.getProperty(PORT_KEY), defaultAccount.port()),
-				parseSecurity(properties.getProperty(SECURITY_KEY), defaultAccount.security()),
+				parseEnum(EmailSecurity.class, properties.getProperty(SECURITY_KEY), defaultAccount.security()),
 				properties.getProperty(USERNAME_KEY, defaultAccount.username()),
 				password);
 
 		return account.isComplete() || !defaultAccount.isComplete() ? account : defaultAccount;
-	}
-
-	private static OrganizeMode parseOrganizeMode(String text, OrganizeMode fallback) {
-		try {
-			return text == null ? fallback : OrganizeMode.valueOf(text.trim());
-		} catch (IllegalArgumentException e) {
-			return fallback;
-		}
 	}
 
 	private static CertificateSettings readCertificate(Properties properties) {
@@ -189,22 +181,6 @@ public final class PropertiesSettingsRepository implements SettingsRepository {
 				: FiscalEnvironment.HOMOLOGATION;
 	}
 
-	private static SeparationMode parseSeparationMode(String text, SeparationMode fallback) {
-		try {
-			return text == null ? fallback : SeparationMode.valueOf(text.trim());
-		} catch (IllegalArgumentException e) {
-			return fallback;
-		}
-	}
-
-	private static PdvType parsePdvType(String text, PdvType fallback) {
-		try {
-			return text == null ? fallback : PdvType.valueOf(text.trim());
-		} catch (IllegalArgumentException e) {
-			return fallback;
-		}
-	}
-
 	private static int parsePort(String text, int fallback) {
 		try {
 			return text == null ? fallback : Integer.parseInt(text.trim());
@@ -213,9 +189,9 @@ public final class PropertiesSettingsRepository implements SettingsRepository {
 		}
 	}
 
-	private static EmailSecurity parseSecurity(String text, EmailSecurity fallback) {
+	private static <E extends Enum<E>> E parseEnum(Class<E> type, String text, E fallback) {
 		try {
-			return text == null ? fallback : EmailSecurity.valueOf(text.trim());
+			return text == null ? fallback : Enum.valueOf(type, text.trim());
 		} catch (IllegalArgumentException e) {
 			return fallback;
 		}

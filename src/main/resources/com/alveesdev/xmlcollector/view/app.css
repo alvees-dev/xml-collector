@@ -1,0 +1,59 @@
+/* The frame of the settings window. */
+.settings-frame {
+    -fx-border-color: #808080;
+    -fx-border-width: 1;
+}
+
+/* The round add and remove buttons. Each glyph needs its own nudge to sit at the center of the circle. */
+.round-button {
+    -fx-background-radius: 50;
+    -fx-border-radius: 50;
+    -fx-border-width: 0;
+    -fx-font-size: 25;
+    -fx-font-weight: bold;
+    -fx-cursor: hand;
+    -fx-alignment: center;
+    -fx-content-display: center;
+}
+
+.round-button-add {
+    -fx-padding: -8 1 0 0;
+}
+
+.round-button-remove {
+    -fx-padding: -8 0 0 0;
+}
+
+.plain-scroll {
+    -fx-background-color: transparent;
+    -fx-padding: 0;
+}
+
+/* Messages that tell how something went. */
+.text-danger {
+    -fx-text-fill: #c62828;
+    -fx-font-weight: bold;
+}
+
+.test-ok {
+    -fx-text-fill: #2e7d32;
+}
+
+.test-warning {
+    -fx-text-fill: #e65100;
+}
+
+.progress-title {
+    -fx-font-size: 16px;
+    -fx-font-weight: bold;
+}
+
+.progress-done {
+    -fx-text-fill: #2e7d32;
+    -fx-font-weight: bold;
+}
+
+.progress-warning {
+    -fx-text-fill: #b26a00;
+    -fx-font-weight: bold;
+}
