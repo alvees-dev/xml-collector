@@ -155,7 +155,7 @@ public class DispatchTabController {
 					recordStep(progress);
 					window.update(progress);
 				}),
-				new TaskRunner.Handlers<>(result -> Dialogs.info(FUNCTION, DispatchText.success(monthLabel, request.recipient(), result)),
+				new TaskRunner.Handlers<>(result -> Dialogs.dispatchCompleted(DispatchText.success(monthLabel, request.recipient(), result)),
 						error -> Dialogs.error(FUNCTION, DispatchText.failure(error)),
 						() -> Dialogs.warning("Envio cancelado. O e-mail não foi enviado.")));
 	}

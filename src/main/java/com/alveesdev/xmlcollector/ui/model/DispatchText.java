@@ -2,16 +2,12 @@ package com.alveesdev.xmlcollector.ui.model;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Locale;
 
 import com.alveesdev.xmlcollector.application.dispatch.DispatchResult;
 import com.alveesdev.xmlcollector.application.dispatch.ReportOptions;
 import com.alveesdev.xmlcollector.application.port.DispatchException;
 
 public final class DispatchText {
-
-	private static final Locale BRAZIL = Locale.forLanguageTag("pt-BR");
-	private static final double BYTES_PER_MEGABYTE = 1024.0 * 1024.0;
 
 	private DispatchText() {
 	}
@@ -39,15 +35,14 @@ public final class DispatchText {
 
 	public static String success(String monthLabel, String recipient, DispatchResult result) {
 
-		String size = String.format(BRAZIL, "%.1f MB", result.totalZipBytes() / BYTES_PER_MEGABYTE);
+		String sent = "O arquivo XML de " + monthLabel + " foi enviado para " + recipient + " com Sucesso!";
 
 		if (result.method() == DispatchResult.Method.ATTACHED) {
-			return "E-mail enviado para " + recipient + " com o XML de " + monthLabel
-					+ " em anexo (" + size + ").";
+			return sent;
 		}
 
-		String success = "O Arquivo XML de " + monthLabel + " (" + size + ") passou do limite de 25 MB e foi salvo no Google Drive."
-				+ "\nO link para acessar a pasta foi enviado para " + recipient + "."
+		String success = sent
+				+ "\n\nEle passou do limite de 25 MB, então foi salvo no Google Drive e o e-mail levou o link da pasta."
 				+ "\n\nLink: " + result.driveLink();
 
 		if (result.driveCleanupFailure() == null) {

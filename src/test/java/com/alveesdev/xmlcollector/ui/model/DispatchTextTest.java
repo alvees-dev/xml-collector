@@ -17,10 +17,10 @@ class DispatchTextTest {
 	private static final long THREE_AND_A_HALF_MEGABYTES = 3_670_016;
 
 	@Test
-	void anAttachedFileShowsTheSizeInTheBrazilianWay() {
+	void anAttachedFileSaysWhatWasSentAndToWhomWithoutItsSize() {
 		DispatchResult result = new DispatchResult(DispatchResult.Method.ATTACHED, List.of(), THREE_AND_A_HALF_MEGABYTES, null, null);
 
-		assertEquals("E-mail enviado para contador@exemplo.com com o XML de Janeiro de 2026 em anexo (3,5 MB).",
+		assertEquals("O arquivo XML de Janeiro de 2026 foi enviado para contador@exemplo.com com Sucesso!",
 				DispatchText.success("Janeiro de 2026", "contador@exemplo.com", result));
 	}
 
@@ -30,8 +30,9 @@ class DispatchTextTest {
 
 		String text = DispatchText.success("Janeiro de 2026", "contador@exemplo.com", result);
 
+		assertTrue(text.startsWith("O arquivo XML de Janeiro de 2026 foi enviado para contador@exemplo.com com Sucesso!"), text);
 		assertTrue(text.contains("passou do limite de 25 MB"), text);
-		assertTrue(text.contains("foi enviado para contador@exemplo.com"), text);
+		assertFalse(text.contains("3,5"), text);
 		assertTrue(text.endsWith("Link: http://exemplo/pasta"), text);
 		assertFalse(text.contains("Atenção"), text);
 	}

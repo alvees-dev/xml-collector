@@ -25,7 +25,11 @@ import javafx.scene.control.ButtonType;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextInputDialog;
 import javafx.scene.layout.Priority;
+import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
+import javafx.scene.paint.Color;
+import javafx.scene.shape.Circle;
+import javafx.scene.shape.SVGPath;
 import javafx.stage.Window;
 
 public final class Dialogs {
@@ -36,6 +40,10 @@ public final class Dialogs {
 		CANCEL
 	}
 
+	private static final String DISPATCH_COMPLETED = "Envio Concluído";
+	private static final String CHECK_SHAPE = "M 0 7 L 6 13 L 17 1";
+	private static final double CHECK_RADIUS = 18;
+	private static final Color CHECK_GREEN = Color.web("#2e7d32");
 	private static final double MESSAGE_WIDTH = 560;
 	private static final double WHOLE_MESSAGE_WIDTH = 760;
 	private static final String MESSAGE_STYLE = "-fx-control-inner-background: -fx-background; -fx-background-color: transparent;"
@@ -107,6 +115,23 @@ public final class Dialogs {
 		alert.getDialogPane().setContent(content);
 		alert.getDialogPane().setPrefWidth(MESSAGE_WIDTH);
 		return alert;
+	}
+
+	public static void dispatchCompleted(String message) {
+		Alert alert = summary(Alert.AlertType.INFORMATION, DISPATCH_COMPLETED, message);
+		alert.setTitle(DISPATCH_COMPLETED);
+		alert.setGraphic(greenCheck());
+		alert.showAndWait();
+	}
+
+	private static Node greenCheck() {
+		SVGPath check = new SVGPath();
+		check.setContent(CHECK_SHAPE);
+		check.setFill(Color.TRANSPARENT);
+		check.setStroke(Color.WHITE);
+		check.setStrokeWidth(3);
+
+		return new StackPane(new Circle(CHECK_RADIUS, CHECK_GREEN), check);
 	}
 
 	private static Node previewOf(String message) {
