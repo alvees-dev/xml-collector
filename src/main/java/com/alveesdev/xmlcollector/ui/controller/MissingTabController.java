@@ -1,18 +1,10 @@
 package com.alveesdev.xmlcollector.ui.controller;
 
 import java.io.IOException;
-import java.nio.file.Path;
-import java.time.YearMonth;
-import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
-import java.util.SortedMap;
-import java.util.TreeMap;
 import java.util.function.Consumer;
-import java.util.function.IntPredicate;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -26,20 +18,17 @@ import com.alveesdev.xmlcollector.application.settings.AppSettings;
 import com.alveesdev.xmlcollector.application.settings.CertificateSettings;
 import com.alveesdev.xmlcollector.application.settings.SearchModelCatalog;
 import com.alveesdev.xmlcollector.application.settings.service.SettingsService;
+import com.alveesdev.xmlcollector.application.voiding.MissingNumbersSession;
 import com.alveesdev.xmlcollector.application.voiding.VoidingBatch;
 import com.alveesdev.xmlcollector.application.voiding.VoidingOutcome;
 import com.alveesdev.xmlcollector.application.voiding.VoidingPlanner;
-import com.alveesdev.xmlcollector.application.voiding.VoidingProgress;
+import com.alveesdev.xmlcollector.application.voiding.VoidingPreparation;
 import com.alveesdev.xmlcollector.domain.model.DateRange;
 import com.alveesdev.xmlcollector.domain.model.DocumentCategory;
-import com.alveesdev.xmlcollector.domain.model.DocumentEntry;
 import com.alveesdev.xmlcollector.domain.model.FiscalEnvironment;
 import com.alveesdev.xmlcollector.domain.model.NumberRange;
 import com.alveesdev.xmlcollector.domain.model.PdvSearchModel;
-import com.alveesdev.xmlcollector.domain.model.SeriesOwner;
-import com.alveesdev.xmlcollector.domain.model.VoidingRequest;
 import com.alveesdev.xmlcollector.domain.model.XmlDocument;
-import com.alveesdev.xmlcollector.domain.service.MissingNumberFinder;
 import com.alveesdev.xmlcollector.ui.model.FailureText;
 import com.alveesdev.xmlcollector.ui.model.MissingTableModel;
 import com.alveesdev.xmlcollector.ui.model.SourceMode;
@@ -48,6 +37,7 @@ import com.alveesdev.xmlcollector.ui.view.ProgressWindow;
 
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
+import javafx.concurrent.Task;
 import javafx.fxml.FXML;
 import javafx.scene.Node;
 import javafx.scene.control.Button;
@@ -59,23 +49,17 @@ public class MissingTabController {
 
 	private static final Logger LOG = Logger.getLogger(MissingTabController.class.getName());
 	private static final double COLUMN_WIDTH = 110;
-	private static final int MAX_LISTED_PROBLEMS = 15;
 
 	private final CollectionService collectionService;
 	private final SettingsService settingsService;
 	private final SearchModelCatalog searchModels;
 	private final AppPaths paths;
 	private final VoidingBatch voidingBatch;
-	private final VoidingPlanner voidingPlanner;
+	private final VoidingPreparation voidingPreparation;
+
+	private final MissingNumbersSession session = new MissingNumbersSession();
 
 	private MissingTableModel model;
-	private CollectionRequest lastCollection;
-	private SortedMap<Integer, List<NumberRange>> missingBySeries = new TreeMap<>();
-	private Map<Integer, Set<Integer>> sourcesBySeries = Map.of();
-	private Map<Integer, Set<SeriesOwner>> ownersBySeries = Map.of();
-	private Map<Integer, Integer> firstNumberBySeries = Map.of();
-	private List<String> collectionProblems = List.of();
-	private List<String> searchProblems;
 	private Consumer<CollectionResult> onFound = result -> {
 	};
 
@@ -116,7 +100,7 @@ public class MissingTabController {
 		this.searchModels = searchModels;
 		this.paths = paths;
 		this.voidingBatch = voidingBatch;
-		this.voidingPlanner = voidingPlanner;
+		this.voidingPreparation = new VoidingPreparation(voidingPlanner, voidingBatch);
 	}
 
 	public void setOnFound(Consumer<CollectionResult> onFound) {
@@ -129,13 +113,7 @@ public class MissingTabController {
 	}
 
 	public void show(CollectionRequest request, CollectionResult result) {
-		lastCollection = request;
-		missingBySeries = result.missingBySeries();
-		sourcesBySeries = result.sourcesBySeries();
-		ownersBySeries = result.ownersBySeries();
-		firstNumberBySeries = result.firstNumberBySeries();
-		collectionProblems = VoidingPlanner.problemsOf(result);
-		searchProblems = null;
+		session.registerCollection(request, result);
 		show(MissingTableModel.fromResult(result));
 	}
 
@@ -156,35 +134,15 @@ public class MissingTabController {
 	@FXML
 	private void onSearchAll() {
 
-		Map<Integer, List<NumberRange>> wanted = missingBySeries;
-
-		if (wanted.values().stream().allMatch(List::isEmpty)) {
+		if (session.nothingMissing()) {
 			Dialogs.info("Não há notas faltantes para procurar. Faça a coleta primeiro.");
 			return;
 		}
 
-		search(btnSearchAll, wanted, result -> {
-			searchProblems = VoidingPlanner.problemsOf(result);
+		search(btnSearchAll, session.missing(), result -> {
+			session.registerSearchOfAll(result);
 			showFound(result);
 		});
-	}
-
-	private IntPredicate sourcesOfMissingSeries(Map<Integer, List<NumberRange>> wanted) {
-
-		// The series of each PDV come from the last collection, which only applies if it read these same PDVs.
-		if (!lastCollection.directories().equals(settingsService.current().pdvDirectories())) {
-			return index -> true;
-		}
-
-		Set<Integer> sources = new HashSet<>();
-
-		wanted.forEach((series, ranges) -> {
-			if (!ranges.isEmpty()) {
-				sources.addAll(sourcesBySeries.getOrDefault(series, Set.of()));
-			}
-		});
-
-		return sources.isEmpty() ? index -> true : sources::contains;
 	}
 
 	@FXML
@@ -207,20 +165,12 @@ public class MissingTabController {
 	@FXML
 	private void onVoidAll() {
 
-		if (lastCollection == null) {
+		if (!session.hasCollection()) {
 			Dialogs.warning("Não é possível Inutilizar Todas, pois nenhuma coleta foi feita.");
 			return;
 		}
 
-		Map<Integer, List<NumberRange>> wanted = new TreeMap<>();
-
-		missingBySeries.forEach((series, ranges) -> {
-			if (!ranges.isEmpty()) {
-				wanted.put(series, ranges);
-			}
-		});
-
-		voidNumbers(btnVoidAll, wanted, true);
+		voidNumbers(btnVoidAll, session.missingWithNumbers(), true);
 	}
 
 	@FXML
@@ -249,51 +199,82 @@ public class MissingTabController {
 
 	private void voidNumbers(Node trigger, Map<Integer, List<NumberRange>> wanted, boolean searchRequired) {
 
-		Optional<String> blocked = voidingBlock(searchRequired);
+		AppSettings settings = settingsService.current();
+		Optional<String> blocked = session.voidingBlock(settings.pdvDirectories(), searchRequired);
 
 		if (blocked.isPresent()) {
 			Dialogs.warning(blocked.get());
 			return;
 		}
 
-		AppSettings settings = settingsService.current();
 		CertificateSettings certificate = settings.certificate();
-		List<VoidingRequest> requests;
-		Map<Integer, List<Path>> pdvFolders;
+		String voidingFolder = searchModels.pdvModel(settings.pdvModelId()).voidingFolder();
+		List<String> pdvDirectories = settings.pdvDirectories();
 
-		try {
-			requests = voidingPlanner.plan(wanted, missingBySeries, ownersBySeries);
-			voidingBatch.checkCertificate(certificate, requests);
+		Optional<ProgressWindow> window = openProgress(trigger, "Conferindo certificado e pastas...");
 
-			// The month of the collection, so collecting that period again reads the file back.
-			pdvFolders = VoidingPlanner.pdvFolders(requests, settings.pdvDirectories(), sourcesBySeries,
-					searchModels.pdvModel(settings.pdvModelId()).voidingFolder(), YearMonth.from(lastCollection.period().to()));
-			voidingBatch.checkPdvFolders(pdvFolders);
-		} catch (VoidingException e) {
-			Dialogs.warning(e.getMessage());
+		if (window.isEmpty()) {
 			return;
 		}
 
-		if (searchProblems == null && !Dialogs.confirmVoidingWithoutSearch()) {
+		ProgressWindow progressWindow = window.get();
+		trigger.setDisable(true);
+
+		// A network folder that does not answer can hold this for a long time, and nothing has gone out yet.
+		Task<VoidingPreparation.Plan> task = BackgroundWork.start("xml-voiding-checks",
+				() -> voidingPreparation.prepare(session, wanted, certificate, pdvDirectories, voidingFolder),
+				plan -> {
+					progressWindow.close();
+					trigger.setDisable(false);
+					confirmAndSend(trigger, plan, certificate);
+				},
+				error -> {
+					progressWindow.close();
+					trigger.setDisable(false);
+					showCheckFailure(error);
+				});
+
+		task.setOnCancelled(event -> {
+			progressWindow.close();
+			trigger.setDisable(false);
+		});
+
+		progressWindow.setCancelAction(task::cancel);
+		progressWindow.show();
+	}
+
+	private static void showCheckFailure(Throwable error) {
+
+		if (error instanceof VoidingException) {
+			Dialogs.warning(error.getMessage());
 			return;
 		}
 
-		if (!Dialogs.confirmVoiding(requests, certificate.environment())) {
+		LOG.log(Level.SEVERE, "The checks before the voiding failed", error);
+		Dialogs.error(FailureText.of(error));
+	}
+
+	private void confirmAndSend(Node trigger, VoidingPreparation.Plan plan, CertificateSettings certificate) {
+
+		if (!session.searchedAll() && !Dialogs.confirmVoidingWithoutSearch()) {
 			return;
 		}
 
-		ProgressWindow progressWindow;
-
-		try {
-			progressWindow = new ProgressWindow(trigger.getScene().getWindow(), "Inutilização em andamento...");
-		} catch (IOException e) {
-			Dialogs.error("Erro ao abrir a tela de progresso: " + e.getMessage());
+		if (!Dialogs.confirmVoiding(plan.requests(), certificate.environment())) {
 			return;
 		}
+
+		Optional<ProgressWindow> window = openProgress(trigger, "Inutilização em andamento...");
+
+		if (window.isEmpty()) {
+			return;
+		}
+
+		ProgressWindow progressWindow = window.get();
 
 		// The month of the collection, so the file goes out with the documents of the gaps it closes.
-		VoidingTask task = new VoidingTask(voidingBatch, requests, certificate, paths.xmlArchiveDir(),
-				lastCollection.period().to(), pdvFolders);
+		VoidingTask task = new VoidingTask(voidingBatch, plan.requests(), certificate, paths.xmlArchiveDir(),
+				session.lastCollectedDay(), plan.pdvFolders());
 		progressWindow.setCancelAction(task::requestStop);
 
 		trigger.setDisable(true);
@@ -318,53 +299,19 @@ public class MissingTabController {
 		thread.start();
 	}
 
-	private Optional<String> voidingBlock(boolean searchRequired) {
-
-		if (lastCollection == null) {
-			return Optional.of("Faça a coleta antes de inutilizar.");
+	private static Optional<ProgressWindow> openProgress(Node trigger, String title) {
+		try {
+			return Optional.of(new ProgressWindow(trigger.getScene().getWindow(), title));
+		} catch (IOException e) {
+			Dialogs.error("Erro ao abrir a tela de progresso: " + e.getMessage());
+			return Optional.empty();
 		}
-
-		if (!lastCollection.directories().equals(settingsService.current().pdvDirectories())) {
-			return Optional.of("A última coleta não leu os PDVs configurados. Colete por Diretório PDV antes de inutilizar.");
-		}
-
-		if (!collectionProblems.isEmpty()) {
-			return Optional.of(blockedBy("A coleta teve problemas, e uma nota pode existir sem ter sido lida:", collectionProblems));
-		}
-
-		if (searchProblems == null) {
-			return searchRequired
-					? Optional.of("Clique em Procurar Todas antes de inutilizar, para só inutilizar o que realmente não foi encontrado.")
-					: Optional.empty();
-		}
-
-		if (!searchProblems.isEmpty()) {
-			return Optional.of(blockedBy("A busca teve problemas, e uma nota pode existir sem ter sido lida:", searchProblems));
-		}
-
-		return Optional.empty();
-	}
-
-	private static String blockedBy(String reason, List<String> problems) {
-		return reason + "\n\n" + String.join("\n", problems.stream().limit(MAX_LISTED_PROBLEMS).toList())
-				+ "\n\nResolva e faça a coleta de novo antes de inutilizar.";
 	}
 
 	private void showVoided(List<VoidingOutcome> outcomes, FiscalEnvironment environment) {
 
-		// A homologation approval has no fiscal effect, so the numbers are still missing.
-		if (environment == FiscalEnvironment.PRODUCTION) {
-			SortedMap<Integer, List<NumberRange>> remaining = new TreeMap<>(missingBySeries);
-
-			for (VoidingOutcome outcome : outcomes) {
-				if (outcome.stage() == VoidingProgress.Stage.APPROVED) {
-					int series = outcome.request().series();
-					remaining.put(series, MissingNumberFinder.subtract(remaining.getOrDefault(series, List.of()), List.of(outcome.request().range())));
-				}
-			}
-
-			missingBySeries = remaining;
-			show(MissingTableModel.fromMissing(remaining));
+		if (session.registerVoided(outcomes, environment)) {
+			show(MissingTableModel.fromMissing(session.missing()));
 		}
 
 		Dialogs.voidingSummary(outcomes, environment);
@@ -372,7 +319,7 @@ public class MissingTabController {
 
 	private void search(Node trigger, Map<Integer, List<NumberRange>> wanted, Consumer<CollectionResult> onSuccess) {
 
-		if (lastCollection == null) {
+		if (!session.hasCollection()) {
 			Dialogs.warning("Faça a coleta primeiro para definir o período da busca.");
 			return;
 		}
@@ -386,48 +333,23 @@ public class MissingTabController {
 			return;
 		}
 
-		// A gap before the first number can be the last note of the previous month.
-		DateRange period = startsBeforeTheCollection(wanted) ? lastCollection.period().fromThePreviousMonth() : lastCollection.period();
+		DateRange period = session.searchPeriod(wanted);
 
 		CollectionRequest request = new CollectionRequest(
 				settings.pdvDirectories(), DocumentCategory.NFCE, period, settings.organizeMode(),
 				paths.xmlArchiveDir(), folders,
-				CollectionTarget.missing(wanted, sourcesOfMissingSeries(wanted), searchModel.missingFileSuffix()),
+				CollectionTarget.missing(wanted, session.sourcesToSearch(wanted, settings.pdvDirectories()), searchModel.missingFileSuffix()),
 				settings.separationMode());
 
 		CollectionRunner.run(trigger, "Procurando notas faltantes", collectionService, request, SourceMode.PDV_DIRECTORIES, onSuccess);
 	}
 
-	private boolean startsBeforeTheCollection(Map<Integer, List<NumberRange>> wanted) {
-		return wanted.entrySet().stream().anyMatch(entry -> entry.getValue().stream()
-				.anyMatch(range -> firstNumberBySeries.containsKey(entry.getKey()) && range.start() < firstNumberBySeries.get(entry.getKey())));
-	}
-
 	private void showFound(CollectionResult result) {
 
-		List<XmlDocument.Invoice> found = result.entries().stream()
-				.map(DocumentEntry::invoice)
-				.filter(invoice -> invoice != null)
-				.toList();
-
-		SortedMap<Integer, List<NumberRange>> remaining = new TreeMap<>();
-
-		missingBySeries.forEach((series, ranges) -> {
-			List<NumberRange> foundInSeries = new ArrayList<>();
-
-			for (XmlDocument.Invoice invoice : found) {
-				if (invoice.series() == series) {
-					foundInSeries.add(new NumberRange(invoice.number(), invoice.number()));
-				}
-			}
-
-			remaining.put(series, MissingNumberFinder.subtract(ranges, foundInSeries));
-		});
-
-		missingBySeries = remaining;
+		List<XmlDocument.Invoice> found = session.registerFound(result);
 
 		if (model != null && model.isSeriesBased()) {
-			show(MissingTableModel.fromMissing(remaining));
+			show(MissingTableModel.fromMissing(session.missing()));
 		}
 
 		onFound.accept(result);

@@ -6,12 +6,13 @@ import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.function.Function;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import java.util.stream.Stream;
 
 import com.alveesdev.xmlcollector.application.connection.DirectoryTarget;
 import com.alveesdev.xmlcollector.application.connection.DirectoryTester;
 import com.alveesdev.xmlcollector.application.port.VoidingException;
-import com.alveesdev.xmlcollector.application.port.VoidingGatewayFactory;
 import com.alveesdev.xmlcollector.application.settings.AppSettings;
 import com.alveesdev.xmlcollector.application.settings.CertificateSettings;
 import com.alveesdev.xmlcollector.application.settings.EmailAccount;
@@ -25,11 +26,14 @@ import com.alveesdev.xmlcollector.domain.model.PdvSearchModel;
 import com.alveesdev.xmlcollector.domain.model.PdvType;
 import com.alveesdev.xmlcollector.domain.model.SearchFolderPattern;
 import com.alveesdev.xmlcollector.domain.model.SeparationMode;
+import com.alveesdev.xmlcollector.ui.model.FailureText;
 import com.alveesdev.xmlcollector.ui.model.VoidingText;
 import com.alveesdev.xmlcollector.ui.view.Dialogs;
 import com.alveesdev.xmlcollector.ui.view.DirectoryListEditor;
 
+import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
+import javafx.scene.Node;
 import javafx.scene.control.Button;
 import javafx.scene.control.ChoiceBox;
 import javafx.scene.control.Label;
@@ -44,6 +48,7 @@ import javafx.util.StringConverter;
 
 public class SettingsController {
 
+	private static final Logger LOG = Logger.getLogger(SettingsController.class.getName());
 	private static final DateTimeFormatter VALIDITY_FORMAT = DateTimeFormatter.ofPattern("dd/MM/yyyy").withZone(ZoneId.systemDefault());
 
 	private final SettingsService settingsService;
@@ -156,16 +161,35 @@ public class SettingsController {
 	}
 
 	@FXML
-	private void onCheckCertificate() {
-		try {
-			VoidingGatewayFactory.CertificateInfo certificate = voidingBatch.checkCertificate(readCertificate());
+	private void onCheckCertificate(ActionEvent event) {
 
-			Dialogs.info("Certificado válido.\n\nCNPJ: " + certificate.cnpj()
-					+ "\nVálido até: " + VALIDITY_FORMAT.format(certificate.validUntil()));
+		Node trigger = (Node) event.getSource();
+		CertificateSettings settings = readCertificate();
 
-		} catch (VoidingException e) {
-			Dialogs.warning(e.getMessage());
+		trigger.setDisable(true);
+
+		// The certificate can be on a network folder, which may take long to answer.
+		BackgroundWork.start("xml-certificate-check", () -> voidingBatch.checkCertificate(settings),
+				certificate -> {
+					trigger.setDisable(false);
+					Dialogs.info("Certificado válido.\n\nCNPJ: " + certificate.cnpj()
+							+ "\nVálido até: " + VALIDITY_FORMAT.format(certificate.validUntil()));
+				},
+				error -> {
+					trigger.setDisable(false);
+					showCertificateFailure(error);
+				});
+	}
+
+	private static void showCertificateFailure(Throwable error) {
+
+		if (error instanceof VoidingException) {
+			Dialogs.warning(error.getMessage());
+			return;
 		}
+
+		LOG.log(Level.SEVERE, "The certificate could not be checked", error);
+		Dialogs.error(FailureText.of(error));
 	}
 
 	@FXML
