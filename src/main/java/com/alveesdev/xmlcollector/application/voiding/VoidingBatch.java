@@ -9,6 +9,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import com.alveesdev.xmlcollector.application.port.DocumentArchive;
 import com.alveesdev.xmlcollector.application.port.VoidingException;
@@ -19,6 +21,7 @@ import com.alveesdev.xmlcollector.domain.model.VoidingRequest;
 
 public class VoidingBatch {
 
+	private static final Logger LOG = Logger.getLogger(VoidingBatch.class.getName());
 	private static final int CNPJ_ROOT_LENGTH = 8;
 
 	private final VoidingGatewayFactory gateways;
@@ -73,7 +76,7 @@ public class VoidingBatch {
 			VoidingRequest request = requests.get(index);
 
 			if (stopped || cancelled.getAsBoolean()) {
-				outcomes.add(new VoidingOutcome(request, Stage.NOT_SENT, null));
+				record(outcomes, new VoidingOutcome(request, Stage.NOT_SENT, null), settings);
 				listener.accept(new VoidingProgress(index, Stage.NOT_SENT));
 				continue;
 			}
@@ -84,8 +87,8 @@ public class VoidingBatch {
 				VoidingResult result = service.voidRange(request, archiveRoot, archiveDate, pdvFolders.getOrDefault(request.series(), List.of()));
 				Stage stage = result.receipt().approved() ? Stage.APPROVED : Stage.REJECTED;
 
-				outcomes.add(new VoidingOutcome(request, stage, result.receipt().status() + " - " + result.receipt().reason(),
-						result.archiveFailure(), result.pdvFailures()));
+				record(outcomes, new VoidingOutcome(request, stage, result.receipt().status() + " - " + result.receipt().reason(),
+						result.archiveFailure(), result.pdvFailures()), settings);
 				listener.accept(new VoidingProgress(index, stage));
 
 				// The file of this range is not safe yet, so no other one goes out until that is solved.
@@ -94,12 +97,23 @@ public class VoidingBatch {
 			} catch (VoidingException e) {
 				// The answer is unknown, so nothing else goes out until someone checks the Sefaz.
 				stopped = true;
-				outcomes.add(new VoidingOutcome(request, Stage.FAILED, e.getMessage()));
+				LOG.log(Level.WARNING, "No known answer for the voiding " + request.id(), e);
+				record(outcomes, new VoidingOutcome(request, Stage.FAILED, e.getMessage()), settings);
 				listener.accept(new VoidingProgress(index, Stage.FAILED));
 			}
 		}
 
 		return outcomes;
+	}
+
+	// A voiding cannot be undone and the summary on the screen is gone once closed, so what happened to each range stays here.
+	private static void record(List<VoidingOutcome> outcomes, VoidingOutcome outcome, CertificateSettings settings) {
+		outcomes.add(outcome);
+
+		boolean clean = outcome.stage() == Stage.APPROVED && outcome.archiveFailure() == null && outcome.pdvFailures().isEmpty();
+
+		LOG.log(clean ? Level.INFO : Level.WARNING, "Voiding " + outcome.request().id() + " in " + settings.environment() + ": " + outcome.stage()
+				+ ", detail: " + outcome.detail() + ", archive failure: " + outcome.archiveFailure() + ", PDV failures: " + outcome.pdvFailures());
 	}
 
 	private static void requireSameCompany(VoidingGatewayFactory.CertificateInfo certificate, List<VoidingRequest> requests)
