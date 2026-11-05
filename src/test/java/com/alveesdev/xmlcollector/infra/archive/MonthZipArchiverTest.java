@@ -3,6 +3,7 @@ package com.alveesdev.xmlcollector.infra.archive;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.IOException;
@@ -126,6 +127,54 @@ class MonthZipArchiverTest {
 		Files.writeString(root.resolve("2026").resolve("Janeiro_2026.zip"), "zip");
 
 		assertTrue(archiver.existing(month).isEmpty());
+	}
+
+	@Test
+	void stopsWhenCancelledAndKeepsThePreviousZip() throws IOException {
+		Files.writeString(month.resolve("NFCe").resolve("nota.xml"), "<a/>");
+		archiver.compress(month, ZIP_NAME, List.of()).orElseThrow();
+		long previousSize = Files.size(root.resolve("2026").resolve(ZIP_NAME + ".zip"));
+
+		Files.writeString(month.resolve("NFCe").resolve("outra.xml"), "<b/>");
+		Thread.currentThread().interrupt();
+
+		try {
+			assertThrows(IOException.class, () -> archiver.compress(month, ZIP_NAME, List.of()));
+		} finally {
+			Thread.interrupted();
+		}
+
+		assertEquals(previousSize, Files.size(root.resolve("2026").resolve(ZIP_NAME + ".zip")));
+		assertEquals(List.of(ZIP_NAME + ".zip", "Janeiro"), namesIn(root.resolve("2026")));
+	}
+
+	@Test
+	void compressingAgainRightAfterCancellingWorks() throws Exception {
+		int files = 3000;
+
+		for (int index = 0; index < files; index++) {
+			Files.writeString(month.resolve("NFCe").resolve(index + ".xml"), "<nota>" + index + "</nota>");
+		}
+
+		Thread cancelled = new Thread(() -> {
+			try {
+				archiver.compress(month, ZIP_NAME, List.of());
+			} catch (IOException e) {
+				// What is expected from a compression that was cancelled.
+			}
+		});
+
+		cancelled.start();
+		cancelled.interrupt();
+
+		CompressedFile zip = archiver.compress(month, ZIP_NAME, List.of()).orElseThrow();
+		cancelled.join();
+
+		try (ZipFile file = new ZipFile(zip.file().toFile())) {
+			assertEquals(files, file.size());
+		}
+
+		assertEquals(List.of(ZIP_NAME + ".zip", "Janeiro"), namesIn(root.resolve("2026")));
 	}
 
 	private static List<String> namesIn(Path directory) throws IOException {

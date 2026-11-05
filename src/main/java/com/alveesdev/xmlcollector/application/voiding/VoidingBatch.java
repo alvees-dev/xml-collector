@@ -13,11 +13,13 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import com.alveesdev.xmlcollector.application.port.DocumentArchive;
+import com.alveesdev.xmlcollector.application.port.Failures;
 import com.alveesdev.xmlcollector.application.port.VoidingException;
 import com.alveesdev.xmlcollector.application.port.VoidingGatewayFactory;
 import com.alveesdev.xmlcollector.application.settings.CertificateSettings;
 import com.alveesdev.xmlcollector.application.voiding.VoidingProgress.Stage;
 import com.alveesdev.xmlcollector.domain.model.VoidingRequest;
+import com.alveesdev.xmlcollector.domain.service.ArchiveLayout;
 
 public class VoidingBatch {
 
@@ -60,6 +62,18 @@ public class VoidingBatch {
 		}
 	}
 
+	// The answer of the Sefaz exists only in memory until it is saved, so this has to be known before anything goes out.
+	public void checkArchiveFolder(Path archiveRoot, LocalDate archiveDate) throws VoidingException {
+		Path folder = ArchiveLayout.voidingDirectoryFor(archiveRoot, archiveDate);
+
+		try {
+			archive.requireWritable(folder);
+		} catch (IOException e) {
+			throw new VoidingException("Não é possível gravar na pasta de arquivos: " + folder
+					+ "\n\nNada foi enviado à Sefaz. Confira o acesso a essa pasta.", e);
+		}
+	}
+
 	public List<VoidingOutcome> run(List<VoidingRequest> requests, CertificateSettings settings,
 			Path archiveRoot, LocalDate archiveDate, Map<Integer, List<Path>> pdvFolders, Consumer<VoidingProgress> listener,
 			BooleanSupplier cancelled) throws VoidingException {
@@ -67,6 +81,7 @@ public class VoidingBatch {
 		VoidingGatewayFactory.Connection connection = gateways.open(settings);
 		requireSameCompany(connection.certificate(), requests);
 		checkPdvFolders(pdvFolders);
+		checkArchiveFolder(archiveRoot, archiveDate);
 
 		VoidingService service = new VoidingService(connection.gateway(), archive, clock, settings.environment());
 		List<VoidingOutcome> outcomes = new ArrayList<>();
@@ -88,17 +103,17 @@ public class VoidingBatch {
 				Stage stage = result.receipt().approved() ? Stage.APPROVED : Stage.REJECTED;
 
 				record(outcomes, new VoidingOutcome(request, stage, result.receipt().status() + " - " + result.receipt().reason(),
-						result.archiveFailure(), result.pdvFailures()), settings);
+						result.archiveFailure(), result.pdvFailures(), result.unsavedXml()), settings);
 				listener.accept(new VoidingProgress(index, stage));
 
 				// The file of this range is not safe yet, so no other one goes out until that is solved.
 				stopped = !result.pdvFailures().isEmpty();
 
-			} catch (VoidingException e) {
-				// The answer is unknown, so nothing else goes out until someone checks the Sefaz.
+			} catch (VoidingException | RuntimeException e) {
+				// The answer is unknown, so nothing else goes out until someone checks the Sefaz, and what was already answered is kept.
 				stopped = true;
 				LOG.log(Level.WARNING, "No known answer for the voiding " + request.id(), e);
-				record(outcomes, new VoidingOutcome(request, Stage.FAILED, e.getMessage()), settings);
+				record(outcomes, new VoidingOutcome(request, Stage.FAILED, Failures.describe(e)), settings);
 				listener.accept(new VoidingProgress(index, Stage.FAILED));
 			}
 		}
@@ -114,6 +129,10 @@ public class VoidingBatch {
 
 		LOG.log(clean ? Level.INFO : Level.WARNING, "Voiding " + outcome.request().id() + " in " + settings.environment() + ": " + outcome.stage()
 				+ ", detail: " + outcome.detail() + ", archive failure: " + outcome.archiveFailure() + ", PDV failures: " + outcome.pdvFailures());
+
+		if (outcome.unsavedXml() != null) {
+			LOG.severe("Approved voiding " + outcome.request().id() + " was not saved anywhere, its XML follows: " + outcome.unsavedXml());
+		}
 	}
 
 	private static void requireSameCompany(VoidingGatewayFactory.CertificateInfo certificate, List<VoidingRequest> requests)

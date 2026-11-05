@@ -196,4 +196,47 @@ class FiscalXmlReaderTest {
 				+ "<dhEvento>2026-01-16T10:00:00-03:00</dhEvento><tpEvento>" + type + "</tpEvento>"
 				+ "</infEvento></evento></procEventoNFe>";
 	}
+
+	@Test
+	void readsTheCancellationOfANoteWithAnAlphanumericCnpj() {
+		String key = "352601" + "12ABC34501DE35" + KEY.substring(20);
+
+		XmlDocument.CancelEvent event = assertInstanceOf(XmlDocument.CancelEvent.class, read(eventXml("110111", key, "ID110111" + key + "01")));
+
+		assertEquals("110111" + key + "01", event.eventId());
+		assertEquals("12ABC34501DE35", event.cancelledKey().cnpj());
+	}
+
+	@Test
+	void refusesAnEventIdThatEndsWithoutItsSequence() {
+		assertInstanceOf(XmlDocument.Unreadable.class, read(eventXml("110111", KEY, "ID110111" + KEY + "AB")));
+		assertInstanceOf(XmlDocument.Unreadable.class, read(eventXml("110111", KEY, "ID110111" + KEY + "1")));
+	}
+
+
+	@Test
+	void aVoidingWithAPathInPlaceOfItsCnpjIsUnreadable() {
+		String xml = voidingXml("102", "65").replace("12345678000190", "..\\..\\..\\fora");
+
+		assertInstanceOf(XmlDocument.Unreadable.class, read(xml));
+	}
+
+	@Test
+	void aVoidingWithAnInvalidCharacterInItsCnpjIsUnreadable() {
+		assertInstanceOf(XmlDocument.Unreadable.class, read(voidingXml("102", "65").replace("12345678000190", "1234567800:190")));
+	}
+
+	@Test
+	void aVoidingWithAnInvalidStateOrYearIsUnreadable() {
+		assertInstanceOf(XmlDocument.Unreadable.class, read(voidingXml("102", "65").replace("<cUF>35</cUF>", "<cUF>..</cUF>")));
+		assertInstanceOf(XmlDocument.Unreadable.class, read(voidingXml("102", "65").replace("<ano>26</ano>", "<ano>2/</ano>")));
+	}
+
+	@Test
+	void aVoidingCanHaveAnAlphanumericCnpj() {
+		XmlDocument.Voiding voiding = assertInstanceOf(XmlDocument.Voiding.class, read(voidingXml("102", "65").replace("12345678000190", "12ABC34501DE35")));
+
+		assertEquals("12ABC34501DE35", voiding.cnpj());
+	}
+
 }

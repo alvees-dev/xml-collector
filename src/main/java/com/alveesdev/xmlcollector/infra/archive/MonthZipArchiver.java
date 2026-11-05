@@ -1,6 +1,7 @@
 package com.alveesdev.xmlcollector.infra.archive;
 
 import java.io.IOException;
+import java.io.InterruptedIOException;
 import java.io.UncheckedIOException;
 import java.nio.file.AtomicMoveNotSupportedException;
 import java.nio.file.FileVisitResult;
@@ -60,7 +61,8 @@ public class MonthZipArchiver implements DirectoryCompressor {
 
 		String rootName = ArchiveLayout.monthLabel(monthDirectory);
 		Path zipFile = monthDirectory.resolveSibling(zipName + ZIP_SUFFIX);
-		Path temp = monthDirectory.resolveSibling(zipName + ZIP_SUFFIX + TEMP_SUFFIX);
+		// Its own temporary file, because a cancelled compression can still be ending when the next one starts.
+		Path temp = Files.createTempFile(monthDirectory.toAbsolutePath().getParent(), zipName + ZIP_SUFFIX + ".", TEMP_SUFFIX);
 		int[] entries = {0};
 
 		try (ZipOutputStream output = new ZipOutputStream(Files.newOutputStream(temp))) {
@@ -75,6 +77,10 @@ public class MonthZipArchiver implements DirectoryCompressor {
 
 				@Override
 				public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+					if (Thread.currentThread().isInterrupted()) {
+						throw new InterruptedIOException("Compactação cancelada");
+					}
+
 					if (attrs.isRegularFile() && !file.getFileName().toString().endsWith(TEMP_SUFFIX)) {
 						String relative = monthDirectory.relativize(file).toString().replace('\\', '/');
 

@@ -1,6 +1,8 @@
 package com.alveesdev.xmlcollector.application.voiding;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -25,6 +27,7 @@ import com.alveesdev.xmlcollector.domain.model.FiscalEnvironment;
 import com.alveesdev.xmlcollector.domain.model.NumberRange;
 import com.alveesdev.xmlcollector.domain.model.VoidingReceipt;
 import com.alveesdev.xmlcollector.domain.model.VoidingRequest;
+import com.alveesdev.xmlcollector.domain.service.ArchiveLayout;
 
 class VoidingServiceTest {
 
@@ -121,6 +124,35 @@ class VoidingServiceTest {
 
 		assertTrue(result.receipt().approved());
 		assertTrue(archive.names.isEmpty());
+	}
+
+	@Test
+	void keepsTheXmlWhenNoCopyReachedTheDisk() throws Exception {
+		archive.failure = new IOException("disco cheio");
+
+		VoidingResult result = service(APPROVED).voidRange(REQUEST, ROOT, COLLECTED, List.of(Path.of("pdv1")));
+
+		assertEquals(APPROVED.xml(), result.unsavedXml());
+	}
+
+	@Test
+	void aCopyInThePdvIsEnoughToNotKeepTheXml() throws Exception {
+		archive.failingDirectory = ArchiveLayout.voidingDirectoryFor(ROOT, COLLECTED);
+
+		VoidingResult result = service(APPROVED).voidRange(REQUEST, ROOT, COLLECTED, List.of(Path.of("pdv1")));
+
+		assertNotNull(result.archiveFailure());
+		assertNull(result.unsavedXml());
+	}
+
+	@Test
+	void aCopyInTheArchiveIsEnoughToNotKeepTheXml() throws Exception {
+		archive.failingDirectory = Path.of("pdv1");
+
+		VoidingResult result = service(APPROVED).voidRange(REQUEST, ROOT, COLLECTED, List.of(Path.of("pdv1")));
+
+		assertEquals(1, result.pdvFailures().size());
+		assertNull(result.unsavedXml());
 	}
 
 	private static class FakeArchive implements StubDocumentArchive {

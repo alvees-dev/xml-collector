@@ -115,7 +115,17 @@ public final class VoidingText {
 				text.append("\n\n").append(rangeLabel(outcome.request()));
 				text.append("\nO XML aprovado não foi salvo: ").append(outcome.archiveFailure());
 			}
+
+			if (outcome.unsavedXml() != null) {
+				text.append("\n\n").append(rangeLabel(outcome.request()));
+				text.append("\nATENÇÃO: esta inutilização foi aprovada e não há cópia do XML em nenhuma pasta. Escolha a seguir onde salvá-lo.");
+			}
 		}
+	}
+
+	public static String unsavedXml(VoidingOutcome outcome, String failure) {
+		return rangeLabel(outcome.request()) + ": o XML aprovado não foi salvo (" + failure + ")."
+				+ "\n\nCopie o conteúdo abaixo e guarde em um arquivo. Ele também foi registrado no log.\n\n" + outcome.unsavedXml();
 	}
 
 	private static String rangeLabel(VoidingRequest request) {

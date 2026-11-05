@@ -39,7 +39,7 @@ public class VoidingService {
 
 		// A homologation file has no fiscal value, so it must not go out with the real documents.
 		if (!receipt.approved() || environment == FiscalEnvironment.HOMOLOGATION) {
-			return new VoidingResult(receipt, null, List.of());
+			return new VoidingResult(receipt, null, List.of(), null);
 		}
 
 		List<String> pdvFailures = new ArrayList<>();
@@ -54,7 +54,10 @@ public class VoidingService {
 
 		Path archived = ArchiveLayout.voidingDirectoryFor(archiveRoot, archiveDate);
 
-		return new VoidingResult(receipt, store(request, receipt, archived), pdvFailures);
+		String archiveFailure = store(request, receipt, archived);
+		boolean noCopy = archiveFailure != null && pdvFailures.size() == pdvFolders.size();
+
+		return new VoidingResult(receipt, archiveFailure, pdvFailures, noCopy ? receipt.xml() : null);
 	}
 
 	private String store(VoidingRequest request, VoidingReceipt receipt, Path directory) {

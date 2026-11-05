@@ -53,6 +53,7 @@ class VoidingPreparationTest {
 	private static final List<String> PDVS = List.of("pdv1");
 	private static final CertificateSettings CERTIFICATE = new CertificateSettings("a.pfx", "x", FiscalEnvironment.HOMOLOGATION);
 	private static final Clock CLOCK = Clock.fixed(Instant.parse("2026-03-05T12:00:00Z"), ZoneOffset.UTC);
+	private static final Path ARCHIVE = Path.of("arquivo");
 
 	// The order of the checks is part of the safety, so every step is recorded here.
 	private final List<String> steps = new ArrayList<>();
@@ -61,6 +62,7 @@ class VoidingPreparationTest {
 	private String certificateCnpj = CNPJ;
 	private Set<Integer> alreadyIssued = Set.of();
 	private boolean folderAcceptsWriting = true;
+	private boolean archiveAcceptsWriting = true;
 
 	private final IssuedNumberRepository history = new StubIssuedNumberRepository() {
 
@@ -95,7 +97,11 @@ class VoidingPreparationTest {
 
 		@Override
 		public void requireWritable(Path directory) throws IOException {
-			steps.add("folder");
+			steps.add(directory.startsWith(ARCHIVE) ? "archive" : "folder");
+
+			if (directory.startsWith(ARCHIVE) && !archiveAcceptsWriting) {
+				throw new IOException("disco cheio");
+			}
 
 			if (!folderAcceptsWriting) {
 				throw new IOException("sem acesso");
@@ -117,9 +123,9 @@ class VoidingPreparationTest {
 
 	@Test
 	void checksInOrderAndReturnsThePlan() throws VoidingException {
-		VoidingPreparation.Plan plan = preparation.prepare(session, WANTED, CERTIFICATE, PDVS, "inutilizadas/{AAAAMM}");
+		VoidingPreparation.Plan plan = preparation.prepare(session, WANTED, CERTIFICATE, PDVS, "inutilizadas/{AAAAMM}", ARCHIVE);
 
-		assertEquals(List.of("history", "certificate", "folder"), steps);
+		assertEquals(List.of("history", "certificate", "folder", "archive"), steps);
 		assertEquals(1, plan.requests().size());
 		assertEquals(GAP, plan.requests().get(0).range());
 		assertEquals(Map.of(1, List.of(Path.of("pdv1", "inutilizadas", "202602"))), plan.pdvFolders());
@@ -129,7 +135,7 @@ class VoidingPreparationTest {
 	void aNumberOutOfTheListStopsBeforeTouchingAnything() {
 		Map<Integer, List<NumberRange>> outOfTheList = Map.of(1, List.of(new NumberRange(9, 9)));
 
-		assertThrows(VoidingException.class, () -> preparation.prepare(session, outOfTheList, CERTIFICATE, PDVS, "inutilizadas"));
+		assertThrows(VoidingException.class, () -> preparation.prepare(session, outOfTheList, CERTIFICATE, PDVS, "inutilizadas", ARCHIVE));
 
 		assertEquals(List.of(), steps);
 	}
@@ -138,7 +144,7 @@ class VoidingPreparationTest {
 	void aNumberInTheHistoryStopsBeforeOpeningTheCertificate() {
 		alreadyIssued = Set.of(5);
 
-		assertThrows(VoidingException.class, () -> preparation.prepare(session, WANTED, CERTIFICATE, PDVS, "inutilizadas"));
+		assertThrows(VoidingException.class, () -> preparation.prepare(session, WANTED, CERTIFICATE, PDVS, "inutilizadas", ARCHIVE));
 
 		assertEquals(List.of("history"), steps);
 	}
@@ -147,7 +153,7 @@ class VoidingPreparationTest {
 	void aCertificateOfAnotherCompanyStopsBeforeTestingTheFolders() {
 		certificateCnpj = "98765432000110";
 
-		VoidingException error = assertThrows(VoidingException.class, () -> preparation.prepare(session, WANTED, CERTIFICATE, PDVS, "inutilizadas"));
+		VoidingException error = assertThrows(VoidingException.class, () -> preparation.prepare(session, WANTED, CERTIFICATE, PDVS, "inutilizadas", ARCHIVE));
 
 		assertTrue(error.getMessage().contains(certificateCnpj), error.getMessage());
 		assertEquals(List.of("history", "certificate"), steps);
@@ -155,7 +161,7 @@ class VoidingPreparationTest {
 
 	@Test
 	void aModelWithoutVoidingFolderStopsBeforeTestingTheFolders() {
-		assertThrows(VoidingException.class, () -> preparation.prepare(session, WANTED, CERTIFICATE, PDVS, " "));
+		assertThrows(VoidingException.class, () -> preparation.prepare(session, WANTED, CERTIFICATE, PDVS, " ", ARCHIVE));
 
 		assertEquals(List.of("history", "certificate"), steps);
 	}
@@ -164,8 +170,19 @@ class VoidingPreparationTest {
 	void aFolderThatRefusesWritingStopsThePreparation() {
 		folderAcceptsWriting = false;
 
-		VoidingException error = assertThrows(VoidingException.class, () -> preparation.prepare(session, WANTED, CERTIFICATE, PDVS, "inutilizadas"));
+		VoidingException error = assertThrows(VoidingException.class, () -> preparation.prepare(session, WANTED, CERTIFICATE, PDVS, "inutilizadas", ARCHIVE));
 
 		assertTrue(error.getMessage().contains("Nada foi enviado"), error.getMessage());
 	}
+
+	@Test
+	void anArchiveThatRefusesWritingStopsThePreparation() {
+		archiveAcceptsWriting = false;
+
+		VoidingException error = assertThrows(VoidingException.class, () -> preparation.prepare(session, WANTED, CERTIFICATE, PDVS, "inutilizadas", ARCHIVE));
+
+		assertTrue(error.getMessage().contains("pasta de arquivos"), error.getMessage());
+		assertTrue(error.getMessage().contains("Nada foi enviado"), error.getMessage());
+	}
+
 }

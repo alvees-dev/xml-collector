@@ -34,7 +34,7 @@ public record VoidingRequest(
 			throw new IllegalArgumentException("Invalid year: " + year);
 		}
 
-		if (cnpj == null || !cnpj.matches("[0-9A-Z]{12}[0-9]{2}")) {
+		if (cnpj == null || !cnpj.matches(AccessKey.CNPJ_PATTERN)) {
 			throw new IllegalArgumentException("Invalid CNPJ: " + cnpj);
 		}
 

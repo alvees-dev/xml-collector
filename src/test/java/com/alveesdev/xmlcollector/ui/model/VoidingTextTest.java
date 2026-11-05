@@ -43,8 +43,8 @@ class VoidingTextTest {
 	@Test
 	void theReportListsOnlyTheRefusedNumbers() {
 		String text = VoidingText.summary(List.of(
-				new VoidingOutcome(SINGLE, Stage.APPROVED, "102 - Homologado", null, List.of()),
-				new VoidingOutcome(RANGE, Stage.REJECTED, "241 - Numero ja utilizado", null, List.of())), FiscalEnvironment.PRODUCTION);
+				new VoidingOutcome(SINGLE, Stage.APPROVED, "102 - Homologado", null, List.of(), null),
+				new VoidingOutcome(RANGE, Stage.REJECTED, "241 - Numero ja utilizado", null, List.of(), null)), FiscalEnvironment.PRODUCTION);
 
 		assertEquals("Numerações recusadas:\nSérie 2: 10 a 12", text);
 	}
@@ -52,7 +52,7 @@ class VoidingTextTest {
 	@Test
 	void theReportSaysTheNumbersWereVoidedWhenAllWereApproved() {
 		String text = VoidingText.summary(List.of(
-				new VoidingOutcome(SINGLE, Stage.APPROVED, "102 - Homologado", null, List.of())), FiscalEnvironment.PRODUCTION);
+				new VoidingOutcome(SINGLE, Stage.APPROVED, "102 - Homologado", null, List.of(), null)), FiscalEnvironment.PRODUCTION);
 
 		assertEquals("As numerações foram inutilizadas.", text);
 	}
@@ -76,7 +76,7 @@ class VoidingTextTest {
 	@Test
 	void anApprovedTestInHomologationDoesNotClaimTheNumbersWereVoided() {
 		String text = VoidingText.summary(List.of(
-				new VoidingOutcome(SINGLE, Stage.APPROVED, "102 - Homologado", null, List.of())), FiscalEnvironment.HOMOLOGATION);
+				new VoidingOutcome(SINGLE, Stage.APPROVED, "102 - Homologado", null, List.of(), null)), FiscalEnvironment.HOMOLOGATION);
 
 		assertEquals("Teste em homologação, sem efeito fiscal.\n\nTeste concluído, nenhuma numeração foi inutilizada.", text);
 	}
@@ -84,7 +84,7 @@ class VoidingTextTest {
 	@Test
 	void theReportDoesNotHideWhatStillNeedsAttention() {
 		String text = VoidingText.summary(List.of(
-				new VoidingOutcome(SINGLE, Stage.APPROVED, "102 - Homologado", "disco cheio", List.of("pdv1: sem acesso")),
+				new VoidingOutcome(SINGLE, Stage.APPROVED, "102 - Homologado", "disco cheio", List.of("pdv1: sem acesso"), null),
 				new VoidingOutcome(RANGE, Stage.FAILED, "sem resposta"),
 				new VoidingOutcome(request(3, 5, 5), Stage.NOT_SENT, null)), FiscalEnvironment.PRODUCTION);
 
@@ -98,7 +98,7 @@ class VoidingTextTest {
 	@Test
 	void theReportWarnsThatHomologationIsATest() {
 		String text = VoidingText.summary(List.of(
-				new VoidingOutcome(SINGLE, Stage.APPROVED, "102 - Homologado", null, List.of())), FiscalEnvironment.HOMOLOGATION);
+				new VoidingOutcome(SINGLE, Stage.APPROVED, "102 - Homologado", null, List.of(), null)), FiscalEnvironment.HOMOLOGATION);
 
 		assertTrue(text.startsWith("Teste em homologação"));
 	}
@@ -107,4 +107,19 @@ class VoidingTextTest {
 		return new VoidingRequest("35", 2026, "12345678000190", DocumentModel.NFCE, series, new NumberRange(start, end),
 				VoidingRequest.STANDARD_JUSTIFICATION);
 	}
+
+	@Test
+	void warnsThatAnApprovedVoidingHasNoCopy() {
+		VoidingRequest request = new VoidingRequest("35", 2026, "12345678000190", DocumentModel.NFCE, 1, new NumberRange(5, 7), VoidingRequest.STANDARD_JUSTIFICATION);
+		VoidingOutcome outcome = new VoidingOutcome(request, Stage.APPROVED, "102 - ok", "disco cheio", List.of(), "<xml/>");
+
+		String summary = VoidingText.summary(List.of(outcome), FiscalEnvironment.PRODUCTION);
+		String unsaved = VoidingText.unsavedXml(outcome, "disco cheio");
+
+		assertTrue(summary.contains("não há cópia do XML"), summary);
+		assertTrue(unsaved.contains("Série 1: 5 a 7"), unsaved);
+		assertTrue(unsaved.contains("disco cheio"), unsaved);
+		assertTrue(unsaved.endsWith("<xml/>"), unsaved);
+	}
+
 }

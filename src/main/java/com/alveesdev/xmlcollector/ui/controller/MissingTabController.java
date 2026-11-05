@@ -1,5 +1,8 @@
 package com.alveesdev.xmlcollector.ui.controller;
 
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -26,9 +29,11 @@ import com.alveesdev.xmlcollector.domain.model.FiscalEnvironment;
 import com.alveesdev.xmlcollector.domain.model.NumberRange;
 import com.alveesdev.xmlcollector.domain.model.PdvSearchModel;
 import com.alveesdev.xmlcollector.domain.model.XmlDocument;
+import com.alveesdev.xmlcollector.domain.service.ArchiveLayout;
 import com.alveesdev.xmlcollector.ui.model.FailureText;
 import com.alveesdev.xmlcollector.ui.model.MissingTableModel;
 import com.alveesdev.xmlcollector.ui.model.SourceMode;
+import com.alveesdev.xmlcollector.ui.model.VoidingText;
 import com.alveesdev.xmlcollector.ui.view.Dialogs;
 import com.alveesdev.xmlcollector.ui.view.ProgressWindow;
 
@@ -40,6 +45,7 @@ import javafx.scene.control.Button;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
+import javafx.stage.FileChooser;
 
 public class MissingTabController {
 
@@ -209,7 +215,7 @@ public class MissingTabController {
 		// A network folder that does not answer can hold this for a long time, and nothing has gone out yet.
 		TaskRunner.withProgress(trigger, "xml-voiding-checks",
 				() -> new ProgressWindow(trigger.getScene().getWindow(), "Conferindo certificado e pastas..."),
-				window -> TaskRunner.taskOf(() -> voidingPreparation.prepare(session, wanted, certificate, pdvDirectories, voidingFolder)),
+				window -> TaskRunner.taskOf(() -> voidingPreparation.prepare(session, wanted, certificate, pdvDirectories, voidingFolder, paths.xmlArchiveDir())),
 				new TaskRunner.Handlers<>(plan -> confirmAndSend(trigger, plan, certificate), MissingTabController::showCheckFailure, () -> {
 				}));
 	}
@@ -248,6 +254,28 @@ public class MissingTabController {
 		}
 
 		Dialogs.voidingSummary(outcomes, environment);
+
+		outcomes.stream().filter(outcome -> outcome.unsavedXml() != null).forEach(this::saveUnsavedXml);
+	}
+
+	// The Sefaz will not give this document again, so the person must have the chance of keeping it.
+	private void saveUnsavedXml(VoidingOutcome outcome) {
+		FileChooser chooser = new FileChooser();
+		chooser.setTitle("Salvar o XML da inutilização");
+		chooser.setInitialFileName(ArchiveLayout.voidingFileName(outcome.request().id()));
+
+		File file = chooser.showSaveDialog(missingTable.getScene().getWindow());
+
+		if (file == null) {
+			Dialogs.warning(VoidingText.unsavedXml(outcome, "nenhum arquivo foi escolhido"));
+			return;
+		}
+
+		try {
+			Files.writeString(file.toPath(), outcome.unsavedXml());
+		} catch (IOException e) {
+			Dialogs.error(VoidingText.unsavedXml(outcome, FailureText.of(e)));
+		}
 	}
 
 	private void search(Node trigger, Map<Integer, List<NumberRange>> wanted, Consumer<CollectionResult> onSuccess) {
