@@ -13,6 +13,7 @@ import com.alveesdev.xmlcollector.application.voiding.VoidingProgress;
 import com.alveesdev.xmlcollector.domain.model.FiscalEnvironment;
 import com.alveesdev.xmlcollector.domain.model.VoidingRequest;
 import com.alveesdev.xmlcollector.domain.model.XmlDocument;
+import com.alveesdev.xmlcollector.ui.model.FailureText;
 import com.alveesdev.xmlcollector.ui.model.MessageLayout;
 import com.alveesdev.xmlcollector.ui.model.SourceLabels;
 import com.alveesdev.xmlcollector.ui.model.SourceMode;
@@ -60,7 +61,9 @@ public final class Dialogs {
 
 	// The label of a plain Alert cuts a long message off without any way of reading the rest.
 	private static Alert alert(Alert.AlertType type, String message, ButtonType... buttons) {
-		return alertWith(previewOf(message), type, message, buttons);
+		String text = FailureText.orNoDescription(message);
+
+		return alertWith(previewOf(text), type, text, buttons);
 	}
 
 	// For what must be read before answering: the end of the text can hold the warning or the word to type.
