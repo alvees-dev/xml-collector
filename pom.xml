@@ -19,6 +19,12 @@
 				<artifactId>google-oauth-client</artifactId>
 				<version>1.39.0</version>
 			</dependency>
+			<!-- The version the Google libraries bring has a known vulnerability, GHSA-xxph-c9ww-hj94. -->
+			<dependency>
+				<groupId>com.google.guava</groupId>
+				<artifactId>guava</artifactId>
+				<version>33.8.0-jre</version>
+			</dependency>
 		</dependencies>
 	</dependencyManagement>
 
