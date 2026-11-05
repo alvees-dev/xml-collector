@@ -16,14 +16,14 @@ import com.alveesdev.xmlcollector.application.port.DocumentReader;
 import com.alveesdev.xmlcollector.application.port.Failures;
 import com.alveesdev.xmlcollector.domain.model.AccessKey;
 import com.alveesdev.xmlcollector.domain.model.DocumentModel;
+import com.alveesdev.xmlcollector.domain.model.FiscalEnvironment;
 import com.alveesdev.xmlcollector.domain.model.NumberRange;
+import com.alveesdev.xmlcollector.domain.model.VoidingReceipt;
 import com.alveesdev.xmlcollector.domain.model.XmlDocument;
 
 public class FiscalXmlReader implements DocumentReader {
 
 	private static final String CANCEL_EVENT_TYPE = "110111";
-	private static final String VOIDING_APPROVED = "102";
-	private static final String HOMOLOGATION = "2";
 	private static final String NFE_ID_PREFIX = "NFe";
 	private static final String EVENT_ID_PREFIX = "ID";
 	private static final int EVENT_ID_DIGITS = 52;
@@ -118,11 +118,11 @@ public class FiscalXmlReader implements DocumentReader {
 		String status = requiredText(info, "cStat");
 		Element environment = child(info, "tpAmb");
 
-		if (environment != null && HOMOLOGATION.equals(environment.getTextContent().trim())) {
+		if (environment != null && FiscalEnvironment.HOMOLOGATION.code().equals(environment.getTextContent().trim())) {
 			return new XmlDocument.Ignored("voiding of the homologation environment has no fiscal effect");
 		}
 
-		if (!VOIDING_APPROVED.equals(status)) {
+		if (!VoidingReceipt.APPROVED_STATUS.equals(status)) {
 			return new XmlDocument.Ignored("voiding was not approved, status " + status);
 		}
 
