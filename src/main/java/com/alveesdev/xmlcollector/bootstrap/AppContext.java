@@ -25,10 +25,15 @@ import com.alveesdev.xmlcollector.infra.settings.BundledEmailAccount;
 import com.alveesdev.xmlcollector.infra.settings.PropertiesSettingsRepository;
 import com.alveesdev.xmlcollector.infra.xml.FiscalXmlReader;
 import com.alveesdev.xmlcollector.infra.xml.XmlFileScanner;
+import com.alveesdev.xmlcollector.ui.controller.CertificateTabController;
 import com.alveesdev.xmlcollector.ui.controller.CollectionTabController;
+import com.alveesdev.xmlcollector.ui.controller.DirectoryListPaneController;
 import com.alveesdev.xmlcollector.ui.controller.DispatchTabController;
+import com.alveesdev.xmlcollector.ui.controller.EmailTabController;
 import com.alveesdev.xmlcollector.ui.controller.MainScreenController;
 import com.alveesdev.xmlcollector.ui.controller.MissingTabController;
+import com.alveesdev.xmlcollector.ui.controller.ModelsTabController;
+import com.alveesdev.xmlcollector.ui.controller.OrganizeTabController;
 import com.alveesdev.xmlcollector.ui.controller.SettingsController;
 import com.alveesdev.xmlcollector.ui.view.SettingsWindow;
 
@@ -99,7 +104,27 @@ public final class AppContext {
 		}
 
 		if (type == SettingsController.class) {
-			return new SettingsController(settingsService, searchModels, voidingBatch, directoryTester);
+			return new SettingsController(settingsService);
+		}
+
+		if (type == ModelsTabController.class) {
+			return new ModelsTabController(searchModels);
+		}
+
+		if (type == DirectoryListPaneController.class) {
+			return new DirectoryListPaneController(directoryTester);
+		}
+
+		if (type == OrganizeTabController.class) {
+			return new OrganizeTabController();
+		}
+
+		if (type == EmailTabController.class) {
+			return new EmailTabController();
+		}
+
+		if (type == CertificateTabController.class) {
+			return new CertificateTabController(voidingBatch);
 		}
 
 		throw new IllegalArgumentException("Unknown controller: " + type.getName());

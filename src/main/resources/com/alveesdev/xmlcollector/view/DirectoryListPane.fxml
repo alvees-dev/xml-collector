@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.ScrollPane?>
+<?import javafx.scene.control.Separator?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.VBox?>
+
+<VBox prefHeight="200.0" prefWidth="100.0" xmlns="http://javafx.com/javafx/26" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.alveesdev.xmlcollector.ui.controller.DirectoryListPaneController">
+   <children>
+      <HBox alignment="CENTER_LEFT" maxHeight="80.0" minHeight="80.0" prefHeight="83.0" prefWidth="383.0" spacing="10.0">
+         <padding>
+            <Insets left="15.0" />
+         </padding>
+         <children>
+            <Label fx:id="lblTitle">
+               <HBox.margin>
+                  <Insets right="10.0" />
+               </HBox.margin>
+            </Label>
+            <Button maxHeight="24.0" maxWidth="24.0" minHeight="24.0" minWidth="24.0" mnemonicParsing="false" onAction="#onAdd" prefHeight="24.0" prefWidth="24.0" styleClass="round-button, round-button-add" text="+" />
+            <Button maxHeight="24.0" maxWidth="24.0" minHeight="24.0" minWidth="24.0" mnemonicParsing="false" onAction="#onRemove" prefHeight="24.0" prefWidth="24.0" styleClass="round-button, round-button-remove" text="-" />
+            <Button mnemonicParsing="false" onAction="#onTestAll" text="Testar Todos">
+               <HBox.margin>
+                  <Insets left="50.0" />
+               </HBox.margin>
+            </Button>
+         </children>
+      </HBox>
+      <Separator prefWidth="383.0" />
+      <ScrollPane fx:id="scrollPane" fitToWidth="true" hbarPolicy="NEVER" styleClass="plain-scroll" VBox.vgrow="ALWAYS">
+         <content>
+            <VBox fx:id="listBox" />
+         </content>
+      </ScrollPane>
+   </children>
+</VBox>
