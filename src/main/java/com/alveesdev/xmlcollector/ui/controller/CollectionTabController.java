@@ -10,6 +10,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.BiConsumer;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import java.util.stream.Stream;
 
 import com.alveesdev.xmlcollector.application.collection.CollectedDocuments;
@@ -28,6 +30,7 @@ import com.alveesdev.xmlcollector.domain.model.NfeSearchModel;
 import com.alveesdev.xmlcollector.domain.model.SeparationMode;
 import com.alveesdev.xmlcollector.ui.model.DocumentRow;
 import com.alveesdev.xmlcollector.ui.model.DocumentRowMapper;
+import com.alveesdev.xmlcollector.ui.model.FailureText;
 import com.alveesdev.xmlcollector.ui.model.SourceMode;
 import com.alveesdev.xmlcollector.ui.view.Dialogs;
 import com.alveesdev.xmlcollector.ui.view.FileExplorer;
@@ -52,6 +55,7 @@ import javafx.scene.input.DataFormat;
 
 public class CollectionTabController {
 
+	private static final Logger LOG = Logger.getLogger(CollectionTabController.class.getName());
 	private static final List<String> COLUMN_PROPERTIES = List.of("number", "series", "totalValue", "emissionDate", "accessKey", "status");
 
 	private final CollectionService collectionService;
@@ -172,20 +176,28 @@ public class CollectionTabController {
 		Clipboard.getSystemClipboard().setContent(Map.of(DataFormat.PLAIN_TEXT, entry.invoice().key().value()));
 	}
 
+	// Finding the file reads the documents of the whole month.
 	private void openFolderOf(DocumentEntry entry) {
-		try {
-			Optional<Path> file = collectionService.storedFileOf(paths.xmlArchiveDir(), entry);
+		BackgroundWork.start("xml-open-folder", () -> showInExplorer(entry),
+				found -> {
+					if (!found) {
+						Dialogs.warning("O arquivo da nota não foi encontrado em:\n" + paths.xmlArchiveDir());
+					}
+				},
+				error -> {
+					LOG.log(Level.WARNING, "The folder of a note could not be opened", error);
+					Dialogs.error("Não foi possível abrir o diretório da nota: " + FailureText.of(error));
+				});
+	}
 
-			if (file.isEmpty()) {
-				Dialogs.warning("O arquivo da nota não foi encontrado em:\n" + paths.xmlArchiveDir());
-				return;
-			}
+	private boolean showInExplorer(DocumentEntry entry) throws IOException {
+		Optional<Path> file = collectionService.storedFileOf(paths.xmlArchiveDir(), entry);
 
+		if (file.isPresent()) {
 			FileExplorer.showSelected(file.get());
-
-		} catch (IOException e) {
-			Dialogs.error("Não foi possível abrir o diretório da nota: " + e.getMessage());
 		}
+
+		return file.isPresent();
 	}
 
 	@FXML
