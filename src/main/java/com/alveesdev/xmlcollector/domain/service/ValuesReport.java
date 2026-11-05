@@ -53,18 +53,21 @@ public record ValuesReport(List<Section> sections, int unreadableFiles) {
 		int unreadable = 0;
 
 		for (XmlDocument document : documents) {
-			if (document instanceof XmlDocument.Invoice invoice) {
-				AccessKey key = invoice.key();
-				builders.computeIfAbsent(new SectionKey(key.cnpj(), key.modelCode(), invoice.series()), ignored -> new Builder())
-						.invoices.put(key, invoice);
-			} else if (document instanceof XmlDocument.CancelEvent event) {
-				cancelled.add(event.cancelledKey());
-			} else if (document instanceof XmlDocument.Voiding voiding) {
-				if (seenVoidings.add(voiding.id())) {
-					builders.computeIfAbsent(new SectionKey(voiding.cnpj(), voiding.modelCode(), voiding.series()), ignored -> new Builder()).voided.add(voiding.range());
+			switch (document) {
+				case XmlDocument.Invoice invoice -> {
+					AccessKey key = invoice.key();
+					builders.computeIfAbsent(new SectionKey(key.cnpj(), key.modelCode(), invoice.series()), ignored -> new Builder())
+							.invoices.put(key, invoice);
 				}
-			} else if (document instanceof XmlDocument.Unreadable) {
-				unreadable++;
+				case XmlDocument.CancelEvent event -> cancelled.add(event.cancelledKey());
+				case XmlDocument.Voiding voiding -> {
+					if (seenVoidings.add(voiding.id())) {
+						builders.computeIfAbsent(new SectionKey(voiding.cnpj(), voiding.modelCode(), voiding.series()), ignored -> new Builder()).voided.add(voiding.range());
+					}
+				}
+				case XmlDocument.Unreadable _ -> unreadable++;
+				case XmlDocument.Ignored _ -> {
+				}
 			}
 		}
 

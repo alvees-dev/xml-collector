@@ -57,24 +57,16 @@ public final class CollectionRules {
 
 	public Decision decide(int sourceIndex, String fileName, XmlDocument document) {
 
-		if (document instanceof XmlDocument.Invoice invoice) {
-			return decideInvoice(sourceIndex, fileName, invoice);
-		}
-
-		if (document instanceof XmlDocument.CancelEvent event) {
-			return decideCancelEvent(event);
-		}
-
-		if (document instanceof XmlDocument.Voiding voiding) {
-			return decideVoiding(voiding);
-		}
-
-		if (document instanceof XmlDocument.Ignored) {
-			return new Skip(SkipReason.IGNORED);
-		}
-
-		accepted(sourceIndex).add(new Accepted(fileName, null));
-		return new Skip(SkipReason.UNREADABLE);
+		return switch (document) {
+			case XmlDocument.Invoice invoice -> decideInvoice(sourceIndex, fileName, invoice);
+			case XmlDocument.CancelEvent event -> decideCancelEvent(event);
+			case XmlDocument.Voiding voiding -> decideVoiding(voiding);
+			case XmlDocument.Ignored _ -> new Skip(SkipReason.IGNORED);
+			case XmlDocument.Unreadable _ -> {
+				accepted(sourceIndex).add(new Accepted(fileName, null));
+				yield new Skip(SkipReason.UNREADABLE);
+			}
+		};
 	}
 
 	public List<DocumentEntry> entriesOf(int sourceIndex) {
