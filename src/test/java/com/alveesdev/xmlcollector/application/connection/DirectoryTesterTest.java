@@ -22,8 +22,6 @@ import org.junit.jupiter.api.Test;
 
 import com.alveesdev.xmlcollector.application.connection.DirectoryTestResult.Outcome;
 import com.alveesdev.xmlcollector.application.connection.DirectoryTestResult.Status;
-import com.alveesdev.xmlcollector.application.port.DocumentArchive;
-import com.alveesdev.xmlcollector.application.port.SourceFiles;
 import com.alveesdev.xmlcollector.application.port.StubDocumentArchive;
 import com.alveesdev.xmlcollector.application.port.StubSourceFiles;
 import com.alveesdev.xmlcollector.domain.model.DateRange;

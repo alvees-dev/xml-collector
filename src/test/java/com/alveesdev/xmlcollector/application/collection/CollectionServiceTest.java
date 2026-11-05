@@ -29,10 +29,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import org.junit.jupiter.api.Test;
 
-import com.alveesdev.xmlcollector.application.port.DocumentArchive;
 import com.alveesdev.xmlcollector.application.port.DocumentReader;
-import com.alveesdev.xmlcollector.application.port.IssuedNumberRepository;
-import com.alveesdev.xmlcollector.application.port.SourceFiles;
 import com.alveesdev.xmlcollector.application.port.StubDocumentArchive;
 import com.alveesdev.xmlcollector.application.port.StubIssuedNumberRepository;
 import com.alveesdev.xmlcollector.application.port.StubSourceFiles;

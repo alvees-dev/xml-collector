@@ -66,4 +66,5 @@ public record CollectionResult(
 		return sources.stream()
 				.flatMap(source -> source.entries().stream())
 				.toList();
-	}}
+	}
+}

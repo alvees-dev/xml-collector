@@ -20,7 +20,6 @@ import com.alveesdev.xmlcollector.domain.model.XmlDocument;
 
 public class XmlArchivedDocuments implements ArchivedDocuments {
 
-
 	private final DocumentReader reader;
 
 	public XmlArchivedDocuments(DocumentReader reader) {

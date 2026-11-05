@@ -18,7 +18,6 @@ import java.util.List;
 
 import org.junit.jupiter.api.Test;
 
-import com.alveesdev.xmlcollector.application.port.DocumentArchive;
 import com.alveesdev.xmlcollector.application.port.StubDocumentArchive;
 import com.alveesdev.xmlcollector.application.port.VoidingException;
 import com.alveesdev.xmlcollector.domain.model.DocumentModel;
