@@ -24,6 +24,5 @@ public interface SourceFiles {
 
 	byte[] read(SourceFile file) throws IOException;
 
-	default void requireReadable(Path directory) throws IOException {
-	}
+	void requireReadable(Path directory) throws IOException;
 }

@@ -18,6 +18,7 @@ import java.util.Map;
 import org.junit.jupiter.api.Test;
 
 import com.alveesdev.xmlcollector.application.port.DocumentArchive;
+import com.alveesdev.xmlcollector.application.port.StubDocumentArchive;
 import com.alveesdev.xmlcollector.application.port.VoidingException;
 import com.alveesdev.xmlcollector.application.port.VoidingGateway;
 import com.alveesdev.xmlcollector.application.port.VoidingGatewayFactory;
@@ -46,7 +47,7 @@ class VoidingBatchTest {
 	private final List<VoidingProgress> events = new ArrayList<>();
 	private final List<String> stored = new ArrayList<>();
 
-	private final DocumentArchive archive = new DocumentArchive() {
+	private final DocumentArchive archive = new StubDocumentArchive() {
 
 		@Override
 		public Outcome store(byte[] content, FileTime sourceModified, Path directory, String preferredName,
@@ -124,7 +125,7 @@ class VoidingBatchTest {
 					sent.add(request);
 					return APPROVED;
 				}, new VoidingGatewayFactory.CertificateInfo("12345678000190", Instant.MAX)),
-				new DocumentArchive() {
+				new StubDocumentArchive() {
 
 					@Override
 					public Outcome store(byte[] content, FileTime sourceModified, Path directory, String preferredName,
@@ -153,7 +154,7 @@ class VoidingBatchTest {
 					sent.add(request);
 					return APPROVED;
 				}, new VoidingGatewayFactory.CertificateInfo("12345678000190", Instant.MAX)),
-				new DocumentArchive() {
+				new StubDocumentArchive() {
 
 					@Override
 					public Outcome store(byte[] content, FileTime sourceModified, Path directory, String preferredName,

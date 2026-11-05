@@ -22,6 +22,8 @@ import com.alveesdev.xmlcollector.application.port.CloudStorage;
 import com.alveesdev.xmlcollector.application.port.DirectoryCompressor;
 import com.alveesdev.xmlcollector.application.port.DispatchException;
 import com.alveesdev.xmlcollector.application.port.EmailMessage;
+import com.alveesdev.xmlcollector.application.port.StubArchivedDocuments;
+import com.alveesdev.xmlcollector.application.port.StubDirectoryCompressor;
 import com.alveesdev.xmlcollector.application.settings.EmailAccount;
 import com.alveesdev.xmlcollector.application.settings.EmailSecurity;
 import com.alveesdev.xmlcollector.domain.TestDocuments;
@@ -40,7 +42,7 @@ class DispatchServiceTest {
 	private final List<String> zipNames = new ArrayList<>();
 	private final List<EmailMessage> sent = new ArrayList<>();
 
-	private final DirectoryCompressor compressor = (directory, zipName, extraFiles) -> {
+	private final DirectoryCompressor compressor = (StubDirectoryCompressor) (directory, zipName, extraFiles) -> {
 		zipNames.add(zipName);
 		return Optional.of(new DirectoryCompressor.CompressedFile(directory.resolveSibling(zipName + ".zip"), 10));
 	};
@@ -100,7 +102,7 @@ class DispatchServiceTest {
 	void putsTheValuesReportOfTheMonthInTheZip() throws Exception {
 		List<DirectoryCompressor.ExtraFile> received = new ArrayList<>();
 
-		ArchivedDocuments documents = new ArchivedDocuments() {
+		ArchivedDocuments documents = new StubArchivedDocuments() {
 
 			@Override
 			public Set<String> cnpjsIn(Path directory) {
@@ -113,7 +115,7 @@ class DispatchServiceTest {
 			}
 		};
 
-		new DispatchService(documents, (directory, zipName, extraFiles) -> {
+		new DispatchService(documents, (StubDirectoryCompressor) (directory, zipName, extraFiles) -> {
 			received.addAll(extraFiles);
 			return Optional.of(new DirectoryCompressor.CompressedFile(directory.resolveSibling(zipName + ".zip"), 10));
 		}, (account, message) -> sent.add(message), (accountEmail, folderName, files) -> new CloudStorage.UploadResult("link", null))
@@ -132,7 +134,7 @@ class DispatchServiceTest {
 		List<DirectoryCompressor.ExtraFile> received = new ArrayList<>();
 		int[] reads = {0};
 
-		ArchivedDocuments documents = new ArchivedDocuments() {
+		ArchivedDocuments documents = new StubArchivedDocuments() {
 
 			@Override
 			public Set<String> cnpjsIn(Path directory) {
@@ -146,7 +148,7 @@ class DispatchServiceTest {
 			}
 		};
 
-		new DispatchService(documents, (directory, zipName, extraFiles) -> {
+		new DispatchService(documents, (StubDirectoryCompressor) (directory, zipName, extraFiles) -> {
 			received.addAll(extraFiles);
 			return Optional.of(new DirectoryCompressor.CompressedFile(directory.resolveSibling(zipName + ".zip"), 10));
 		}, (account, message) -> sent.add(message), (accountEmail, folderName, files) -> new CloudStorage.UploadResult("link", null))
@@ -162,7 +164,7 @@ class DispatchServiceTest {
 		List<String> report = new ArrayList<>();
 		int[] purchaseReads = {0};
 
-		ArchivedDocuments documents = new ArchivedDocuments() {
+		ArchivedDocuments documents = new StubArchivedDocuments() {
 
 			@Override
 			public Set<String> cnpjsIn(Path directory) {
@@ -176,7 +178,7 @@ class DispatchServiceTest {
 			}
 		};
 
-		DispatchService service = new DispatchService(documents, (directory, zipName, extraFiles) -> {
+		DispatchService service = new DispatchService(documents, (StubDirectoryCompressor) (directory, zipName, extraFiles) -> {
 			extraFiles.forEach(file -> report.add(new String(file.content(), StandardCharsets.UTF_8)));
 			return Optional.of(new DirectoryCompressor.CompressedFile(directory.resolveSibling(zipName + ".zip"), 10));
 		}, (account, message) -> sent.add(message), (accountEmail, folderName, files) -> new CloudStorage.UploadResult("link", null));
@@ -248,7 +250,7 @@ class DispatchServiceTest {
 		boolean[] cancelled = {false};
 
 		DispatchService service = new DispatchService(
-				directory -> Set.of("12345678000190"),
+				(StubArchivedDocuments) directory -> Set.of("12345678000190"),
 				largeCompressor(),
 				(account, message) -> sent.add(message),
 				(accountEmail, folderName, files) -> {
@@ -331,7 +333,7 @@ class DispatchServiceTest {
 	}
 
 	private DirectoryCompressor compressorWith(Path existingZip, long bytes) {
-		return new DirectoryCompressor() {
+		return new StubDirectoryCompressor() {
 
 			@Override
 			public Optional<CompressedFile> compress(Path directory, String zipName, List<ExtraFile> extraFiles) {
@@ -347,7 +349,7 @@ class DispatchServiceTest {
 	}
 
 	private DirectoryCompressor largeCompressor() {
-		return (directory, zipName, extraFiles) -> Optional.of(new DirectoryCompressor.CompressedFile(
+		return (StubDirectoryCompressor) (directory, zipName, extraFiles) -> Optional.of(new DirectoryCompressor.CompressedFile(
 				directory.resolveSibling(zipName + ".zip"), DispatchService.MAX_MESSAGE_BYTES));
 	}
 
@@ -357,7 +359,7 @@ class DispatchServiceTest {
 
 	private DispatchService serviceWith(Set<String> cnpjs, DirectoryCompressor chosen, String cleanupFailure) {
 		return new DispatchService(
-				directory -> cnpjs,
+				(StubArchivedDocuments) directory -> cnpjs,
 				chosen,
 				(account, message) -> sent.add(message),
 				(accountEmail, folderName, files) -> {
@@ -369,7 +371,7 @@ class DispatchServiceTest {
 
 	private void dispatch(Set<String> cnpjs) throws Exception {
 		DispatchService service = new DispatchService(
-				directory -> cnpjs,
+				(StubArchivedDocuments) directory -> cnpjs,
 				compressor,
 				(account, message) -> sent.add(message),
 				(accountEmail, folderName, files) -> new CloudStorage.UploadResult("link", null));

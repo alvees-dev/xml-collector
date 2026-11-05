@@ -16,7 +16,5 @@ public interface DirectoryCompressor {
 
 	Optional<CompressedFile> compress(Path directory, String zipName, List<ExtraFile> extraFiles) throws IOException;
 
-	default Optional<CompressedFile> existing(Path directory) throws IOException {
-		return Optional.empty();
-	}
+	Optional<CompressedFile> existing(Path directory) throws IOException;
 }

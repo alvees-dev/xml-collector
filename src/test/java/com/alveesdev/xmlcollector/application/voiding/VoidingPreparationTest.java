@@ -23,12 +23,14 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import com.alveesdev.xmlcollector.application.collection.CollectionRequest;
-import com.alveesdev.xmlcollector.application.collection.CollectionResult;
 import com.alveesdev.xmlcollector.application.collection.CollectionResult.SourceResult;
+import com.alveesdev.xmlcollector.application.collection.CollectionResult;
 import com.alveesdev.xmlcollector.application.collection.CollectionSummary;
 import com.alveesdev.xmlcollector.application.collection.CollectionTarget;
 import com.alveesdev.xmlcollector.application.port.DocumentArchive;
 import com.alveesdev.xmlcollector.application.port.IssuedNumberRepository;
+import com.alveesdev.xmlcollector.application.port.StubDocumentArchive;
+import com.alveesdev.xmlcollector.application.port.StubIssuedNumberRepository;
 import com.alveesdev.xmlcollector.application.port.VoidingException;
 import com.alveesdev.xmlcollector.application.port.VoidingGatewayFactory;
 import com.alveesdev.xmlcollector.application.settings.CertificateSettings;
@@ -60,7 +62,7 @@ class VoidingPreparationTest {
 	private Set<Integer> alreadyIssued = Set.of();
 	private boolean folderAcceptsWriting = true;
 
-	private final IssuedNumberRepository history = new IssuedNumberRepository() {
+	private final IssuedNumberRepository history = new StubIssuedNumberRepository() {
 
 		@Override
 		public void initialize() {
@@ -84,7 +86,7 @@ class VoidingPreparationTest {
 		}, new VoidingGatewayFactory.CertificateInfo(certificateCnpj, CLOCK.instant()));
 	};
 
-	private final DocumentArchive archive = new DocumentArchive() {
+	private final DocumentArchive archive = new StubDocumentArchive() {
 
 		@Override
 		public Outcome store(byte[] content, FileTime sourceModified, Path directory, String preferredName, String canonicalName, String identity) {

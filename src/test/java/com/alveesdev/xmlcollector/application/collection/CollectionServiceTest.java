@@ -33,6 +33,9 @@ import com.alveesdev.xmlcollector.application.port.DocumentArchive;
 import com.alveesdev.xmlcollector.application.port.DocumentReader;
 import com.alveesdev.xmlcollector.application.port.IssuedNumberRepository;
 import com.alveesdev.xmlcollector.application.port.SourceFiles;
+import com.alveesdev.xmlcollector.application.port.StubDocumentArchive;
+import com.alveesdev.xmlcollector.application.port.StubIssuedNumberRepository;
+import com.alveesdev.xmlcollector.application.port.StubSourceFiles;
 import com.alveesdev.xmlcollector.domain.model.DateRange;
 import com.alveesdev.xmlcollector.domain.model.DocumentCategory;
 import com.alveesdev.xmlcollector.domain.model.DocumentEntry;
@@ -732,7 +735,7 @@ class CollectionServiceTest {
 	private record Stored(Path directory, String preferredName, String canonicalName, String identity) {
 	}
 
-	private static class FakeSources implements SourceFiles, DocumentReader {
+	private static class FakeSources implements StubSourceFiles, DocumentReader {
 
 		private static final FileTime MODIFIED = FileTime.fromMillis(0);
 
@@ -790,7 +793,7 @@ class CollectionServiceTest {
 		}
 	}
 
-	private static class FakeIssuedNumbers implements IssuedNumberRepository {
+	private static class FakeIssuedNumbers implements StubIssuedNumberRepository {
 
 		private final Set<IssuedNumber> saved = new HashSet<>();
 		private IOException failure;
@@ -827,7 +830,7 @@ class CollectionServiceTest {
 		}
 	}
 
-	private static class FakeArchive implements DocumentArchive {
+	private static class FakeArchive implements StubDocumentArchive {
 
 		private final List<Stored> stored = new ArrayList<>();
 		private String failingName;

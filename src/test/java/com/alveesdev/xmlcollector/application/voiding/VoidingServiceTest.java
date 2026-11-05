@@ -19,6 +19,7 @@ import java.util.List;
 import org.junit.jupiter.api.Test;
 
 import com.alveesdev.xmlcollector.application.port.DocumentArchive;
+import com.alveesdev.xmlcollector.application.port.StubDocumentArchive;
 import com.alveesdev.xmlcollector.application.port.VoidingException;
 import com.alveesdev.xmlcollector.domain.model.DocumentModel;
 import com.alveesdev.xmlcollector.domain.model.FiscalEnvironment;
@@ -123,7 +124,7 @@ class VoidingServiceTest {
 		assertTrue(archive.names.isEmpty());
 	}
 
-	private static class FakeArchive implements DocumentArchive {
+	private static class FakeArchive implements StubDocumentArchive {
 
 		private final List<String> names = new ArrayList<>();
 		private final List<Path> directories = new ArrayList<>();
