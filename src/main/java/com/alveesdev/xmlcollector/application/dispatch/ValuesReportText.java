@@ -123,7 +123,7 @@ public final class ValuesReportText {
 		}
 
 		return ranges.stream()
-				.map(range -> range.size() == 1 ? String.valueOf(range.start()) : range.start() + " a " + range.end())
+				.map(NumberRange::text)
 				.collect(Collectors.joining(", "));
 	}
 
