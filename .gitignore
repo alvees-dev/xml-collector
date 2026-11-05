@@ -5,6 +5,9 @@ src/main/resources/default-email.properties
 src/main/java/com/alveesdev/xmlcollector/infra/search/models/
 src/test/java/com/alveesdev/xmlcollector/infra/search/models/
 
+### Local build script ###
+build.bat
+
 ### Java ###
 # Compiled class file
 *.class
