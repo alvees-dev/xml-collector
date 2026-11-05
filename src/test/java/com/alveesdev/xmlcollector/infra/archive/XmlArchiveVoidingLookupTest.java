@@ -29,13 +29,6 @@ class XmlArchiveVoidingLookupTest {
 	}
 
 	@Test
-	void findsAnOlderVoidingInsideADayFolder() throws IOException {
-		create(october().resolve("Inutilizadas").resolve("31-10-2026").resolve(NAME));
-
-		assertTrue(archive.holdsVoidingInAnotherMonth(root, november(), NAME));
-	}
-
-	@Test
 	void doesNotCountTheMonthBeingCollected() throws IOException {
 		create(november().resolve("Inutilizadas").resolve(NAME));
 

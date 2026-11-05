@@ -37,14 +37,12 @@ class PropertiesSettingsRepositoryTest {
 	Path directory;
 
 	private Path file;
-	private Path legacyFile;
 	private PropertiesSettingsRepository repository;
 
 	@BeforeEach
 	void setUp() {
 		file = directory.resolve("settings.properties");
-		legacyFile = directory.resolve("email.properties");
-		repository = new PropertiesSettingsRepository(file, legacyFile, DefaultEmailAccount.get());
+		repository = new PropertiesSettingsRepository(file, DefaultEmailAccount.get());
 	}
 
 	@Test
@@ -87,11 +85,11 @@ class PropertiesSettingsRepositoryTest {
 
 		EmailAccount rotated = new EmailAccount("smtp.gmail.com", 587, EmailSecurity.STARTTLS, DEFAULT_ACCOUNT.username(), "senha-nova");
 
-		assertEquals(rotated, new PropertiesSettingsRepository(file, legacyFile, rotated).load().emailAccount());
+		assertEquals(rotated, new PropertiesSettingsRepository(file, rotated).load().emailAccount());
 	}
 
 	private PropertiesSettingsRepository repositoryWithDefaultAccount() {
-		return new PropertiesSettingsRepository(file, legacyFile, DEFAULT_ACCOUNT);
+		return new PropertiesSettingsRepository(file, DEFAULT_ACCOUNT);
 	}
 
 	@Test
@@ -105,7 +103,7 @@ class PropertiesSettingsRepositoryTest {
 
 		repository.save(settings);
 
-		assertEquals(settings, new PropertiesSettingsRepository(file, legacyFile, DefaultEmailAccount.get()).load());
+		assertEquals(settings, new PropertiesSettingsRepository(file, DefaultEmailAccount.get()).load());
 	}
 
 	@Test
@@ -113,31 +111,6 @@ class PropertiesSettingsRepositoryTest {
 		repository.save(sampleSettings());
 
 		assertFalse(Files.readString(file).contains(PASSWORD));
-	}
-
-	@Test
-	void readsTheLegacyEmailFileAndRemovesItAfterSaving() throws IOException {
-		Files.writeString(legacyFile, "smtp.username=antigo@exemplo.com\nmessage.subject=Antigo\n", StandardCharsets.UTF_8);
-
-		AppSettings loaded = repository.load();
-
-		assertEquals("antigo@exemplo.com", loaded.emailAccount().username());
-		assertEquals("Antigo", loaded.emailDraft().subject());
-		assertEquals(AppSettings.defaults().pdvDirectories(), loaded.pdvDirectories());
-		assertTrue(Files.exists(legacyFile));
-
-		repository.save(loaded);
-
-		assertFalse(Files.exists(legacyFile));
-		assertEquals("antigo@exemplo.com", repository.load().emailAccount().username());
-	}
-
-	@Test
-	void prefersTheCurrentFileOverTheLegacyOne() throws IOException {
-		repository.save(sampleSettings());
-		Files.writeString(legacyFile, "smtp.username=antigo@exemplo.com\n", StandardCharsets.UTF_8);
-
-		assertEquals("usuario@exemplo.com", repository.load().emailAccount().username());
 	}
 
 	@Test
@@ -150,13 +123,6 @@ class PropertiesSettingsRepositoryTest {
 		assertEquals(defaults.organizeMode(), loaded.organizeMode());
 		assertEquals(defaults.emailAccount().port(), loaded.emailAccount().port());
 		assertEquals(defaults.emailAccount().security(), loaded.emailAccount().security());
-	}
-
-	@Test
-	void readsTheOldSalesDirectoriesAsNfeDirectories() throws IOException {
-		Files.writeString(file, "directories.nfe.sales.0=E\\:\\\\vendas\n", StandardCharsets.UTF_8);
-
-		assertEquals(List.of("E:\\vendas"), repository.load().nfeDirectories());
 	}
 
 	@Test

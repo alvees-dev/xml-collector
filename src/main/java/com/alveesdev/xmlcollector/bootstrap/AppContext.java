@@ -63,7 +63,7 @@ public final class AppContext {
 				new SmtpEmailSender(),
 				new GoogleDriveStorage(paths.googleCredentialsFile(), paths.googleTokensDir()));
 		this.settingsService = new SettingsService(
-				new PropertiesSettingsRepository(paths.settingsFile(), paths.legacyEmailSettingsFile(), BundledEmailAccount.load()));
+				new PropertiesSettingsRepository(paths.settingsFile(), BundledEmailAccount.load()));
 		this.searchModels = new SearchModelCatalog(SearchModelLoader.load());
 		this.directoryTester = new DirectoryTester(new XmlFileScanner(), archive, clock, DirectoryTester.DEFAULT_TIMEOUT);
 		this.settingsWindow = new SettingsWindow(this::createController);

@@ -98,7 +98,7 @@ public class XmlArchive implements DocumentArchive {
 
 		for (Path year : foldersIn(archiveRoot)) {
 			for (Path other : foldersIn(year)) {
-				if (!other.equals(month) && holdsVoiding(other.resolve(DocumentCategory.VOIDED.folderName()), fileName)) {
+				if (!other.equals(month) && Files.exists(other.resolve(DocumentCategory.VOIDED.folderName()).resolve(fileName))) {
 					return true;
 				}
 			}
@@ -128,22 +128,6 @@ public class XmlArchive implements DocumentArchive {
 
 	private static boolean mayBe(String name, String identity, String fileName) {
 		return name.contains(identity) || name.equalsIgnoreCase(fileName);
-	}
-
-	private static boolean holdsVoiding(Path voided, String fileName) throws IOException {
-
-		if (Files.exists(voided.resolve(fileName))) {
-			return true;
-		}
-
-		// Older voidings can still be inside a day folder.
-		for (Path day : foldersIn(voided)) {
-			if (Files.exists(day.resolve(fileName))) {
-				return true;
-			}
-		}
-
-		return false;
 	}
 
 	private static List<Path> foldersIn(Path directory) throws IOException {
