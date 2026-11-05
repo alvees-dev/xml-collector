@@ -1,21 +1,17 @@
 package com.alveesdev.xmlcollector.ui.view;
 
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.List;
 
 import com.alveesdev.xmlcollector.application.collection.CollectionResult;
-import com.alveesdev.xmlcollector.application.collection.CollectionSummary;
-import com.alveesdev.xmlcollector.application.collection.SourceFailure;
 import com.alveesdev.xmlcollector.application.voiding.VoidingOutcome;
 import com.alveesdev.xmlcollector.application.voiding.VoidingProgress;
 import com.alveesdev.xmlcollector.domain.model.FiscalEnvironment;
 import com.alveesdev.xmlcollector.domain.model.VoidingRequest;
 import com.alveesdev.xmlcollector.domain.model.XmlDocument;
+import com.alveesdev.xmlcollector.ui.model.CollectionSummaryText;
 import com.alveesdev.xmlcollector.ui.model.FailureText;
 import com.alveesdev.xmlcollector.ui.model.MessageLayout;
-import com.alveesdev.xmlcollector.ui.model.SourceLabels;
 import com.alveesdev.xmlcollector.ui.model.SourceMode;
 import com.alveesdev.xmlcollector.ui.model.VoidingText;
 
@@ -38,7 +34,6 @@ public final class Dialogs {
 		CANCEL
 	}
 
-	private static final int MAX_LISTED_FAILURES = 15;
 	private static final double MESSAGE_WIDTH = 560;
 	private static final double WHOLE_MESSAGE_WIDTH = 760;
 	private static final String MESSAGE_STYLE = "-fx-control-inner-background: -fx-background; -fx-background-color: transparent;"
@@ -115,34 +110,9 @@ public final class Dialogs {
 
 	public static void collectionSummary(CollectionResult result, Path archiveRoot, SourceMode sourceMode, String header) {
 
-		CollectionSummary summary = result.summary();
-		List<String> failures = describeFailures(result, sourceMode);
-
-		StringBuilder message = new StringBuilder();
-		message.append("Copiados: ").append(summary.copied());
-
-		if (summary.renamed() > 0) {
-			message.append("\nRenomeados pela chave (nome repetido): ").append(summary.renamed());
-		}
-
-		if (summary.replaced() > 0) {
-			message.append("\nSubstituídos (arquivo danificado no destino): ").append(summary.replaced());
-		}
-
-		message.append("\nJá existiam no destino: ").append(summary.alreadyExisting());
-		message.append("\nFora do período: ").append(summary.outOfPeriod());
-		message.append("\nCom erro de leitura: ").append(summary.errors());
-		message.append("\n\nArquivos salvos em: ").append(archiveRoot);
-
-		if (!failures.isEmpty()) {
-			message.append("\n\nFalhas:\n").append(String.join("\n", failures));
-		}
-
-		boolean hasProblems = !failures.isEmpty() || summary.errors() > 0;
-
 		Alert alert = alert(
-				hasProblems ? Alert.AlertType.WARNING : Alert.AlertType.INFORMATION,
-				message.toString());
+				CollectionSummaryText.collectionHasProblems(result, sourceMode) ? Alert.AlertType.WARNING : Alert.AlertType.INFORMATION,
+				CollectionSummaryText.collection(result, archiveRoot, sourceMode));
 		alert.setHeaderText(header);
 		alert.showAndWait();
 	}
@@ -220,65 +190,10 @@ public final class Dialogs {
 
 	public static void missingSearchSummary(CollectionResult result, List<XmlDocument.Invoice> found, Path archiveRoot) {
 
-		List<String> failures = describeFailures(result, SourceMode.PDV_DIRECTORIES);
-
-		StringBuilder message = new StringBuilder();
-		message.append("Encontradas: ").append(found.size());
-
-		found.stream()
-				.sorted(Comparator.comparingInt(XmlDocument.Invoice::series).thenComparingInt(XmlDocument.Invoice::number))
-				.limit(MAX_LISTED_FAILURES)
-				.forEach(invoice -> message.append("\nSérie ").append(invoice.series()).append(": ").append(invoice.number()));
-
-		if (found.size() > MAX_LISTED_FAILURES) {
-			message.append("\n... e mais ").append(found.size() - MAX_LISTED_FAILURES);
-		}
-
-		message.append("\n\nCom erro de leitura: ").append(result.summary().errors());
-		message.append("\nDestino: ").append(archiveRoot);
-
-		if (!failures.isEmpty()) {
-			message.append("\n\nFalhas:\n").append(String.join("\n", failures));
-		}
-
 		Alert alert = alert(
-				failures.isEmpty() ? Alert.AlertType.INFORMATION : Alert.AlertType.WARNING,
-				message.toString());
+				CollectionSummaryText.missingSearchHasProblems(result) ? Alert.AlertType.WARNING : Alert.AlertType.INFORMATION,
+				CollectionSummaryText.missingSearch(result, found, archiveRoot));
 		alert.setHeaderText("Busca de notas faltantes concluída");
 		alert.showAndWait();
-	}
-
-	private static List<String> describeFailures(CollectionResult result, SourceMode sourceMode) {
-
-		List<String> lines = new ArrayList<>();
-
-		for (SourceFailure failure : result.failures()) {
-			String label = SourceLabels.label(failure.sourceIndex(), sourceMode);
-
-			lines.add(switch (failure.reason()) {
-				case NOT_INFORMED -> label + ": diretório não informado";
-				case INACCESSIBLE -> label + ": diretório inacessível (" + failure.path() + ")";
-				case NO_MODEL_FOLDER -> label + ": nenhuma pasta do modelo de busca encontrada (" + failure.path() + ")";
-				case FOLDER_NOT_FOUND -> label + ": pasta não encontrada (" + failure.path() + ")";
-				case SUBFOLDER_INACCESSIBLE -> label + ": subpasta inacessível (" + failure.path() + ")";
-			});
-		}
-
-		if (result.historyFailure() != null) {
-			lines.add(result.historyFailure());
-		}
-
-		for (CollectionSummary.CopyFailure failure : result.summary().copyFailures()) {
-			lines.add("Falha ao copiar " + failure.fileName() + ": " + failure.reason());
-		}
-
-		if (lines.size() > MAX_LISTED_FAILURES) {
-			int hidden = lines.size() - MAX_LISTED_FAILURES;
-			List<String> limited = new ArrayList<>(lines.subList(0, MAX_LISTED_FAILURES));
-			limited.add("... e mais " + hidden + " falha(s)");
-			return limited;
-		}
-
-		return lines;
 	}
 }
