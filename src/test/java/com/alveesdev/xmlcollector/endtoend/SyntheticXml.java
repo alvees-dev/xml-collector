@@ -13,6 +13,7 @@ final class SyntheticXml {
 	static final String CNPJ = "12345678000190";
 	static final String UF = "35";
 	static final String NFCE = "65";
+	static final String NFE = "55";
 	static final String VALUE_OF_A_NOTE = "10.50";
 
 	private SyntheticXml() {
@@ -21,6 +22,13 @@ final class SyntheticXml {
 	static void writeInvoice(Path folder, int series, int number, LocalDate date) throws IOException {
 		Files.createDirectories(folder);
 		Files.writeString(folder.resolve(keyOf(series, number, date) + "-nfe.xml"), invoice(series, number, date));
+	}
+
+	static void writeNfe(Path folder, String cnpj, int number, LocalDate date) throws IOException {
+		String key = UF + shortYear(date) + String.format("%02d", date.getMonthValue()) + cnpj + NFE + String.format("%03d%09d1%09d", 1, number, number);
+
+		Files.createDirectories(folder);
+		Files.writeString(folder.resolve(key + "-nfe.xml"), invoiceWith(key, 1, number, date));
 	}
 
 	static void writeCancellation(Path folder, int series, int number, LocalDate date) throws IOException {
@@ -66,6 +74,10 @@ final class SyntheticXml {
 	}
 
 	private static String invoice(int series, int number, LocalDate date) {
+		return invoiceWith(keyOf(series, number, date), series, number, date);
+	}
+
+	private static String invoiceWith(String key, int series, int number, LocalDate date) {
 		return """
 				<nfeProc xmlns="http://www.portalfiscal.inf.br/nfe" versao="4.00">
 					<NFe>
@@ -83,7 +95,7 @@ final class SyntheticXml {
 						</infNFe>
 					</NFe>
 				</nfeProc>
-				""".formatted(keyOf(series, number, date), series, number, atNoon(date), VALUE_OF_A_NOTE);
+				""".formatted(key, series, number, atNoon(date), VALUE_OF_A_NOTE);
 	}
 
 	private static String cancellation(String eventId, int series, int number, LocalDate date) {

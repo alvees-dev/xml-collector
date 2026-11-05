@@ -64,7 +64,7 @@ public class DispatchService {
 			compressed = existingOf(request.monthDirectories(), cnpjs);
 		} else {
 			listener.accept(new DispatchProgress(Step.COMPRESSING, Stage.RUNNING));
-			compressed = compressAll(request.monthDirectories(), cnpjs);
+			compressed = compressAll(request.monthDirectories(), request.reports(), cnpjs);
 			listener.accept(new DispatchProgress(Step.COMPRESSING, Stage.DONE));
 		}
 
@@ -192,7 +192,7 @@ public class DispatchService {
 		return existing;
 	}
 
-	private List<CompressedFile> compressAll(List<Path> monthDirectories, Set<String> cnpjs) throws DispatchException {
+	private List<CompressedFile> compressAll(List<Path> monthDirectories, ReportOptions reports, Set<String> cnpjs) throws DispatchException {
 
 		List<CompressedFile> compressed = new ArrayList<>();
 
@@ -202,7 +202,8 @@ public class DispatchService {
 				cnpjs.addAll(ofMonth);
 
 				String zipName = ArchiveLayout.zipName(ofMonth, directory);
-				Optional<CompressedFile> file = compressor.compress(directory, zipName, List.of(valuesReportOf(directory)));
+				List<DirectoryCompressor.ExtraFile> extras = reports.anySelected() ? List.of(valuesReportOf(directory, reports)) : List.of();
+				Optional<CompressedFile> file = compressor.compress(directory, zipName, extras);
 
 				if (file.isEmpty()) {
 					throw new DispatchException("A pasta " + ArchiveLayout.monthLabel(directory) + " não tem arquivos para enviar.");
@@ -218,12 +219,13 @@ public class DispatchService {
 		return compressed;
 	}
 
-	private DirectoryCompressor.ExtraFile valuesReportOf(Path directory) throws IOException {
+	private DirectoryCompressor.ExtraFile valuesReportOf(Path directory, ReportOptions reports) throws IOException {
 
-		ValuesReport report = ValuesReport.of(archivedDocuments.documentsOfTheCompanyIn(directory));
+		ValuesReport company = reports.anySales() ? ValuesReport.of(archivedDocuments.documentsOfTheCompanyIn(directory)) : ValuesReport.of(List.of());
+		ValuesReport purchases = reports.nfePurchases() ? ValuesReport.of(archivedDocuments.purchasesIn(directory)) : ValuesReport.of(List.of());
 		String month = directory.getFileName() + " de " + directory.getParent().getFileName();
 
-		return new DirectoryCompressor.ExtraFile(ValuesReportText.FILE_NAME, ValuesReportText.bytesOf(month, report));
+		return new DirectoryCompressor.ExtraFile(ValuesReportText.FILE_NAME, ValuesReportText.bytesOf(month, company, purchases, reports));
 	}
 
 	private static String bodyOf(DispatchRequest request) {
