@@ -1,8 +1,6 @@
 package com.alveesdev.xmlcollector.ui.controller;
 
 import java.io.IOException;
-import java.nio.file.Path;
-import java.time.YearMonth;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -24,12 +22,12 @@ import com.alveesdev.xmlcollector.application.voiding.MissingNumbersSession;
 import com.alveesdev.xmlcollector.application.voiding.VoidingBatch;
 import com.alveesdev.xmlcollector.application.voiding.VoidingOutcome;
 import com.alveesdev.xmlcollector.application.voiding.VoidingPlanner;
+import com.alveesdev.xmlcollector.application.voiding.VoidingPreparation;
 import com.alveesdev.xmlcollector.domain.model.DateRange;
 import com.alveesdev.xmlcollector.domain.model.DocumentCategory;
 import com.alveesdev.xmlcollector.domain.model.FiscalEnvironment;
 import com.alveesdev.xmlcollector.domain.model.NumberRange;
 import com.alveesdev.xmlcollector.domain.model.PdvSearchModel;
-import com.alveesdev.xmlcollector.domain.model.VoidingRequest;
 import com.alveesdev.xmlcollector.domain.model.XmlDocument;
 import com.alveesdev.xmlcollector.ui.model.FailureText;
 import com.alveesdev.xmlcollector.ui.model.MissingTableModel;
@@ -39,6 +37,7 @@ import com.alveesdev.xmlcollector.ui.view.ProgressWindow;
 
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
+import javafx.concurrent.Task;
 import javafx.fxml.FXML;
 import javafx.scene.Node;
 import javafx.scene.control.Button;
@@ -56,7 +55,7 @@ public class MissingTabController {
 	private final SearchModelCatalog searchModels;
 	private final AppPaths paths;
 	private final VoidingBatch voidingBatch;
-	private final VoidingPlanner voidingPlanner;
+	private final VoidingPreparation voidingPreparation;
 
 	private final MissingNumbersSession session = new MissingNumbersSession();
 
@@ -101,7 +100,7 @@ public class MissingTabController {
 		this.searchModels = searchModels;
 		this.paths = paths;
 		this.voidingBatch = voidingBatch;
-		this.voidingPlanner = voidingPlanner;
+		this.voidingPreparation = new VoidingPreparation(voidingPlanner, voidingBatch);
 	}
 
 	public void setOnFound(Consumer<CollectionResult> onFound) {
@@ -209,42 +208,73 @@ public class MissingTabController {
 		}
 
 		CertificateSettings certificate = settings.certificate();
-		List<VoidingRequest> requests;
-		Map<Integer, List<Path>> pdvFolders;
+		String voidingFolder = searchModels.pdvModel(settings.pdvModelId()).voidingFolder();
+		List<String> pdvDirectories = settings.pdvDirectories();
 
-		try {
-			requests = voidingPlanner.plan(wanted, session.missing(), session.ownersBySeries());
-			voidingBatch.checkCertificate(certificate, requests);
+		Optional<ProgressWindow> window = openProgress(trigger, "Conferindo certificado e pastas...");
 
-			// The month of the collection, so collecting that period again reads the file back.
-			pdvFolders = VoidingPlanner.pdvFolders(requests, settings.pdvDirectories(), session.sourcesBySeries(),
-					searchModels.pdvModel(settings.pdvModelId()).voidingFolder(), YearMonth.from(session.lastCollectedDay()));
-			voidingBatch.checkPdvFolders(pdvFolders);
-		} catch (VoidingException e) {
-			Dialogs.warning(e.getMessage());
+		if (window.isEmpty()) {
 			return;
 		}
+
+		ProgressWindow progressWindow = window.get();
+		trigger.setDisable(true);
+
+		// A network folder that does not answer can hold this for a long time, and nothing has gone out yet.
+		Task<VoidingPreparation.Plan> task = BackgroundWork.start("xml-voiding-checks",
+				() -> voidingPreparation.prepare(session, wanted, certificate, pdvDirectories, voidingFolder),
+				plan -> {
+					progressWindow.close();
+					trigger.setDisable(false);
+					confirmAndSend(trigger, plan, certificate);
+				},
+				error -> {
+					progressWindow.close();
+					trigger.setDisable(false);
+					showCheckFailure(error);
+				});
+
+		task.setOnCancelled(event -> {
+			progressWindow.close();
+			trigger.setDisable(false);
+		});
+
+		progressWindow.setCancelAction(task::cancel);
+		progressWindow.show();
+	}
+
+	private static void showCheckFailure(Throwable error) {
+
+		if (error instanceof VoidingException) {
+			Dialogs.warning(error.getMessage());
+			return;
+		}
+
+		LOG.log(Level.SEVERE, "The checks before the voiding failed", error);
+		Dialogs.error(FailureText.of(error));
+	}
+
+	private void confirmAndSend(Node trigger, VoidingPreparation.Plan plan, CertificateSettings certificate) {
 
 		if (!session.searchedAll() && !Dialogs.confirmVoidingWithoutSearch()) {
 			return;
 		}
 
-		if (!Dialogs.confirmVoiding(requests, certificate.environment())) {
+		if (!Dialogs.confirmVoiding(plan.requests(), certificate.environment())) {
 			return;
 		}
 
-		ProgressWindow progressWindow;
+		Optional<ProgressWindow> window = openProgress(trigger, "Inutilização em andamento...");
 
-		try {
-			progressWindow = new ProgressWindow(trigger.getScene().getWindow(), "Inutilização em andamento...");
-		} catch (IOException e) {
-			Dialogs.error("Erro ao abrir a tela de progresso: " + e.getMessage());
+		if (window.isEmpty()) {
 			return;
 		}
+
+		ProgressWindow progressWindow = window.get();
 
 		// The month of the collection, so the file goes out with the documents of the gaps it closes.
-		VoidingTask task = new VoidingTask(voidingBatch, requests, certificate, paths.xmlArchiveDir(),
-				session.lastCollectedDay(), pdvFolders);
+		VoidingTask task = new VoidingTask(voidingBatch, plan.requests(), certificate, paths.xmlArchiveDir(),
+				session.lastCollectedDay(), plan.pdvFolders());
 		progressWindow.setCancelAction(task::requestStop);
 
 		trigger.setDisable(true);
@@ -267,6 +297,15 @@ public class MissingTabController {
 		Thread thread = new Thread(task, "xml-voiding");
 		thread.setDaemon(true);
 		thread.start();
+	}
+
+	private static Optional<ProgressWindow> openProgress(Node trigger, String title) {
+		try {
+			return Optional.of(new ProgressWindow(trigger.getScene().getWindow(), title));
+		} catch (IOException e) {
+			Dialogs.error("Erro ao abrir a tela de progresso: " + e.getMessage());
+			return Optional.empty();
+		}
 	}
 
 	private void showVoided(List<VoidingOutcome> outcomes, FiscalEnvironment environment) {
