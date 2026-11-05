@@ -54,9 +54,6 @@ public class SettingsController {
 	private final DirectoryTester directoryTester;
 
 	@FXML
-	private Button btnSave;
-
-	@FXML
 	private Button btnCancel;
 
 	@FXML

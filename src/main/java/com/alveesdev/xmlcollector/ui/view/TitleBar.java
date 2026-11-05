@@ -52,8 +52,8 @@ public final class TitleBar {
 		icon.setSmooth(true);
 
 		// The icons of a window can arrive only when it opens.
-		stage.getIcons().addListener((ListChangeListener<Image>) change -> showFirst(stage, icon));
-		showFirst(stage, icon);
+		stage.getIcons().addListener((ListChangeListener<Image>) change -> showLastIcon(stage, icon));
+		showLastIcon(stage, icon);
 
 		HBox box = new HBox(8, icon, new Label(title));
 		box.getStyleClass().add("title-bar-title");
@@ -61,7 +61,7 @@ public final class TitleBar {
 		return box;
 	}
 
-	private static void showFirst(Stage stage, ImageView icon) {
+	private static void showLastIcon(Stage stage, ImageView icon) {
 		icon.setImage(stage.getIcons().isEmpty() ? null : stage.getIcons().get(stage.getIcons().size() - 1));
 	}
 
