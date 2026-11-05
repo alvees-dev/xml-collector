@@ -18,6 +18,7 @@ import com.alveesdev.xmlcollector.application.port.VoidingGatewayFactory;
 import com.alveesdev.xmlcollector.application.settings.CertificateSettings;
 import com.alveesdev.xmlcollector.application.voiding.VoidingProgress.Stage;
 import com.alveesdev.xmlcollector.domain.model.VoidingRequest;
+import com.alveesdev.xmlcollector.domain.service.ArchiveLayout;
 
 public class VoidingBatch {
 
@@ -60,6 +61,18 @@ public class VoidingBatch {
 		}
 	}
 
+	// The answer of the Sefaz exists only in memory until it is saved, so this has to be known before anything goes out.
+	public void checkArchiveFolder(Path archiveRoot, LocalDate archiveDate) throws VoidingException {
+		Path folder = ArchiveLayout.voidingDirectoryFor(archiveRoot, archiveDate);
+
+		try {
+			archive.requireWritable(folder);
+		} catch (IOException e) {
+			throw new VoidingException("Não é possível gravar na pasta de arquivos: " + folder
+					+ "\n\nNada foi enviado à Sefaz. Confira o acesso a essa pasta.", e);
+		}
+	}
+
 	public List<VoidingOutcome> run(List<VoidingRequest> requests, CertificateSettings settings,
 			Path archiveRoot, LocalDate archiveDate, Map<Integer, List<Path>> pdvFolders, Consumer<VoidingProgress> listener,
 			BooleanSupplier cancelled) throws VoidingException {
@@ -67,6 +80,7 @@ public class VoidingBatch {
 		VoidingGatewayFactory.Connection connection = gateways.open(settings);
 		requireSameCompany(connection.certificate(), requests);
 		checkPdvFolders(pdvFolders);
+		checkArchiveFolder(archiveRoot, archiveDate);
 
 		VoidingService service = new VoidingService(connection.gateway(), archive, clock, settings.environment());
 		List<VoidingOutcome> outcomes = new ArrayList<>();

@@ -25,7 +25,7 @@ public final class VoidingPreparation {
 	}
 
 	public Plan prepare(MissingNumbersSession session, Map<Integer, List<NumberRange>> wanted, CertificateSettings certificate,
-			List<String> pdvDirectories, String voidingFolder) throws VoidingException {
+			List<String> pdvDirectories, String voidingFolder, Path archiveRoot) throws VoidingException {
 
 		List<VoidingRequest> requests = planner.plan(wanted, session.missing(), session.ownersBySeries());
 		batch.checkCertificate(certificate, requests);
@@ -34,6 +34,7 @@ public final class VoidingPreparation {
 		Map<Integer, List<Path>> pdvFolders = VoidingPlanner.pdvFolders(requests, pdvDirectories, session.sourcesBySeries(), voidingFolder,
 				YearMonth.from(session.lastCollectedDay()));
 		batch.checkPdvFolders(pdvFolders);
+		batch.checkArchiveFolder(archiveRoot, session.lastCollectedDay());
 
 		return new Plan(requests, pdvFolders);
 	}

@@ -209,7 +209,7 @@ public class MissingTabController {
 		// A network folder that does not answer can hold this for a long time, and nothing has gone out yet.
 		TaskRunner.withProgress(trigger, "xml-voiding-checks",
 				() -> new ProgressWindow(trigger.getScene().getWindow(), "Conferindo certificado e pastas..."),
-				window -> TaskRunner.taskOf(() -> voidingPreparation.prepare(session, wanted, certificate, pdvDirectories, voidingFolder)),
+				window -> TaskRunner.taskOf(() -> voidingPreparation.prepare(session, wanted, certificate, pdvDirectories, voidingFolder, paths.xmlArchiveDir())),
 				new TaskRunner.Handlers<>(plan -> confirmAndSend(trigger, plan, certificate), MissingTabController::showCheckFailure, () -> {
 				}));
 	}

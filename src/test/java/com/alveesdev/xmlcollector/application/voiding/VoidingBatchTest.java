@@ -190,4 +190,36 @@ class VoidingBatchTest {
 		return new VoidingRequest("35", 2026, "12345678000190", DocumentModel.NFCE, 1, new NumberRange(number, number),
 				VoidingRequest.STANDARD_JUSTIFICATION);
 	}
+
+	@Test
+	void sendsNothingWhenTheArchiveCannotBeWritten() {
+		VoidingBatch batch = new VoidingBatch(
+				settings -> new VoidingGatewayFactory.Connection(request -> {
+					sent.add(request);
+					return APPROVED;
+				}, new VoidingGatewayFactory.CertificateInfo("12345678000190", Instant.MAX)),
+				new StubDocumentArchive() {
+
+					@Override
+					public Outcome store(byte[] content, FileTime sourceModified, Path directory, String preferredName,
+							String canonicalName, String identity) {
+						return Outcome.COPIED;
+					}
+
+					@Override
+					public void requireWritable(Path directory) throws IOException {
+						if (directory.startsWith(ROOT)) {
+							throw new IOException("disco cheio");
+						}
+					}
+				},
+				CLOCK);
+
+		VoidingException error = assertThrows(VoidingException.class, () -> batch.run(List.of(FIRST), SETTINGS,
+				ROOT, COLLECTED, Map.of(1, List.of(Path.of("pdv1", "saida"))), events::add, () -> false));
+
+		assertTrue(error.getMessage().contains("Nada foi enviado"));
+		assertEquals(List.of(), sent);
+	}
+
 }
