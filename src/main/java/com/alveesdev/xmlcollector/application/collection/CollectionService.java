@@ -133,7 +133,7 @@ public class CollectionService {
 			}
 
 			return new CollectionResult(results, processor.missingNumbers(gapsBeforeTheFirst), processor.summary(), failures,
-					historyFailure, processor.cancelledKeys());
+					historyFailure, processor.cancelledKeys(), processor.voidedNumbers());
 
 		} finally {
 			executor.shutdownNow();

@@ -118,6 +118,10 @@ class SourceProcessor {
 		return rules.issuedNumbers();
 	}
 
+	int voidedNumbers() {
+		return rules.voidedInPeriod();
+	}
+
 	Set<AccessKey> cancelledKeys() {
 		return rules.cancelledKeys();
 	}

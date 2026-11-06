@@ -11,6 +11,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 import java.util.stream.Stream;
 
 import com.alveesdev.xmlcollector.application.collection.CollectedDocuments;
@@ -28,9 +29,11 @@ import com.alveesdev.xmlcollector.application.settings.service.SettingsService;
 import com.alveesdev.xmlcollector.domain.model.DateRange;
 import com.alveesdev.xmlcollector.domain.model.DocumentCategory;
 import com.alveesdev.xmlcollector.domain.model.DocumentEntry;
+import com.alveesdev.xmlcollector.domain.model.DocumentStatus;
 import com.alveesdev.xmlcollector.domain.model.NfeSearchModel;
 import com.alveesdev.xmlcollector.domain.model.PdvSearchModel;
 import com.alveesdev.xmlcollector.domain.model.SeparationMode;
+import com.alveesdev.xmlcollector.ui.model.CollectionCounts;
 import com.alveesdev.xmlcollector.ui.model.DirectoryTestText;
 import com.alveesdev.xmlcollector.ui.model.DocumentRow;
 import com.alveesdev.xmlcollector.ui.model.DocumentRowMapper;
@@ -66,6 +69,8 @@ public class CollectionTabController {
 
 	private static final List<String> COLUMN_PROPERTIES = List.of("number", "series", "totalValue", "emissionDate", "accessKey", "status");
 	private static final int STATUS_COLUMN = COLUMN_PROPERTIES.indexOf("status");
+	private static final String COLLECTION_DONE = "Coleta concluída";
+	private static final String READING_DONE = "Leitura concluída";
 
 	private final CollectionService collectionService;
 	private final SettingsService settingsService;
@@ -78,6 +83,14 @@ public class CollectionTabController {
 
 	private BiConsumer<CollectionRequest, CollectionResult> onCollected = (request, result) -> {
 	};
+
+	private Consumer<CollectionCounts> onCounted = counts -> {
+	};
+
+	// What the footer counts: the last collection or reading, and the voidings of its NFCe.
+	private String countedAction;
+	private DateRange countedPeriod;
+	private int voidedNumbers;
 
 	@FXML
 	private DatePicker dpFrom;
@@ -189,6 +202,10 @@ public class CollectionTabController {
 
 	public void setOnCollected(BiConsumer<CollectionRequest, CollectionResult> onCollected) {
 		this.onCollected = onCollected;
+	}
+
+	public void setOnCounted(Consumer<CollectionCounts> onCounted) {
+		this.onCounted = onCounted;
 	}
 
 	public void addFound(CollectionResult result) {
@@ -338,6 +355,7 @@ public class CollectionTabController {
 
 		CollectionRunner.run(btnCollect, "Coletando " + label, collectionService, request, SourceMode.NFE_DIRECTORIES, result -> {
 			nfeCollected.put(request.category(), CollectedDocuments.from(result));
+			countedAs(COLLECTION_DONE, request.period());
 			showCollected();
 
 			Dialogs.collectionSummary(result, paths.xmlArchiveDir(), SourceMode.NFE_DIRECTORIES, "Coleta de " + label + " concluída");
@@ -382,6 +400,8 @@ public class CollectionTabController {
 
 		collected = CollectedDocuments.from(result);
 		nfeCollected.clear();
+		countedAs(READING_DONE, request.period());
+		voidedNumbers = result.voidedNumbers();
 		showCollected();
 
 		onCollected.accept(request, result);
@@ -508,6 +528,8 @@ public class CollectionTabController {
 
 		collected = CollectedDocuments.from(result);
 		nfeCollected.clear();
+		countedAs(COLLECTION_DONE, request.period());
+		voidedNumbers = result.voidedNumbers();
 		showCollected();
 
 		onCollected.accept(request, result);
@@ -522,6 +544,29 @@ public class CollectionTabController {
 		txtNfceTotal.setText(DocumentRowMapper.currency(collected.authorizedTotal()));
 		txtNfeSalesTotal.setText(nfeTotal(DocumentCategory.NFE_SALES));
 		txtNfePurchasesTotal.setText(nfeTotal(DocumentCategory.NFE_PURCHASES));
+		publishCounts();
+	}
+
+	private void countedAs(String action, DateRange period) {
+		countedAction = action;
+		countedPeriod = period;
+	}
+
+	private void publishCounts() {
+
+		if (countedAction == null) {
+			return;
+		}
+
+		List<DocumentEntry> onScreen = Stream.concat(Stream.of(collected), nfeCollected.values().stream())
+				.flatMap(documents -> documents.entries().stream())
+				.toList();
+
+		long xml = onScreen.stream().filter(entry -> entry.invoice() != null).count();
+		long cancelled = onScreen.stream().filter(entry -> entry.status() == DocumentStatus.CANCELLED).count();
+		long errors = onScreen.stream().filter(entry -> entry.status() == DocumentStatus.ERROR).count();
+
+		onCounted.accept(new CollectionCounts(countedAction, xml, cancelled, voidedNumbers, errors, countedPeriod.from(), countedPeriod.to()));
 	}
 
 	private static ObservableList<DocumentRow> rowsOf(Stream<CollectedDocuments> documents) {

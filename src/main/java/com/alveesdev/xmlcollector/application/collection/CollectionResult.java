@@ -18,8 +18,15 @@ public record CollectionResult(
 		CollectionSummary summary,
 		List<SourceFailure> failures,
 		String historyFailure,
-		Set<AccessKey> cancelledKeys
+		Set<AccessKey> cancelledKeys,
+		int voidedNumbers
 ) {
+
+	// Without voidings, as most results that do not come from a collection.
+	public CollectionResult(List<SourceResult> sources, SortedMap<Integer, List<NumberRange>> missingBySeries, CollectionSummary summary,
+			List<SourceFailure> failures, String historyFailure, Set<AccessKey> cancelledKeys) {
+		this(sources, missingBySeries, summary, failures, historyFailure, cancelledKeys, 0);
+	}
 
 	public record SourceResult(int sourceIndex, List<DocumentEntry> entries) {
 	}
