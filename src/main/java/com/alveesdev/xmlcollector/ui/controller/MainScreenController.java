@@ -4,6 +4,7 @@ import com.alveesdev.xmlcollector.application.settings.Theme;
 import com.alveesdev.xmlcollector.ui.model.ActivityLog;
 import com.alveesdev.xmlcollector.ui.view.PersonalizationWindow;
 import com.alveesdev.xmlcollector.ui.view.SettingsWindow;
+import com.alveesdev.xmlcollector.ui.view.StatusFooter;
 import com.alveesdev.xmlcollector.ui.view.Themes;
 
 import javafx.application.Platform;
@@ -34,6 +35,10 @@ public class MainScreenController {
 		collectionTabController.setOnCollected((request, result) -> missingTabController.show(request, result));
 		missingTabController.setOnFound(collectionTabController::addFound);
 		collectionTabController.setOnOpenDirectories(() -> openSettings(DIRECTORIES_TAB));
+
+		StatusFooter footer = new StatusFooter();
+		root.getChildren().add(footer);
+		collectionTabController.setOnCounted(footer::show);
 	}
 
 	@FXML
