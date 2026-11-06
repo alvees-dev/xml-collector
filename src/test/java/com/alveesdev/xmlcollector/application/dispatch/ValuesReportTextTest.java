@@ -13,6 +13,7 @@ import java.util.List;
 import org.junit.jupiter.api.Test;
 
 import com.alveesdev.xmlcollector.application.port.DirectoryCompressor;
+import com.alveesdev.xmlcollector.application.port.ReportPdfWriter;
 import com.alveesdev.xmlcollector.domain.model.NumberRange;
 import com.alveesdev.xmlcollector.domain.service.ValuesReport;
 
@@ -139,5 +140,23 @@ class ValuesReportTextTest {
 		String decoded = new String(ValuesReportText.filesOf(OCTOBER, NO_DOCUMENTS, NO_DOCUMENTS, ReportOptions.STANDARD).get(0).content(), StandardCharsets.UTF_8);
 
 		assertTrue(decoded.startsWith(String.valueOf((char) 0xFEFF) + "RELATÓRIO"), decoded);
+	}
+
+	@Test
+	void thePdfHasTheCheckedReportsOneAfterTheOther() {
+		List<ReportPdfWriter.Line> lines = ValuesReportText.pdfLinesOf(OCTOBER, COMPANY, PURCHASES, new ReportOptions(true, false, true));
+		List<String> texts = lines.stream().map(ReportPdfWriter.Line::text).toList();
+
+		assertEquals("RELATÓRIO NFCe - Outubro de 2026", texts.get(0));
+		assertTrue(texts.contains("RELATÓRIO NFe - Outubro de 2026"));
+		assertTrue(texts.contains("NF-e - COMPRAS"));
+		assertFalse(texts.contains("NF-e - VENDAS"));
+		assertTrue(lines.get(0).heading());
+		assertFalse(lines.stream().filter(line -> line.text().startsWith("Total de vendas")).findFirst().orElseThrow().heading());
+	}
+
+	@Test
+	void thePdfIsNamedAfterTheMonth() {
+		assertEquals("Relatório Outubro 2026.pdf", ValuesReportText.pdfFileName(OCTOBER));
 	}
 }
