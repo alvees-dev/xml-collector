@@ -6,6 +6,8 @@ import java.nio.file.Path;
 import java.security.GeneralSecurityException;
 import java.util.Date;
 import java.util.Properties;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import javax.net.ssl.SSLSocketFactory;
 
@@ -30,6 +32,8 @@ import jakarta.mail.internet.MimeMessage;
 import jakarta.mail.internet.MimeMultipart;
 
 public class SmtpEmailSender implements EmailSender {
+
+	private static final Logger LOG = Logger.getLogger(SmtpEmailSender.class.getName());
 
 	private static final String CONNECTION_TIMEOUT_MILLIS = "30000";
 	private static final String READ_TIMEOUT_MILLIS = "120000";
@@ -75,8 +79,28 @@ public class SmtpEmailSender implements EmailSender {
 		} catch (AddressException e) {
 			throw new DispatchException("Endereço de e-mail inválido. Confira o remetente e o destinatário.", e);
 		} catch (MessagingException | IOException e) {
-			throw new DispatchException("Falha ao enviar o e-mail: " + e.getMessage(), e);
+			LOG.log(Level.WARNING, "Falha ao enviar o e-mail", e);
+			throw new DispatchException(failure(e), e);
 		}
+	}
+
+	// The first message only says what step failed; the reason is in the deepest cause, so it goes on the screen too.
+	static String failure(Exception error) {
+
+		String message = "Falha ao enviar o e-mail: " + error.getMessage();
+
+		Throwable root = error;
+		while (root.getCause() != null && root.getCause() != root) {
+			root = root.getCause();
+		}
+
+		String reason = root.getMessage();
+
+		if (root == error || reason == null || reason.isBlank() || reason.equals(error.getMessage())) {
+			return message;
+		}
+
+		return message + "\nCausa: " + reason;
 	}
 
 	static Properties properties(EmailAccount account) throws DispatchException {
