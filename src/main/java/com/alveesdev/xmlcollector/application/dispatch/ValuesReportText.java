@@ -109,22 +109,17 @@ public final class ValuesReportText {
 		return number == null ? NO_NUMBER : number.toString();
 	}
 
+	// Only how many, because a list of numbers of five digits reads like a quantity.
 	private static String cancelledOf(List<Integer> numbers) {
-		if (numbers.isEmpty()) {
-			return NONE;
-		}
-
-		return numbers.stream().map(String::valueOf).collect(Collectors.joining(", "));
+		return countOf(numbers.size());
 	}
 
 	private static String voidedOf(List<NumberRange> ranges) {
-		if (ranges.isEmpty()) {
-			return NONE;
-		}
+		return countOf(ranges.stream().mapToInt(NumberRange::size).sum());
+	}
 
-		return ranges.stream()
-				.map(NumberRange::text)
-				.collect(Collectors.joining(", "));
+	private static String countOf(int notes) {
+		return notes == 0 ? NONE : salesOf(notes);
 	}
 
 	private static String salesOf(int sales) {
