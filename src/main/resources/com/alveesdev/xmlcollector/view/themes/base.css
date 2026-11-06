@@ -114,3 +114,30 @@
 	-fx-background-color: -cx-warning-bg;
 	-fx-text-fill: -cx-warning;
 }
+
+/* The strip that holds the menus and the sun, in the color of the menus. */
+.menu-strip {
+	-fx-background-color: -cx-menu-bg;
+}
+
+.theme-toggle {
+	-fx-background-color: transparent;
+	-fx-background-radius: 11;
+	-fx-padding: 0;
+	-fx-min-width: 22;
+	-fx-min-height: 22;
+	-fx-pref-width: 22;
+	-fx-pref-height: 22;
+	-fx-max-width: 22;
+	-fx-max-height: 22;
+	-fx-cursor: hand;
+}
+
+.theme-toggle:hover,
+.theme-toggle:focus-visible {
+	-fx-background-color: -cx-menu-hover;
+}
+
+.sun-icon {
+	-fx-fill: -cx-sun;
+}
