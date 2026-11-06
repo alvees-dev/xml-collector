@@ -73,6 +73,12 @@ public class MonthZipArchiver implements DirectoryCompressor {
 
 			Files.walkFileTree(monthDirectory, new SimpleFileVisitor<>() {
 
+				// The files that could not be read stay on this computer and do not go to the accountant.
+				@Override
+				public FileVisitResult preVisitDirectory(Path directory, BasicFileAttributes attrs) {
+					return ArchiveLayout.isErrorDirectory(directory, monthDirectory) ? FileVisitResult.SKIP_SUBTREE : FileVisitResult.CONTINUE;
+				}
+
 				@Override
 				public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
 					if (Thread.currentThread().isInterrupted()) {

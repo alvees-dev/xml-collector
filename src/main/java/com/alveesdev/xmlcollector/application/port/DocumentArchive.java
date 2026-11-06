@@ -17,6 +17,9 @@ public interface DocumentArchive {
 	Outcome store(byte[] content, FileTime sourceModified, Path directory, String preferredName,
 			String canonicalName, String identity) throws IOException;
 
+	// A file that could not be read has no key to compare, so only the same bytes make it a copy that already exists.
+	Outcome storeUnreadable(byte[] content, FileTime sourceModified, Path directory, String fileName) throws IOException;
+
 	void requireWritable(Path directory) throws IOException;
 
 	boolean holdsVoidingInAnotherMonth(Path archiveRoot, Path month, String fileName) throws IOException;

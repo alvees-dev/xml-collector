@@ -24,6 +24,7 @@ public final class ArchiveLayout {
 	private static final String ZIP_PREFIX = "ArquivoXML";
 	private static final String VOIDING_FILE_SUFFIX = "-procInutNFe.xml";
 	private static final String PDV_FOLDER_PREFIX = "PDV";
+	private static final String ERROR_FOLDER = "Erro";
 
 	private ArchiveLayout() {
 	}
@@ -80,6 +81,15 @@ public final class ArchiveLayout {
 
 	public static Path directoryFor(Path archiveRoot, LocalDate date, OrganizeMode mode, DocumentCategory category) {
 		return withDay(monthDirectory(archiveRoot, date).resolve(category.folderName()), date, mode);
+	}
+
+	// The files that could not be read, kept so someone can look at them, apart from the notes of the month.
+	public static Path errorDirectoryFor(Path archiveRoot, LocalDate date) {
+		return monthDirectory(archiveRoot, date).resolve(ERROR_FOLDER);
+	}
+
+	public static boolean isErrorDirectory(Path directory, Path monthDirectory) {
+		return directory.equals(monthDirectory.resolve(ERROR_FOLDER));
 	}
 
 	public static Path voidingDirectoryFor(Path archiveRoot, LocalDate date) {

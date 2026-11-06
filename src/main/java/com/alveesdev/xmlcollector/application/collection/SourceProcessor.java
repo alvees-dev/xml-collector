@@ -3,6 +3,8 @@ package com.alveesdev.xmlcollector.application.collection;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.attribute.FileTime;
+import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -104,6 +106,7 @@ class SourceProcessor {
 			List<ReadFile> readFiles = readInParallel(batch, onFileDone, cancelled);
 			List<StoreJob> jobs = decide(sourceIndex, readFiles);
 			storeInParallel(jobs, cancelled);
+			storeUnreadable(readFiles, cancelled);
 		}
 	}
 
@@ -171,7 +174,8 @@ class SourceProcessor {
 
 			boolean needsStoring = switch (document) {
 				case XmlDocument.Invoice _, XmlDocument.CancelEvent _, XmlDocument.Voiding _ -> true;
-				case XmlDocument.Ignored _, XmlDocument.Unreadable _ -> false;
+				case XmlDocument.Unreadable _ -> storing;
+				case XmlDocument.Ignored _ -> false;
 			};
 
 			return new ReadFile(source, fileName, document, needsStoring ? content : null);
@@ -300,6 +304,30 @@ class SourceProcessor {
 				}
 				case REPLACED -> counters.replaced++;
 				case ALREADY_EXISTS -> counters.alreadyExisting++;
+			}
+		}
+	}
+
+	// A broken file has no date of its own, so it goes to the month of its last change, kept inside the period collected.
+	private void storeUnreadable(List<ReadFile> readFiles, BooleanSupplier cancelled) {
+
+		for (ReadFile file : readFiles) {
+			if (!(file.document() instanceof XmlDocument.Unreadable) || file.content() == null) {
+				continue;
+			}
+
+			throwIfCancelled(cancelled);
+
+			LocalDate changed = LocalDate.ofInstant(file.source().lastModified().toInstant(), ZoneId.systemDefault());
+			LocalDate month = changed.isBefore(request.period().from()) ? request.period().from()
+					: changed.isAfter(request.period().to()) ? request.period().to() : changed;
+
+			try {
+				archive.storeUnreadable(file.content(), file.source().lastModified(), ArchiveLayout.errorDirectoryFor(request.archiveRoot(), month),
+						file.fileName());
+			} catch (IOException e) {
+				LOG.log(Level.WARNING, "Arquivo com erro não copiado: " + file.fileName(), e);
+				counters.copyFailures.add(new CopyFailure(file.fileName(), Failures.describe(e)));
 			}
 		}
 	}

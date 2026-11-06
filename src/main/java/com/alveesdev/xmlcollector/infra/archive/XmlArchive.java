@@ -9,6 +9,7 @@ import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
 import java.nio.file.attribute.FileTime;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Stream;
@@ -27,11 +28,38 @@ public class XmlArchive implements DocumentArchive {
 	}
 
 	private static final String TEMP_SUFFIX = ".part";
+	private static final int MAX_COPIES_OF_A_NAME = 100;
 
 	private final DocumentReader reader;
 
 	public XmlArchive(DocumentReader reader) {
 		this.reader = reader;
+	}
+
+	// Two registers can have broken files with the same name, so a different content gets a number instead of replacing the other.
+	@Override
+	public Outcome storeUnreadable(byte[] content, FileTime sourceModified, Path directory, String fileName) throws IOException {
+
+		for (int copy = 1; copy <= MAX_COPIES_OF_A_NAME; copy++) {
+			Path target = directory.resolve(copy == 1 ? fileName : numbered(fileName, copy));
+
+			if (!Files.exists(target)) {
+				write(content, sourceModified, target);
+				return copy == 1 ? Outcome.COPIED : Outcome.COPIED_RENAMED;
+			}
+
+			if (Arrays.equals(Files.readAllBytes(target), content)) {
+				return Outcome.ALREADY_EXISTS;
+			}
+		}
+
+		throw new IOException("Há arquivos demais com o nome " + fileName + " em " + directory);
+	}
+
+	private static String numbered(String fileName, int copy) {
+		int dot = fileName.lastIndexOf('.');
+
+		return dot < 0 ? fileName + " (" + copy + ")" : fileName.substring(0, dot) + " (" + copy + ")" + fileName.substring(dot);
 	}
 
 	@Override
