@@ -166,3 +166,8 @@
 	-fx-background-color: -cx-voided-bg;
 	-fx-text-fill: -cx-voided;
 }
+
+/* Columns of the table whose values read better in the middle. */
+.table-view .centered-column {
+	-fx-alignment: CENTER;
+}
