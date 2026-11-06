@@ -2,6 +2,7 @@ package com.alveesdev.xmlcollector.ui.controller;
 
 import com.alveesdev.xmlcollector.application.settings.Theme;
 import com.alveesdev.xmlcollector.ui.model.ActivityLog;
+import com.alveesdev.xmlcollector.ui.view.AboutWindow;
 import com.alveesdev.xmlcollector.ui.view.PersonalizationWindow;
 import com.alveesdev.xmlcollector.ui.view.SettingsWindow;
 import com.alveesdev.xmlcollector.ui.view.StatusFooter;
@@ -57,6 +58,11 @@ public class MainScreenController {
 	private void onOpenPersonalization() {
 		ActivityLog.record("Abriu personalização");
 		PersonalizationWindow.showAndWait(root.getScene().getWindow());
+	}
+
+	@FXML
+	private void onOpenAbout() {
+		AboutWindow.showAndWait(root.getScene().getWindow());
 	}
 
 	@FXML
