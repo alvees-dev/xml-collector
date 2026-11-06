@@ -33,10 +33,10 @@
                </children>
             </VBox>
             <Separator orientation="VERTICAL" />
-            <!-- The shortcuts sit above the source, Ler Diretório on the row of the source and Coletar XML on the row of the field. -->
-            <GridPane alignment="CENTER_LEFT" hgap="12.0" vgap="6.0">
+            <!-- The shortcuts sit above the source, the magnifier beside the field, Ler Diretório on the row of the source and Coletar XML on the row of the field. -->
+            <GridPane alignment="CENTER_LEFT" hgap="6.0" vgap="6.0">
                <padding>
-                  <Insets left="20.0" right="25.0" />
+                  <Insets left="16.0" right="12.0" />
                </padding>
                <children>
                   <HBox alignment="CENTER_LEFT" spacing="8.0">
@@ -52,10 +52,26 @@
                         <Button fx:id="btnTestPaths" mnemonicParsing="false" onAction="#onTestPaths" prefWidth="105.0" text="Testar Caminhos" />
                      </children>
                   </HBox>
-                  <ChoiceBox fx:id="choiceSource" prefWidth="170.0" GridPane.rowIndex="1" />
-                  <TextField fx:id="txtDirectory" prefWidth="170.0" promptText="Vazio: ler Arquivos_XML" GridPane.rowIndex="2" />
-                  <Button fx:id="btnRead" mnemonicParsing="false" onAction="#onRead" prefWidth="105.0" text="Ler Diretório" GridPane.columnIndex="1" GridPane.rowIndex="1" />
-                  <Button fx:id="btnCollect" mnemonicParsing="false" onAction="#onCollect" prefWidth="105.0" styleClass="primary" text="Coletar XML" GridPane.columnIndex="1" GridPane.rowIndex="2" />
+                  <ChoiceBox fx:id="choiceSource" prefWidth="150.0" GridPane.rowIndex="1" />
+                  <TextField fx:id="txtDirectory" prefWidth="150.0" promptText="Vazio: ler Arquivos_XML" GridPane.rowIndex="2" />
+                  <Button fx:id="btnBrowseDirectory" mnemonicParsing="false" onAction="#onBrowseDirectory" maxHeight="25.0" maxWidth="26.0" minHeight="25.0" minWidth="26.0" prefHeight="25.0" prefWidth="26.0" style="-fx-padding: 0;" GridPane.columnIndex="1" GridPane.rowIndex="2">
+                     <graphic>
+                        <SVGPath content="M15.5,14h-0.79l-0.28-0.27C15.41,12.59,16,11.11,16,9.5C16,5.91,13.09,3,9.5,3S3,5.91,3,9.5S5.91,16,9.5,16c1.61,0,3.09-0.59,4.23-1.57l0.27,0.28v0.79l5,4.99L20.49,19L15.5,14z M9.5,14C7.01,14,5,11.99,5,9.5S7.01,5,9.5,5S14,7.01,14,9.5S11.99,14,9.5,14z" styleClass="gear-icon" scaleX="0.75" scaleY="0.75" />
+                     </graphic>
+                     <tooltip>
+                        <Tooltip text="Procurar o diretório no Windows" />
+                     </tooltip>
+                  </Button>
+                  <Button fx:id="btnRead" mnemonicParsing="false" onAction="#onRead" prefWidth="105.0" text="Ler Diretório" GridPane.columnIndex="2" GridPane.rowIndex="1">
+                     <GridPane.margin>
+                        <Insets left="12.0" />
+                     </GridPane.margin>
+                  </Button>
+                  <Button fx:id="btnCollect" mnemonicParsing="false" onAction="#onCollect" prefWidth="105.0" styleClass="primary" text="Coletar XML" GridPane.columnIndex="2" GridPane.rowIndex="2">
+                     <GridPane.margin>
+                        <Insets left="12.0" />
+                     </GridPane.margin>
+                  </Button>
                </children>
             </GridPane>
             <Separator orientation="VERTICAL" />
