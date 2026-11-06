@@ -86,7 +86,7 @@
             <HBox alignment="CENTER_RIGHT" spacing="10.0">
                <children>
                   <Button fx:id="btnCompress" mnemonicParsing="false" onAction="#onCompress" text="Apenas Compactar" />
-                  <Button fx:id="btnSend" mnemonicParsing="false" onAction="#onSend" text="Enviar" />
+                  <Button fx:id="btnSend" mnemonicParsing="false" styleClass="primary" onAction="#onSend" text="Enviar" />
                </children>
             </HBox>
          </children>
