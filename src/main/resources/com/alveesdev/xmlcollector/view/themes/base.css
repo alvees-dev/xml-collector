@@ -1,0 +1,116 @@
+/* The rules the three themes share. Each theme only sets the colors, at .root, and imports this file. */
+
+.menu-bar {
+	-fx-background-color: -cx-menu-bg;
+}
+
+.menu-bar > .container > .menu-button {
+	-fx-background-color: transparent;
+}
+
+.menu-bar > .container > .menu-button > .label {
+	-fx-text-fill: -cx-menu-text;
+}
+
+.menu-bar > .container > .menu-button:hover,
+.menu-bar > .container > .menu-button:focused,
+.menu-bar > .container > .menu-button:showing {
+	-fx-background-color: -cx-menu-hover;
+}
+
+.tab-pane > .tab-header-area > .tab-header-background {
+	-fx-background-color: -fx-background;
+}
+
+.tab-pane > .tab-header-area > .headers-region > .tab {
+	-fx-background-color: -fx-box-border, -cx-tab-bg;
+	-fx-background-insets: 0 1 0 0, 1 2 0 1;
+	-fx-background-radius: 5 5 0 0, 4 4 0 0;
+}
+
+.tab-pane > .tab-header-area > .headers-region > .tab .tab-label {
+	-fx-text-fill: -cx-tab-text;
+}
+
+/* The line of the accent on top of the open tab. */
+.tab-pane > .tab-header-area > .headers-region > .tab:selected {
+	-fx-background-color: -fx-accent, -cx-tab-selected-bg;
+	-fx-background-insets: 0 1 0 0, 3 1 0 0;
+	-fx-background-radius: 5 5 0 0, 0;
+}
+
+.tab-pane > .tab-header-area > .headers-region > .tab:selected .tab-label {
+	-fx-text-fill: -cx-tab-selected-text;
+}
+
+.tab-pane > .tab-header-area > .headers-region > .tab:selected .focus-indicator {
+	-fx-border-color: transparent;
+}
+
+.button.primary {
+	-fx-base: -cx-primary;
+	-fx-font-weight: bold;
+}
+
+.check-box:selected > .box {
+	-fx-background-color: -fx-accent;
+	-fx-background-insets: 0;
+}
+
+.check-box:selected > .box > .mark {
+	-fx-background-color: white;
+}
+
+.radio-button:selected > .radio > .dot {
+	-fx-background-color: -fx-accent;
+}
+
+.gear-icon {
+	-fx-fill: -cx-icon;
+}
+
+.table-view .column-header-background,
+.table-view .column-header-background > .filler {
+	-fx-background-color: -cx-header-bg;
+}
+
+.table-view .column-header {
+	-fx-background-color: transparent;
+	-fx-border-color: transparent -fx-box-border -fx-box-border transparent;
+	-fx-border-width: 0 1 1 0;
+}
+
+.table-view .column-header .label {
+	-fx-text-fill: -cx-header-text;
+	-fx-font-weight: bold;
+}
+
+.dialog-pane > .header-panel {
+	-fx-background-color: -cx-dialog-head;
+}
+
+.dialog-pane > .header-panel > .label {
+	-fx-text-fill: -cx-dialog-head-text;
+}
+
+.status-tag {
+	-fx-padding: 0 8 0 8;
+	-fx-background-radius: 9;
+	-fx-font-size: 0.92em;
+	-fx-font-weight: bold;
+}
+
+.status-authorized {
+	-fx-background-color: -cx-ok-bg;
+	-fx-text-fill: -cx-ok;
+}
+
+.status-cancelled {
+	-fx-background-color: -cx-danger-bg;
+	-fx-text-fill: -cx-danger;
+}
+
+.status-error {
+	-fx-background-color: -cx-warning-bg;
+	-fx-text-fill: -cx-warning;
+}

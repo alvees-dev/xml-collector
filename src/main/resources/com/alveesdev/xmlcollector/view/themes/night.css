@@ -1,0 +1,59 @@
+/* Noite XML: dark like the icon, with a faint cyan glow on what is chosen. */
+@import "base.css";
+
+.root {
+	-fx-base: #16295e;
+	-fx-background: #0a1430;
+	-fx-control-inner-background: #081231;
+	-fx-control-inner-background-alt: #0d1a3d;
+	-fx-accent: #2a8bff;
+	-fx-default-button: #1f6fff;
+	-fx-focus-color: #3fc8ff;
+	-fx-faint-focus-color: #3fc8ff33;
+	-fx-selection-bar: #1d4fb8;
+	-fx-selection-bar-non-focused: #17336f;
+	-fx-box-border: #24396f;
+	-fx-text-box-border: #2a4388;
+	-fx-light-text-color: #e3ecff;
+	-fx-mid-text-color: #c9d7f5;
+	-fx-dark-text-color: #0a1430;
+	-fx-prompt-text-fill: #6f84ad;
+
+	-cx-title-bg: #060d22;
+	-cx-title-line: #1f3266;
+	-cx-title-text: #a9bbe0;
+	-cx-title-hover: #13265a;
+	-cx-menu-bg: #0b1738;
+	-cx-menu-text: #c9d7f5;
+	-cx-menu-hover: #16295e;
+	-cx-tab-bg: #0f1d44;
+	-cx-tab-text: #8fa3c9;
+	-cx-tab-selected-bg: #13265a;
+	-cx-tab-selected-text: #ffffff;
+	-cx-primary: #1f6fff;
+	-cx-icon: #7fd8ff;
+	-cx-header-bg: #13265a;
+	-cx-header-text: #bcd0f5;
+	-cx-dialog-head: #0f1d44;
+	-cx-dialog-head-text: #ffffff;
+	-cx-frame: #1d3a8a;
+	-cx-ok: #3fdc8c;
+	-cx-warning: #ffb547;
+	-cx-danger: #ff6b6b;
+	-cx-ok-bg: #0f3a2a;
+	-cx-warning-bg: #3a2a10;
+	-cx-danger-bg: #3d1620;
+}
+
+.button.primary {
+	-fx-effect: dropshadow(gaussian, rgba(63, 200, 255, 0.45), 10, 0, 0, 0);
+}
+
+.check-box:selected > .box {
+	-fx-background-color: #3fc8ff;
+	-fx-effect: dropshadow(gaussian, rgba(63, 200, 255, 0.55), 8, 0, 0, 0);
+}
+
+.check-box:selected > .box > .mark {
+	-fx-background-color: #0a1430;
+}
