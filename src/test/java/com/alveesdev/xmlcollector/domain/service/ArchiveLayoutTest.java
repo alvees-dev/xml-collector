@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.nio.file.Path;
 import java.time.LocalDate;
+import java.time.YearMonth;
 import java.util.List;
 
 import org.junit.jupiter.api.Test;
@@ -18,7 +19,8 @@ class ArchiveLayoutTest {
 
 	private static final Path ROOT = Path.of("arquivos");
 	private static final LocalDate DAY = LocalDate.of(2026, 3, 5);
-	private static final Path MARCH = ROOT.resolve("2026").resolve("Março");
+	private static final Path MARCH = ROOT.resolve("2026").resolve("Março_2026");
+	private static final YearMonth MARCH_2026 = YearMonth.of(2026, 3);
 
 	@Test
 	void namesEveryMonthInOrder() {
@@ -33,7 +35,13 @@ class ArchiveLayoutTest {
 	void theMonthOfADateIsAFolderInsideItsYear() {
 		assertEquals(MARCH, ArchiveLayout.monthDirectory(ROOT, DAY));
 		assertEquals("Março_2026", ArchiveLayout.monthYearName(DAY));
-		assertEquals("Março_2026", ArchiveLayout.monthLabel(MARCH));
+	}
+
+	@Test
+	void theZipStaysInTheFolderOfTheYearWithTheMarkOfItsSource() {
+		assertEquals(ROOT.resolve("2026"), ArchiveLayout.zipFolder(ROOT, MARCH_2026));
+		assertEquals("Março_2026p", ArchiveLayout.zipLabel(MARCH_2026, "p"));
+		assertEquals("Março_2026s", ArchiveLayout.zipLabel(MARCH_2026, "s"));
 	}
 
 	@Test
@@ -41,27 +49,33 @@ class ArchiveLayoutTest {
 		DateRange period = new DateRange(LocalDate.of(2025, 12, 20), LocalDate.of(2026, 2, 1));
 
 		assertEquals(List.of(
-				ROOT.resolve("2025").resolve("Dezembro"),
-				ROOT.resolve("2026").resolve("Janeiro"),
-				ROOT.resolve("2026").resolve("Fevereiro")), ArchiveLayout.monthDirectories(ROOT, period));
+				ROOT.resolve("2025").resolve("Dezembro_2025"),
+				ROOT.resolve("2026").resolve("Janeiro_2026"),
+				ROOT.resolve("2026").resolve("Fevereiro_2026")), ArchiveLayout.monthDirectories(ROOT, period));
 	}
 
 	@Test
 	void theZipNameHasEachCnpjOnceInOrder() {
-		assertEquals("ArquivoXML_111_222_Março_2026", ArchiveLayout.zipName(List.of("222", "111", "222"), MARCH));
+		assertEquals("ArquivoXML_111_222_Março_2026p", ArchiveLayout.zipName(List.of("222", "111", "222"), "Março_2026p"));
 	}
 
 	@Test
 	void recognizesTheZipOfTheMonthWhateverItsCnpjs() {
-		assertTrue(ArchiveLayout.isZipOfMonth("ArquivoXML_111_Março_2026.zip", MARCH));
-		assertTrue(ArchiveLayout.isZipOfMonth("ArquivoXML_111_222_Março_2026.zip", MARCH));
+		assertTrue(ArchiveLayout.isZipOf("ArquivoXML_111_Março_2026p.zip", "Março_2026p"));
+		assertTrue(ArchiveLayout.isZipOf("ArquivoXML_111_222_Março_2026p.zip", "Março_2026p"));
 	}
 
 	@Test
 	void doesNotTakeAnotherFileAsTheZipOfTheMonth() {
-		assertFalse(ArchiveLayout.isZipOfMonth("ArquivoXML_111_Abril_2026.zip", MARCH));
-		assertFalse(ArchiveLayout.isZipOfMonth("Outro_111_Março_2026.zip", MARCH));
-		assertFalse(ArchiveLayout.isZipOfMonth("ArquivoXML_111_Março_2026.zip.part", MARCH));
+		assertFalse(ArchiveLayout.isZipOf("ArquivoXML_111_Abril_2026p.zip", "Março_2026p"));
+		assertFalse(ArchiveLayout.isZipOf("Outro_111_Março_2026p.zip", "Março_2026p"));
+		assertFalse(ArchiveLayout.isZipOf("ArquivoXML_111_Março_2026p.zip.part", "Março_2026p"));
+	}
+
+	@Test
+	void theZipOfTheServerIsNotTheZipOfTheCollection() {
+		assertFalse(ArchiveLayout.isZipOf("ArquivoXML_111_Março_2026s.zip", "Março_2026p"));
+		assertFalse(ArchiveLayout.isZipOf("ArquivoXML_111_Março_2026p.zip", "Março_2026s"));
 	}
 
 	@Test
@@ -76,7 +90,7 @@ class ArchiveLayoutTest {
 
 	@Test
 	void organizingByDayAddsTheFolderOfTheDay() {
-		assertEquals(MARCH.resolve("NFe_Vendas").resolve("Dia_05"),
+		assertEquals(MARCH.resolve("NFe").resolve("Vendas").resolve("Dia_05"),
 				ArchiveLayout.directoryFor(ROOT, DAY, OrganizeMode.BY_DAY, DocumentCategory.NFE_SALES));
 	}
 

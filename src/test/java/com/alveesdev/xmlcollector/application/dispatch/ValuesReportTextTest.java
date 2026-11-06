@@ -6,16 +6,20 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
+import java.time.YearMonth;
 import java.util.List;
 
 import org.junit.jupiter.api.Test;
 
+import com.alveesdev.xmlcollector.application.port.DirectoryCompressor;
 import com.alveesdev.xmlcollector.domain.model.NumberRange;
 import com.alveesdev.xmlcollector.domain.service.ValuesReport;
 
 class ValuesReportTextTest {
 
 	private static final String MONTH = "Outubro de 2026";
+	private static final DispatchMonth OCTOBER = DispatchMonth.collected(Path.of("arquivos"), YearMonth.of(2026, 10));
 	private static final ValuesReport NO_DOCUMENTS = new ValuesReport(List.of(), 0);
 	private static final ValuesReport.Section NFCE = new ValuesReport.Section("12345678000190", "65", 1, 100, 250,
 			List.of(120, 130), List.of(new NumberRange(140, 142), new NumberRange(150, 150)), 142, new BigDecimal("12345.60"));
@@ -27,11 +31,11 @@ class ValuesReportTextTest {
 	private static final ValuesReport PURCHASES = new ValuesReport(List.of(NFE_PURCHASE), 0);
 
 	@Test
-	void writesEveryPartOfTheNfce() {
-		String text = ValuesReportText.textOf(MONTH, COMPANY, NO_DOCUMENTS, new ReportOptions(true, false, false));
+	void theNfceReportHasEveryPartOfTheNfceAndItsOwnTotal() {
+		String text = ValuesReportText.nfceTextOf(MONTH, COMPANY, NO_DOCUMENTS);
 
 		assertEquals(String.join("\r\n",
-				"RELATÓRIO DE VALORES - Outubro de 2026",
+				"RELATÓRIO NFCe - Outubro de 2026",
 				"",
 				"CNPJ 12345678000190 - NFC-e - Série 1",
 				"Primeira nota emitida: 100",
@@ -48,59 +52,63 @@ class ValuesReportTextTest {
 	}
 
 	@Test
-	void theNfeShowsOnlyTheValue() {
-		String text = ValuesReportText.textOf(MONTH, COMPANY, PURCHASES, new ReportOptions(false, true, true));
+	void theNfeReportHasTheSalesAndThePurchasesApart() {
+		String text = ValuesReportText.nfeTextOf(MONTH, COMPANY, PURCHASES, new ReportOptions(false, true, true));
 
 		assertEquals(String.join("\r\n",
-				"RELATÓRIO DE VALORES - Outubro de 2026",
+				"RELATÓRIO NFe - Outubro de 2026",
 				"",
 				"NF-e - VENDAS",
+				"Total de vendas: 2 notas",
 				"Valor total das vendas: R$ 1.000,00",
 				"",
 				"NF-e - COMPRAS",
 				"Valor total das compras: R$ 250,50",
-				"",
-				"TOTAL DO MÊS",
-				"Total de vendas: 2 notas",
-				"Valor total das vendas: R$ 1.000,00",
 				""), text);
 	}
 
 	@Test
-	void theTotalOfTheMonthJoinsTheNfceAndTheSalesButNotThePurchases() {
-		String text = ValuesReportText.textOf(MONTH, COMPANY, PURCHASES, new ReportOptions(true, true, true));
+	void eachReportHasOnlyItsOwnKind() {
+		String nfce = ValuesReportText.nfceTextOf(MONTH, COMPANY, PURCHASES);
+		String onlyPurchases = ValuesReportText.nfeTextOf(MONTH, COMPANY, PURCHASES, new ReportOptions(false, false, true));
 
-		assertTrue(text.endsWith(String.join("\r\n",
-				"TOTAL DO MÊS",
-				"Total de vendas: 144 notas",
-				"Valor total das vendas: R$ 13.345,60",
-				"")), text);
+		assertFalse(nfce.contains("NF-e"), nfce);
+		assertFalse(nfce.contains("R$ 1.000,00"), nfce);
+		assertFalse(onlyPurchases.contains("VENDAS"), onlyPurchases);
+		assertFalse(onlyPurchases.contains("NFC-e"), onlyPurchases);
+		assertTrue(onlyPurchases.contains("Valor total das compras: R$ 250,50"), onlyPurchases);
 	}
 
 	@Test
-	void anUncheckedKindDoesNotAppear() {
-		String text = ValuesReportText.textOf(MONTH, COMPANY, PURCHASES, new ReportOptions(true, false, false));
+	void theFilesAreNamedAfterTheMonth() {
+		List<DirectoryCompressor.ExtraFile> files = ValuesReportText.filesOf(OCTOBER, COMPANY, PURCHASES, new ReportOptions(true, true, true));
 
-		assertFalse(text.contains("NF-e"), text);
-		assertFalse(text.contains("R$ 1.000,00"), text);
-		assertFalse(text.contains("250,50"), text);
+		assertEquals(List.of("Relatório NFCe Outubro 2026.txt", "Relatório NFe Outubro 2026.txt"), files.stream().map(DirectoryCompressor.ExtraFile::name).toList());
 	}
 
 	@Test
-	void onlyThePurchasesHaveNoTotalOfSales() {
-		String text = ValuesReportText.textOf(MONTH, NO_DOCUMENTS, PURCHASES, new ReportOptions(false, false, true));
-
-		assertTrue(text.contains("Valor total das compras: R$ 250,50"), text);
-		assertFalse(text.contains("TOTAL DO MÊS"), text);
+	void onlyTheCheckedReportsAreMade() {
+		assertEquals(List.of("Relatório NFCe Outubro 2026.txt"),
+				ValuesReportText.filesOf(OCTOBER, COMPANY, PURCHASES, ReportOptions.STANDARD).stream().map(DirectoryCompressor.ExtraFile::name).toList());
+		assertEquals(List.of("Relatório NFe Outubro 2026.txt"),
+				ValuesReportText.filesOf(OCTOBER, COMPANY, PURCHASES, new ReportOptions(false, false, true)).stream().map(DirectoryCompressor.ExtraFile::name).toList());
+		assertEquals(List.of(), ValuesReportText.filesOf(OCTOBER, COMPANY, PURCHASES, new ReportOptions(false, false, false)));
 	}
 
 	@Test
 	void aCheckedKindWithoutNotesShowsZero() {
-		String text = ValuesReportText.textOf(MONTH, NO_DOCUMENTS, NO_DOCUMENTS, new ReportOptions(false, true, true));
+		String text = ValuesReportText.nfeTextOf(MONTH, NO_DOCUMENTS, NO_DOCUMENTS, new ReportOptions(false, true, true));
 
 		assertTrue(text.contains("Valor total das vendas: R$ 0,00"), text);
 		assertTrue(text.contains("Valor total das compras: R$ 0,00"), text);
-		assertFalse(text.contains("Nenhuma nota encontrada."), text);
+	}
+
+	@Test
+	void anNfceReportWithoutNotesSaysSo() {
+		String text = ValuesReportText.nfceTextOf(MONTH, NO_DOCUMENTS, NO_DOCUMENTS);
+
+		assertTrue(text.contains("Nenhuma nota encontrada."), text);
+		assertFalse(text.contains("TOTAL DO MÊS"), text);
 	}
 
 	@Test
@@ -108,7 +116,7 @@ class ValuesReportTextTest {
 		ValuesReport.Section onlyVoided = new ValuesReport.Section("12345678000190", "65", 2, null, null, List.of(),
 				List.of(), 1, BigDecimal.ZERO);
 
-		String text = ValuesReportText.textOf(MONTH, new ValuesReport(List.of(onlyVoided), 0), NO_DOCUMENTS, ReportOptions.STANDARD);
+		String text = ValuesReportText.nfceTextOf(MONTH, new ValuesReport(List.of(onlyVoided), 0), NO_DOCUMENTS);
 
 		assertTrue(text.contains("CNPJ 12345678000190 - NFC-e - Série 2"), text);
 		assertTrue(text.contains("Primeira nota emitida: -"), text);
@@ -118,16 +126,17 @@ class ValuesReportTextTest {
 	}
 
 	@Test
-	void warnsAboutFilesThatCouldNotBeRead() {
-		String text = ValuesReportText.textOf(MONTH, new ValuesReport(List.of(), 2), new ValuesReport(List.of(), 1), ReportOptions.STANDARD);
+	void bothReportsWarnAboutFilesThatCouldNotBeRead() {
+		ValuesReport broken = new ValuesReport(List.of(), 2);
+		ValuesReport brokenPurchase = new ValuesReport(List.of(), 1);
 
-		assertTrue(text.contains("ATENÇÃO: 3 arquivo(s) não puderam ser lidos"), text);
-		assertTrue(text.contains("Nenhuma nota encontrada."), text);
+		assertTrue(ValuesReportText.nfceTextOf(MONTH, broken, brokenPurchase).contains("ATENÇÃO: 3 arquivo(s) não puderam ser lidos"));
+		assertTrue(ValuesReportText.nfeTextOf(MONTH, broken, brokenPurchase, new ReportOptions(false, true, true)).contains("ATENÇÃO: 3 arquivo(s) não puderam ser lidos"));
 	}
 
 	@Test
 	void theBytesStartWithTheMarkOfTheEncoding() {
-		String decoded = new String(ValuesReportText.bytesOf(MONTH, NO_DOCUMENTS, NO_DOCUMENTS, ReportOptions.STANDARD), StandardCharsets.UTF_8);
+		String decoded = new String(ValuesReportText.filesOf(OCTOBER, NO_DOCUMENTS, NO_DOCUMENTS, ReportOptions.STANDARD).get(0).content(), StandardCharsets.UTF_8);
 
 		assertTrue(decoded.startsWith(String.valueOf((char) 0xFEFF) + "RELATÓRIO"), decoded);
 	}

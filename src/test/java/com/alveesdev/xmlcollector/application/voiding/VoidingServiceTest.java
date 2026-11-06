@@ -49,7 +49,7 @@ class VoidingServiceTest {
 		assertNull(result.archiveFailure());
 		assertEquals(1, archive.names.size());
 		assertEquals("35261234567800019065001000000002000000003-procInutNFe.xml", archive.names.get(0));
-		assertEquals(ROOT.resolve("2026").resolve("Janeiro").resolve("Inutilizadas"), archive.directories.get(0));
+		assertEquals(ROOT.resolve("2026").resolve("Janeiro_2026").resolve("Inutilizadas"), archive.directories.get(0));
 		assertEquals("<procInutNFe/>", archive.contents.get(0));
 	}
 
@@ -92,7 +92,7 @@ class VoidingServiceTest {
 		VoidingResult result = service(APPROVED).voidRange(REQUEST, ROOT, COLLECTED, List.of(pdv));
 
 		assertEquals(List.of(), result.pdvFailures());
-		assertEquals(List.of(pdv, ROOT.resolve("2026").resolve("Janeiro").resolve("Inutilizadas")), archive.directories);
+		assertEquals(List.of(pdv, ROOT.resolve("2026").resolve("Janeiro_2026").resolve("Inutilizadas")), archive.directories);
 	}
 
 	@Test

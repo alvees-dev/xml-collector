@@ -92,7 +92,7 @@ public final class AppContext {
 		}
 
 		if (type == CollectionTabController.class) {
-			return new CollectionTabController(collectionService, settingsService, searchModels, paths);
+			return new CollectionTabController(collectionService, settingsService, searchModels, directoryTester, paths);
 		}
 
 		if (type == MissingTabController.class) {
@@ -100,7 +100,7 @@ public final class AppContext {
 		}
 
 		if (type == DispatchTabController.class) {
-			return new DispatchTabController(dispatchService, settingsService, paths);
+			return new DispatchTabController(dispatchService, collectionService, settingsService, searchModels, paths);
 		}
 
 		if (type == SettingsController.class) {

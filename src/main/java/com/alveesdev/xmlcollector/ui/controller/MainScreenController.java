@@ -9,6 +9,8 @@ import javafx.scene.layout.VBox;
 
 public class MainScreenController {
 
+	private static final String DIRECTORIES_TAB = "Diretórios";
+
 	private final SettingsWindow settingsWindow;
 
 	@FXML
@@ -28,12 +30,17 @@ public class MainScreenController {
 	public void initialize() {
 		collectionTabController.setOnCollected((request, result) -> missingTabController.show(request, result));
 		missingTabController.setOnFound(collectionTabController::addFound);
+		collectionTabController.setOnOpenDirectories(() -> openSettings(DIRECTORIES_TAB));
 	}
 
 	@FXML
 	private void onOpenSettings() {
-		ActivityLog.record("Abriu configurações");
-		settingsWindow.showAndWait(root.getScene().getWindow());
+		openSettings(null);
+	}
+
+	private void openSettings(String tabName) {
+		ActivityLog.record(tabName == null ? "Abriu configurações" : "Abriu configurações, aba " + tabName);
+		settingsWindow.showAndWait(root.getScene().getWindow(), tabName);
 		missingTabController.refreshPdvColumns();
 		collectionTabController.refreshServerDirectory();
 	}

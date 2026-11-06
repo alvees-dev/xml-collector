@@ -9,7 +9,6 @@ import com.alveesdev.xmlcollector.application.settings.service.SearchModelCatalo
 import com.alveesdev.xmlcollector.domain.model.NfeSearchModel;
 import com.alveesdev.xmlcollector.domain.model.PdvSearchModel;
 import com.alveesdev.xmlcollector.domain.model.PdvType;
-import com.alveesdev.xmlcollector.domain.model.SearchFolderPattern;
 
 import javafx.fxml.FXML;
 import javafx.scene.control.ChoiceBox;
@@ -76,11 +75,7 @@ public class ModelsTabController {
 			return new DirectoryTarget(directory, List.of(), "");
 		}
 
-		List<String> folders = Stream.concat(model.collectionFolders().stream(), model.missingFolders().stream())
-				.distinct()
-				.toList();
-
-		return new DirectoryTarget(directory, folders, SearchFolderPattern.fixedPrefix(model.voidingFolder()));
+		return DirectoryTarget.ofPdv(directory, model);
 	}
 
 	DirectoryTarget nfeTarget(String directory) {

@@ -24,6 +24,7 @@ public final class ArchiveLayout {
 	private static final String ZIP_PREFIX = "ArquivoXML";
 	private static final String VOIDING_FILE_SUFFIX = "-procInutNFe.xml";
 	private static final String PDV_FOLDER_PREFIX = "PDV";
+	private static final String ERROR_FOLDER = "Erros";
 
 	private ArchiveLayout() {
 	}
@@ -37,11 +38,7 @@ public final class ArchiveLayout {
 	}
 
 	public static Path monthDirectory(Path archiveRoot, LocalDate date) {
-		return archiveRoot.resolve(String.valueOf(date.getYear())).resolve(MONTH_NAMES[date.getMonthValue() - 1]);
-	}
-
-	public static String monthLabel(Path monthDirectory) {
-		return monthDirectory.getFileName() + "_" + monthDirectory.getParent().getFileName();
+		return archiveRoot.resolve(String.valueOf(date.getYear())).resolve(monthYearName(date));
 	}
 
 	public static List<Path> monthDirectories(Path archiveRoot, DateRange period) {
@@ -54,18 +51,28 @@ public final class ArchiveLayout {
 		return directories;
 	}
 
-	public static String zipName(Collection<String> cnpjs, Path monthDirectory) {
+	// The zips of every month and source stay in the folder of the year, even when the notes came from somewhere else.
+	public static Path zipFolder(Path archiveRoot, YearMonth month) {
+		return archiveRoot.resolve(String.valueOf(month.getYear()));
+	}
+
+	// The mark tells where the notes came from, so a zip of the server is never taken for one of the collection.
+	public static String zipLabel(YearMonth month, String sourceMark) {
+		return monthYearName(month.atDay(1)) + sourceMark;
+	}
+
+	public static String zipName(Collection<String> cnpjs, String zipLabel) {
 		List<String> parts = new ArrayList<>();
 		parts.add(ZIP_PREFIX);
 		parts.addAll(new TreeSet<>(cnpjs));
-		parts.add(monthLabel(monthDirectory));
+		parts.add(zipLabel);
 
 		return String.join("_", parts);
 	}
 
-	// The CNPJs in the name are only known after reading the notes, so the month is what identifies the zip.
-	public static boolean isZipOfMonth(String fileName, Path monthDirectory) {
-		return fileName.startsWith(ZIP_PREFIX + "_") && fileName.endsWith("_" + monthLabel(monthDirectory) + ".zip");
+	// The CNPJs in the name are only known after reading the notes, so the month and the source identify the zip.
+	public static boolean isZipOf(String fileName, String zipLabel) {
+		return fileName.startsWith(ZIP_PREFIX + "_") && fileName.endsWith("_" + zipLabel + ".zip");
 	}
 
 	public static String voidingFileName(String voidingId) {
@@ -74,6 +81,15 @@ public final class ArchiveLayout {
 
 	public static Path directoryFor(Path archiveRoot, LocalDate date, OrganizeMode mode, DocumentCategory category) {
 		return withDay(monthDirectory(archiveRoot, date).resolve(category.folderName()), date, mode);
+	}
+
+	// The files that could not be read, kept so someone can look at them, apart from the notes of the month.
+	public static Path errorDirectoryFor(Path archiveRoot, LocalDate date) {
+		return monthDirectory(archiveRoot, date).resolve(ERROR_FOLDER);
+	}
+
+	public static boolean isErrorDirectory(Path directory, Path monthDirectory) {
+		return directory.equals(monthDirectory.resolve(ERROR_FOLDER));
 	}
 
 	public static Path voidingDirectoryFor(Path archiveRoot, LocalDate date) {

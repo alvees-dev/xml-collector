@@ -2,9 +2,15 @@ package com.alveesdev.xmlcollector.application.port;
 
 import java.io.IOException;
 import java.nio.file.Path;
+import java.nio.file.attribute.FileTime;
 import java.util.Optional;
 
 public interface StubDocumentArchive extends DocumentArchive {
+
+	@Override
+	default Outcome storeUnreadable(byte[] content, FileTime sourceModified, Path directory, String fileName) throws IOException {
+		return Outcome.COPIED;
+	}
 
 	@Override
 	default void requireWritable(Path directory) throws IOException {

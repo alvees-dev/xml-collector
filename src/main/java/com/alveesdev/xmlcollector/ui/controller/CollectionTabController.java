@@ -6,6 +6,7 @@ import java.time.LocalDate;
 import java.time.YearMonth;
 import java.util.ArrayList;
 import java.util.EnumMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -17,6 +18,9 @@ import com.alveesdev.xmlcollector.application.collection.CollectionRequest;
 import com.alveesdev.xmlcollector.application.collection.CollectionResult;
 import com.alveesdev.xmlcollector.application.collection.CollectionService;
 import com.alveesdev.xmlcollector.application.collection.CollectionTarget;
+import com.alveesdev.xmlcollector.application.connection.DirectoryTarget;
+import com.alveesdev.xmlcollector.application.connection.DirectoryTestResult;
+import com.alveesdev.xmlcollector.application.connection.DirectoryTester;
 import com.alveesdev.xmlcollector.application.settings.AppPaths;
 import com.alveesdev.xmlcollector.application.settings.AppSettings;
 import com.alveesdev.xmlcollector.application.settings.service.SearchModelCatalog;
@@ -25,11 +29,15 @@ import com.alveesdev.xmlcollector.domain.model.DateRange;
 import com.alveesdev.xmlcollector.domain.model.DocumentCategory;
 import com.alveesdev.xmlcollector.domain.model.DocumentEntry;
 import com.alveesdev.xmlcollector.domain.model.NfeSearchModel;
+import com.alveesdev.xmlcollector.domain.model.PdvSearchModel;
 import com.alveesdev.xmlcollector.domain.model.SeparationMode;
+import com.alveesdev.xmlcollector.ui.model.DirectoryTestText;
 import com.alveesdev.xmlcollector.ui.model.DocumentRow;
 import com.alveesdev.xmlcollector.ui.model.DocumentRowMapper;
 import com.alveesdev.xmlcollector.ui.model.FailureText;
+import com.alveesdev.xmlcollector.ui.model.SourceLabels;
 import com.alveesdev.xmlcollector.ui.model.SourceMode;
+import com.alveesdev.xmlcollector.ui.model.StartText;
 import com.alveesdev.xmlcollector.ui.view.Dialogs;
 import com.alveesdev.xmlcollector.ui.view.FileExplorer;
 
@@ -39,10 +47,10 @@ import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
 import javafx.scene.control.CheckBox;
+import javafx.scene.control.ChoiceBox;
 import javafx.scene.control.ContextMenu;
 import javafx.scene.control.DatePicker;
 import javafx.scene.control.MenuItem;
-import javafx.scene.control.RadioButton;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableRow;
 import javafx.scene.control.TableView;
@@ -53,11 +61,14 @@ import javafx.scene.input.DataFormat;
 
 public class CollectionTabController {
 
+	private static final String TEST_PATHS = "Testar Caminhos";
+
 	private static final List<String> COLUMN_PROPERTIES = List.of("number", "series", "totalValue", "emissionDate", "accessKey", "status");
 
 	private final CollectionService collectionService;
 	private final SettingsService settingsService;
 	private final SearchModelCatalog searchModels;
+	private final DirectoryTester directoryTester;
 	private final AppPaths paths;
 
 	private CollectedDocuments collected = new CollectedDocuments();
@@ -73,13 +84,7 @@ public class CollectionTabController {
 	private DatePicker dpTo;
 
 	@FXML
-	private RadioButton radioServerDirectory;
-
-	@FXML
-	private RadioButton radioPdvDirectories;
-
-	@FXML
-	private RadioButton radioSingleDirectory;
+	private ChoiceBox<SourceMode> choiceSource;
 
 	private String typedDirectory = "";
 
@@ -91,6 +96,15 @@ public class CollectionTabController {
 
 	@FXML
 	private Button btnRead;
+
+	@FXML
+	private Button btnTestPaths;
+
+	private Runnable onOpenDirectories = () -> {
+	};
+
+	@FXML
+	private CheckBox chkNfce;
 
 	@FXML
 	private CheckBox chkNfeSales;
@@ -114,11 +128,61 @@ public class CollectionTabController {
 	private TableView<DocumentRow> nfeTable;
 
 	public CollectionTabController(CollectionService collectionService, SettingsService settingsService,
-			SearchModelCatalog searchModels, AppPaths paths) {
+			SearchModelCatalog searchModels, DirectoryTester directoryTester, AppPaths paths) {
 		this.collectionService = collectionService;
 		this.settingsService = settingsService;
 		this.searchModels = searchModels;
+		this.directoryTester = directoryTester;
 		this.paths = paths;
+	}
+
+	public void setOnOpenDirectories(Runnable onOpenDirectories) {
+		this.onOpenDirectories = onOpenDirectories;
+	}
+
+	@FXML
+	private void onOpenDirectories() {
+		onOpenDirectories.run();
+	}
+
+	// The same test as Testar Todos in the settings, for the PDVs saved there, without opening them.
+	@FXML
+	private void onTestPaths() {
+
+		AppSettings settings = settingsService.current();
+		PdvSearchModel model = searchModels.pdvModel(settings.pdvModelId());
+		List<String> directories = settings.pdvDirectories();
+
+		btnTestPaths.setDisable(true);
+		btnTestPaths.setText(DirectoryTestText.RUNNING);
+
+		TaskRunner.inBackground("pdv-paths-test", () -> {
+			Map<String, DirectoryTestResult> results = new LinkedHashMap<>();
+
+			for (int index = 0; index < directories.size(); index++) {
+				results.put(SourceLabels.label(index, SourceMode.PDV_DIRECTORIES), directoryTester.test(DirectoryTarget.ofPdv(directories.get(index).trim(), model)));
+			}
+
+			return results;
+		}, results -> {
+			restoreTestPathsButton();
+
+			String text = DirectoryTestText.summary(results);
+
+			if (results.values().stream().allMatch(result -> result.status() == DirectoryTestResult.Status.OK)) {
+				Dialogs.info(TEST_PATHS, text);
+			} else {
+				Dialogs.warning(TEST_PATHS, text);
+			}
+		}, error -> {
+			restoreTestPathsButton();
+			Dialogs.error(TEST_PATHS, FailureText.of(error));
+		});
+	}
+
+	private void restoreTestPathsButton() {
+		btnTestPaths.setDisable(false);
+		btnTestPaths.setText(TEST_PATHS);
 	}
 
 	public void setOnCollected(BiConsumer<CollectionRequest, CollectionResult> onCollected) {
@@ -137,16 +201,18 @@ public class CollectionTabController {
 		addRowMenu(nfceTable);
 		addRowMenu(nfeTable);
 
-		radioPdvDirectories.setSelected(true);
+		choiceSource.setConverter(ChoiceLabels.of(SourceLabels::name));
+		choiceSource.getItems().setAll(SourceMode.SERVER_DIRECTORY, SourceMode.PDV_DIRECTORIES, SourceMode.SINGLE_DIRECTORY);
+		choiceSource.setValue(SourceMode.PDV_DIRECTORIES);
 
-		txtDirectory.disableProperty().bind(radioSingleDirectory.selectedProperty().not());
+		txtDirectory.disableProperty().bind(choiceSource.valueProperty().isNotEqualTo(SourceMode.SINGLE_DIRECTORY));
 		txtDirectory.textProperty().addListener((observable, oldText, newText) -> {
-			if (radioSingleDirectory.isSelected()) {
+			if (choiceSource.getValue() == SourceMode.SINGLE_DIRECTORY) {
 				typedDirectory = newText;
 			}
 		});
 
-		radioServerDirectory.selectedProperty().addListener((observable, wasSelected, selected) -> showDirectoryOfTheSource());
+		choiceSource.valueProperty().addListener((observable, oldSource, newSource) -> showDirectoryOfTheSource());
 
 		YearMonth previousMonth = YearMonth.now().minusMonths(1);
 		dpFrom.setValue(previousMonth.atDay(1));
@@ -215,16 +281,37 @@ public class CollectionTabController {
 	@FXML
 	private void onCollect() {
 
-		SourceMode sourceMode = selectedSourceMode();
-		Optional<CollectionRequest> request = buildRequest(sourceMode);
+		if (!chkNfce.isSelected() && !chkNfeSales.isSelected() && !chkNfePurchases.isSelected()) {
+			Dialogs.warning("Marque o que deseja coletar: NFCe, NFe Vendas ou NFe Compras.");
+			return;
+		}
 
-		if (request.isEmpty()) {
+		if (!periodIsValid()) {
+			Dialogs.warning("Informe um período válido (De / Até).");
+			return;
+		}
+
+		SourceMode sourceMode = selectedSourceMode();
+		Optional<CollectionRequest> request = chkNfce.isSelected() ? buildRequest(sourceMode) : Optional.empty();
+
+		if (chkNfce.isSelected() && request.isEmpty()) {
 			return;
 		}
 
 		Optional<List<CollectionRequest>> nfeRequests = buildNfeRequests();
 
 		if (nfeRequests.isEmpty()) {
+			return;
+		}
+
+		if (!Dialogs.confirmStart(StartText.COLLECTION_HEADER,
+				StartText.collection(checkedKinds(), request.isPresent() ? sourceMode : null, dpFrom.getValue(), dpTo.getValue()))) {
+			return;
+		}
+
+		// Only the NFe: the NFCe already collected stay on the screen and in the missing numbers.
+		if (request.isEmpty()) {
+			collectNfe(nfeRequests.get());
 			return;
 		}
 
@@ -260,9 +347,29 @@ public class CollectionTabController {
 		SourceMode sourceMode = selectedSourceMode();
 		Optional<CollectionRequest> request = buildRequest(sourceMode);
 
-		if (request.isPresent()) {
-			CollectionRunner.read(btnRead, "Lendo XML", collectionService, request.get(), sourceMode, result -> showRead(request.get(), result, sourceMode));
+		if (request.isEmpty() || !Dialogs.confirmStart(StartText.READING_HEADER, StartText.reading(sourceMode, dpFrom.getValue(), dpTo.getValue()))) {
+			return;
 		}
+
+		CollectionRunner.read(btnRead, "Lendo XML", collectionService, request.get(), sourceMode, result -> showRead(request.get(), result, sourceMode));
+	}
+
+	private List<String> checkedKinds() {
+		List<String> kinds = new ArrayList<>();
+
+		if (chkNfce.isSelected()) {
+			kinds.add("NFCe");
+		}
+
+		if (chkNfeSales.isSelected()) {
+			kinds.add("NFe Vendas");
+		}
+
+		if (chkNfePurchases.isSelected()) {
+			kinds.add("NFe Compras");
+		}
+
+		return kinds;
 	}
 
 	private void showRead(CollectionRequest request, CollectionResult result, SourceMode sourceMode) {
@@ -328,20 +435,20 @@ public class CollectionTabController {
 	}
 
 	private SourceMode selectedSourceMode() {
-		if (radioServerDirectory.isSelected()) {
-			return SourceMode.SERVER_DIRECTORY;
-		}
-
-		return radioPdvDirectories.isSelected() ? SourceMode.PDV_DIRECTORIES : SourceMode.SINGLE_DIRECTORY;
+		return choiceSource.getValue();
 	}
 
 	// The server comes from the settings, so the field only shows it, and what was typed for the single directory comes back.
 	private void showDirectoryOfTheSource() {
-		txtDirectory.setText(radioServerDirectory.isSelected() ? settingsService.current().serverDirectory() : typedDirectory);
+		txtDirectory.setText(choiceSource.getValue() == SourceMode.SERVER_DIRECTORY ? settingsService.current().serverDirectory() : typedDirectory);
 	}
 
 	public void refreshServerDirectory() {
 		showDirectoryOfTheSource();
+	}
+
+	private boolean periodIsValid() {
+		return dpFrom.getValue() != null && dpTo.getValue() != null && !dpFrom.getValue().isAfter(dpTo.getValue());
 	}
 
 	private Optional<CollectionRequest> buildRequest(SourceMode sourceMode) {
@@ -349,7 +456,7 @@ public class CollectionTabController {
 		LocalDate from = dpFrom.getValue();
 		LocalDate to = dpTo.getValue();
 
-		if (from == null || to == null || from.isAfter(to)) {
+		if (!periodIsValid()) {
 			Dialogs.warning("Informe um período válido (De / Até).");
 			return Optional.empty();
 		}

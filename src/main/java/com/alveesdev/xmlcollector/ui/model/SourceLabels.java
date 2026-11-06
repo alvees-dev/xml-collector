@@ -14,6 +14,16 @@ public final class SourceLabels {
 		};
 	}
 
+	// The name of the whole source, as the list on the main screen shows it.
+	public static String name(SourceMode mode) {
+		return switch (mode) {
+			case SERVER_DIRECTORY -> "Diretório Servidor";
+			case PDV_DIRECTORIES -> "Diretório PDV";
+			case SINGLE_DIRECTORY -> "Diretório Único";
+			case NFE_DIRECTORIES -> "Diretório NFe";
+		};
+	}
+
 	public static String header(int sourceIndex) {
 		return String.format("SERIE%2d ", sourceIndex + 1);
 	}

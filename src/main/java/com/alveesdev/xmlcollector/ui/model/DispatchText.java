@@ -12,7 +12,7 @@ public final class DispatchText {
 	private DispatchText() {
 	}
 
-	public static String started(String monthLabel, String recipient, boolean reuseExistingZip, ReportOptions reports) {
+	public static String started(String monthLabel, String source, String recipient, boolean reuseExistingZip, ReportOptions reports) {
 
 		List<String> names = new ArrayList<>();
 
@@ -28,7 +28,7 @@ public final class DispatchText {
 			names.add("NFe Compras");
 		}
 
-		return "Envio iniciado: XML de " + monthLabel + " para " + recipient
+		return "Envio iniciado: XML de " + monthLabel + " do " + source + " para " + recipient
 				+ (reuseExistingZip ? ", usando o arquivo compactado existente" : ", com um novo arquivo compactado")
 				+ (names.isEmpty() ? ", sem relatório de valores" : ", relatório de valores: " + String.join(", ", names));
 	}

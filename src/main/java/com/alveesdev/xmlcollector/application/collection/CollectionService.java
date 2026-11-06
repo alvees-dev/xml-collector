@@ -3,6 +3,7 @@ package com.alveesdev.xmlcollector.application.collection;
 import java.io.IOException;
 import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
+import java.time.YearMonth;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -26,6 +27,7 @@ import com.alveesdev.xmlcollector.application.port.SourceFiles.ResolvedFolders;
 import com.alveesdev.xmlcollector.application.port.SourceFiles.ScanResult;
 import com.alveesdev.xmlcollector.application.port.SourceFiles.SourceFile;
 import com.alveesdev.xmlcollector.application.port.SourceFiles;
+import com.alveesdev.xmlcollector.domain.model.DateRange;
 import com.alveesdev.xmlcollector.domain.model.DocumentCategory;
 import com.alveesdev.xmlcollector.domain.model.DocumentEntry;
 import com.alveesdev.xmlcollector.domain.model.IssuedNumber;
@@ -65,6 +67,16 @@ public class CollectionService {
 
 	public Optional<Path> storedFileOf(Path archiveRoot, DocumentEntry entry) throws IOException {
 		return archive.findDocument(ArchiveLayout.monthDirectory(archiveRoot, entry.invoice().date()), entry.invoice().key().value(), entry.fileName());
+	}
+
+	// The folder of one month inside a source, as its search model describes it, or empty when it does not exist.
+	public Optional<Path> monthFolderOf(String root, List<String> patterns, YearMonth month) throws IOException {
+		try {
+			DateRange period = new DateRange(month.atDay(1), month.atEndOfMonth());
+			return sourceFiles.resolveFolders(Path.of(root.trim()), patterns, period).folders().stream().findFirst();
+		} catch (InvalidPathException e) {
+			throw new IOException("Caminho inválido: " + root, e);
+		}
 	}
 
 	public CollectionResult collect(CollectionRequest request, ProgressListener listener, BooleanSupplier cancelled) {

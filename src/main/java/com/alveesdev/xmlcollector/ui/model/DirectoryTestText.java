@@ -2,6 +2,8 @@ package com.alveesdev.xmlcollector.ui.model;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 import com.alveesdev.xmlcollector.application.connection.DirectoryTestResult;
 
@@ -20,6 +22,13 @@ public final class DirectoryTestText {
 			case SEARCH_TOO_SLOW -> "Conectou, mas a busca das pastas demorou";
 			case CONNECTED -> connected(result);
 		};
+	}
+
+	// One line per directory, in the order of the settings, as in "PDV 01: OK".
+	public static String summary(Map<String, DirectoryTestResult> results) {
+		return results.entrySet().stream()
+				.map(entry -> entry.getKey() + ": " + of(entry.getValue()).replace("\n", "; "))
+				.collect(Collectors.joining("\n"));
 	}
 
 	private static String connected(DirectoryTestResult result) {
