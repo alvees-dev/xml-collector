@@ -5,6 +5,7 @@
 <?import javafx.scene.control.Label?>
 <?import javafx.scene.control.ScrollPane?>
 <?import javafx.scene.control.Separator?>
+<?import javafx.scene.control.TextField?>
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.VBox?>
 
@@ -29,6 +30,26 @@
             </Button>
          </children>
       </HBox>
+      <VBox fx:id="serverBox" managed="false" visible="false">
+         <children>
+            <Separator prefWidth="383.0" />
+            <VBox spacing="4.0">
+               <padding>
+                  <Insets bottom="14.0" left="15.0" top="14.0" />
+               </padding>
+               <children>
+                  <HBox alignment="CENTER_LEFT" spacing="8.0">
+                     <children>
+                        <Label minWidth="45.0" text="Servidor" />
+                        <TextField fx:id="txtServer" prefWidth="219.0" />
+                        <Button fx:id="btnTestServer" mnemonicParsing="false" onAction="#onTestServer" text="Teste" />
+                     </children>
+                  </HBox>
+                  <Label fx:id="lblServerStatus" managed="false" maxWidth="300.0" visible="false" wrapText="true" />
+               </children>
+            </VBox>
+         </children>
+      </VBox>
       <Separator prefWidth="383.0" />
       <ScrollPane fx:id="scrollPane" fitToWidth="true" hbarPolicy="NEVER" styleClass="plain-scroll" VBox.vgrow="ALWAYS">
          <content>

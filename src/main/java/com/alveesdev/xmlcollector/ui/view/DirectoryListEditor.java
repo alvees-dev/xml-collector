@@ -147,7 +147,7 @@ public class DirectoryListEditor {
 		row.status().setVisible(true);
 	}
 
-	private static String styleOf(DirectoryTestResult result) {
+	public static String styleOf(DirectoryTestResult result) {
 		return switch (result.status()) {
 			case OK -> "test-ok";
 			case WARNING -> "test-warning";

@@ -9,6 +9,7 @@ import com.alveesdev.xmlcollector.domain.model.SeparationMode;
 public record AppSettings(
 		List<String> pdvDirectories,
 		List<String> nfeDirectories,
+		String serverDirectory,
 		PdvType pdvType,
 		String pdvModelId,
 		String nfeModelId,
@@ -31,6 +32,7 @@ public record AppSettings(
 		return new AppSettings(
 				ONE_EMPTY_DIRECTORY,
 				ONE_EMPTY_DIRECTORY,
+				"",
 				PdvType.PDV,
 				DEFAULT_PDV_MODEL_ID,
 				"",
@@ -46,10 +48,10 @@ public record AppSettings(
 	}
 
 	public AppSettings withEmailAccount(EmailAccount account) {
-		return new AppSettings(pdvDirectories, nfeDirectories, pdvType, pdvModelId, nfeModelId, organizeMode, separationMode, account, emailDraft, certificate);
+		return new AppSettings(pdvDirectories, nfeDirectories, serverDirectory, pdvType, pdvModelId, nfeModelId, organizeMode, separationMode, account, emailDraft, certificate);
 	}
 
 	public AppSettings withEmailDraft(EmailDraft draft) {
-		return new AppSettings(pdvDirectories, nfeDirectories, pdvType, pdvModelId, nfeModelId, organizeMode, separationMode, emailAccount, draft, certificate);
+		return new AppSettings(pdvDirectories, nfeDirectories, serverDirectory, pdvType, pdvModelId, nfeModelId, organizeMode, separationMode, emailAccount, draft, certificate);
 	}
 }
