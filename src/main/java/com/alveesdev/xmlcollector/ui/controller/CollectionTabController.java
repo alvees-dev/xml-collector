@@ -1,5 +1,6 @@
 package com.alveesdev.xmlcollector.ui.controller;
 
+import java.io.File;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.nio.file.Path;
@@ -63,6 +64,7 @@ import javafx.scene.control.TextField;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.input.Clipboard;
 import javafx.scene.input.DataFormat;
+import javafx.stage.DirectoryChooser;
 
 public class CollectionTabController {
 
@@ -109,6 +111,9 @@ public class CollectionTabController {
 
 	@FXML
 	private TextField txtDirectory;
+
+	@FXML
+	private Button btnBrowseDirectory;
 
 	@FXML
 	private Button btnCollect;
@@ -229,6 +234,7 @@ public class CollectionTabController {
 		choiceSource.setValue(SourceMode.PDV_DIRECTORIES);
 
 		txtDirectory.disableProperty().bind(choiceSource.valueProperty().isNotEqualTo(SourceMode.SINGLE_DIRECTORY));
+		btnBrowseDirectory.disableProperty().bind(txtDirectory.disableProperty());
 		txtDirectory.textProperty().addListener((observable, oldText, newText) -> {
 			if (choiceSource.getValue() == SourceMode.SINGLE_DIRECTORY) {
 				typedDirectory = newText;
@@ -376,6 +382,26 @@ public class CollectionTabController {
 
 			collectNfe(requests.subList(1, requests.size()));
 		});
+	}
+
+	// The window of Windows to pick the folder, starting where the field already points when it exists.
+	@FXML
+	private void onBrowseDirectory() {
+
+		DirectoryChooser chooser = new DirectoryChooser();
+		chooser.setTitle("Escolher o diretório a ser verificado");
+
+		File typed = new File(txtDirectory.getText().trim());
+
+		if (!txtDirectory.getText().isBlank() && typed.isDirectory()) {
+			chooser.setInitialDirectory(typed);
+		}
+
+		File chosen = chooser.showDialog(btnBrowseDirectory.getScene().getWindow());
+
+		if (chosen != null) {
+			txtDirectory.setText(chosen.getAbsolutePath());
+		}
 	}
 
 	// Like a collection of the chosen source, missing numbers included, but nothing is copied.
