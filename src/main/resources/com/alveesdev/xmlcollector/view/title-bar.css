@@ -1,11 +1,15 @@
 .title-bar {
-	-fx-background-color: -fx-background;
-	-fx-border-color: transparent transparent #c8c8c8 transparent;
+	-fx-background-color: -cx-title-bg;
+	-fx-border-color: transparent transparent -cx-title-line transparent;
 	-fx-border-width: 0 0 1 0;
 }
 
 .title-bar-title {
 	-fx-padding: 0 0 0 10;
+}
+
+.title-bar-title .label {
+	-fx-text-fill: -cx-title-text;
 }
 
 .title-bar-button {
@@ -15,12 +19,12 @@
 	-fx-border-width: 0;
 	-fx-padding: 0;
 	-fx-pref-width: 46;
-	-fx-text-fill: #333333;
+	-fx-text-fill: -cx-title-text;
 	-fx-font-size: 11px;
 }
 
 .title-bar-button:hover {
-	-fx-background-color: #e0e0e0;
+	-fx-background-color: -cx-title-hover;
 }
 
 .title-bar-close:hover {

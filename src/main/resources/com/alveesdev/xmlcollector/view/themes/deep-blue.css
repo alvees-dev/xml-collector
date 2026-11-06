@@ -1,0 +1,40 @@
+/* Azul Profundo: the navy of the icon on the bars, a light body and the bright blue only where it matters. */
+@import "base.css";
+
+.root {
+	-fx-base: #eef3fc;
+	-fx-background: #f4f7fc;
+	-fx-control-inner-background: #ffffff;
+	-fx-control-inner-background-alt: #f6f9fe;
+	-fx-accent: #1565ff;
+	-fx-default-button: #1565ff;
+	-fx-focus-color: #1565ff;
+	-fx-faint-focus-color: #1565ff22;
+	-fx-selection-bar: #d7e6ff;
+	-fx-selection-bar-non-focused: #e4ecfa;
+	-fx-box-border: #c3cfe4;
+	-fx-text-box-border: #b9c6de;
+	-fx-dark-text-color: #13213d;
+
+	-cx-title-bg: #0a1f5c;
+	-cx-title-line: #0a1f5c;
+	-cx-title-text: #dfe8ff;
+	-cx-title-hover: #1a3478;
+	-cx-menu-bg: #0d2b78;
+	-cx-menu-text: #e8efff;
+	-cx-menu-hover: #1a3e9a;
+	-cx-tab-bg: #dde5f3;
+	-cx-tab-text: #4a5a78;
+	-cx-tab-selected-bg: #ffffff;
+	-cx-tab-selected-text: #0d2b78;
+	-cx-primary: #1565ff;
+	-cx-icon: #0d2b78;
+	-cx-header-bg: #eaf0fa;
+	-cx-header-text: #0d2b78;
+	-cx-dialog-head: #eef3fc;
+	-cx-dialog-head-text: #0a1f5c;
+	-cx-frame: #0b2a7a;
+	-cx-ok: #1b8a4b;
+	-cx-warning: #a85a00;
+	-cx-danger: #c62828;
+}

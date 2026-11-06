@@ -5,12 +5,13 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import com.alveesdev.xmlcollector.application.settings.AppPaths;
+import com.alveesdev.xmlcollector.application.settings.Theme;
 import com.alveesdev.xmlcollector.bootstrap.AppContext;
 import com.alveesdev.xmlcollector.infra.logging.FileLog;
 import com.alveesdev.xmlcollector.ui.model.FailureText;
 import com.alveesdev.xmlcollector.ui.view.AppIcon;
 import com.alveesdev.xmlcollector.ui.view.Dialogs;
-import com.alveesdev.xmlcollector.ui.view.LightWindows;
+import com.alveesdev.xmlcollector.ui.view.Themes;
 import com.alveesdev.xmlcollector.ui.view.TitleBar;
 import com.alveesdev.xmlcollector.ui.view.UnexpectedErrorHandler;
 
@@ -43,7 +44,7 @@ public class Main extends Application {
 
     private void open(Stage stage, AppPaths paths) throws Exception {
         AppIcon.applyToEveryWindow();
-        LightWindows.applyToEveryWindow();
+        Themes.applyToEveryWindow(Theme.DEFAULT);
 
         try {
             paths.ensureDirectories();

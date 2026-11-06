@@ -1,0 +1,40 @@
+/* Discreto: close to the plain look, with the blue of the icon only on the main button, the open tab and what is checked. */
+@import "base.css";
+
+.root {
+	-fx-base: #fbfcfd;
+	-fx-background: #f5f6f8;
+	-fx-control-inner-background: #ffffff;
+	-fx-control-inner-background-alt: #fafbfc;
+	-fx-accent: #1565ff;
+	-fx-default-button: #1565ff;
+	-fx-focus-color: #1565ff;
+	-fx-faint-focus-color: #1565ff22;
+	-fx-selection-bar: #e3edff;
+	-fx-selection-bar-non-focused: #eceff4;
+	-fx-box-border: #d3d8e0;
+	-fx-text-box-border: #c5cbd5;
+	-fx-dark-text-color: #1d2330;
+
+	-cx-title-bg: #ffffff;
+	-cx-title-line: #d9dde4;
+	-cx-title-text: #1d2330;
+	-cx-title-hover: #e8ebf0;
+	-cx-menu-bg: #ffffff;
+	-cx-menu-text: #1d2330;
+	-cx-menu-hover: #eceff4;
+	-cx-tab-bg: #eceef2;
+	-cx-tab-text: #5f6878;
+	-cx-tab-selected-bg: #ffffff;
+	-cx-tab-selected-text: #1565ff;
+	-cx-primary: #1565ff;
+	-cx-icon: #4b5466;
+	-cx-header-bg: #f5f6f8;
+	-cx-header-text: #3a4252;
+	-cx-dialog-head: #ffffff;
+	-cx-dialog-head-text: #1d2330;
+	-cx-frame: #9aa3b2;
+	-cx-ok: #2e7d32;
+	-cx-warning: #b26a00;
+	-cx-danger: #c62828;
+}

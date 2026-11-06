@@ -1,6 +1,6 @@
 /* The frame of the settings window. */
 .settings-frame {
-    -fx-border-color: #808080;
+    -fx-border-color: -cx-frame;
     -fx-border-width: 1;
 }
 
@@ -29,18 +29,18 @@
     -fx-padding: 0;
 }
 
-/* Messages that tell how something went. */
+/* Messages that tell how something went. The colors come from the theme. */
 .text-danger {
-    -fx-text-fill: #c62828;
+    -fx-text-fill: -cx-danger;
     -fx-font-weight: bold;
 }
 
 .test-ok {
-    -fx-text-fill: #2e7d32;
+    -fx-text-fill: -cx-ok;
 }
 
 .test-warning {
-    -fx-text-fill: #e65100;
+    -fx-text-fill: -cx-warning;
 }
 
 .progress-title {
@@ -49,11 +49,11 @@
 }
 
 .progress-done {
-    -fx-text-fill: #2e7d32;
+    -fx-text-fill: -cx-ok;
     -fx-font-weight: bold;
 }
 
 .progress-warning {
-    -fx-text-fill: #b26a00;
+    -fx-text-fill: -cx-warning;
     -fx-font-weight: bold;
 }
