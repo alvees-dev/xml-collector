@@ -229,6 +229,24 @@ public final class Dialogs {
 		return chosen == sendExisting ? ExistingZipChoice.SEND_EXISTING : ExistingZipChoice.CANCEL;
 	}
 
+	// Iniciar is the default, because a collection changes nothing that cannot be collected again.
+	public static boolean confirmStart(String header, String text) {
+
+		ButtonType start = new ButtonType("Iniciar", ButtonBar.ButtonData.OK_DONE);
+		ButtonType cancel = new ButtonType("Cancelar", ButtonBar.ButtonData.CANCEL_CLOSE);
+
+		Alert alert = alert(Alert.AlertType.CONFIRMATION, text, cancel, start);
+		alert.setHeaderText(header);
+
+		boolean confirmed = alert.showAndWait().filter(start::equals).isPresent();
+
+		if (!confirmed) {
+			ActivityLog.record(header.replace("?", "") + ": cancelado antes de começar");
+		}
+
+		return confirmed;
+	}
+
 	public static boolean confirmVoidingWithoutSearch() {
 
 		ButtonType yes = new ButtonType("Sim", ButtonBar.ButtonData.YES);

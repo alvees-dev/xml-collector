@@ -37,6 +37,7 @@ import com.alveesdev.xmlcollector.ui.model.DocumentRowMapper;
 import com.alveesdev.xmlcollector.ui.model.FailureText;
 import com.alveesdev.xmlcollector.ui.model.SourceLabels;
 import com.alveesdev.xmlcollector.ui.model.SourceMode;
+import com.alveesdev.xmlcollector.ui.model.StartText;
 import com.alveesdev.xmlcollector.ui.view.Dialogs;
 import com.alveesdev.xmlcollector.ui.view.FileExplorer;
 
@@ -200,7 +201,7 @@ public class CollectionTabController {
 		addRowMenu(nfceTable);
 		addRowMenu(nfeTable);
 
-		choiceSource.setConverter(ChoiceLabels.of(CollectionTabController::sourceName));
+		choiceSource.setConverter(ChoiceLabels.of(SourceLabels::name));
 		choiceSource.getItems().setAll(SourceMode.SERVER_DIRECTORY, SourceMode.PDV_DIRECTORIES, SourceMode.SINGLE_DIRECTORY);
 		choiceSource.setValue(SourceMode.PDV_DIRECTORIES);
 
@@ -303,6 +304,11 @@ public class CollectionTabController {
 			return;
 		}
 
+		if (!Dialogs.confirmStart(StartText.COLLECTION_HEADER,
+				StartText.collection(checkedKinds(), request.isPresent() ? sourceMode : null, dpFrom.getValue(), dpTo.getValue()))) {
+			return;
+		}
+
 		// Only the NFe: the NFCe already collected stay on the screen and in the missing numbers.
 		if (request.isEmpty()) {
 			collectNfe(nfeRequests.get());
@@ -341,9 +347,29 @@ public class CollectionTabController {
 		SourceMode sourceMode = selectedSourceMode();
 		Optional<CollectionRequest> request = buildRequest(sourceMode);
 
-		if (request.isPresent()) {
-			CollectionRunner.read(btnRead, "Lendo XML", collectionService, request.get(), sourceMode, result -> showRead(request.get(), result, sourceMode));
+		if (request.isEmpty() || !Dialogs.confirmStart(StartText.READING_HEADER, StartText.reading(sourceMode, dpFrom.getValue(), dpTo.getValue()))) {
+			return;
 		}
+
+		CollectionRunner.read(btnRead, "Lendo XML", collectionService, request.get(), sourceMode, result -> showRead(request.get(), result, sourceMode));
+	}
+
+	private List<String> checkedKinds() {
+		List<String> kinds = new ArrayList<>();
+
+		if (chkNfce.isSelected()) {
+			kinds.add("NFCe");
+		}
+
+		if (chkNfeSales.isSelected()) {
+			kinds.add("NFe Vendas");
+		}
+
+		if (chkNfePurchases.isSelected()) {
+			kinds.add("NFe Compras");
+		}
+
+		return kinds;
 	}
 
 	private void showRead(CollectionRequest request, CollectionResult result, SourceMode sourceMode) {
@@ -410,15 +436,6 @@ public class CollectionTabController {
 
 	private SourceMode selectedSourceMode() {
 		return choiceSource.getValue();
-	}
-
-	private static String sourceName(SourceMode sourceMode) {
-		return switch (sourceMode) {
-			case SERVER_DIRECTORY -> "Diretório Servidor";
-			case PDV_DIRECTORIES -> "Diretório PDV";
-			case SINGLE_DIRECTORY -> "Diretório Único";
-			case NFE_DIRECTORIES -> "Diretório NFe";
-		};
 	}
 
 	// The server comes from the settings, so the field only shows it, and what was typed for the single directory comes back.

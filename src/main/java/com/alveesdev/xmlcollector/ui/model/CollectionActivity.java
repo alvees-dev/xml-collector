@@ -19,7 +19,7 @@ public final class CollectionActivity {
 	}
 
 	public void started(String title) {
-		ActivityLog.record(title + " por " + sourceName() + ", de " + DATE_FORMAT.format(request.period().from())
+		ActivityLog.record(title + " por " + SourceLabels.name(sourceMode) + ", de " + DATE_FORMAT.format(request.period().from())
 				+ " a " + DATE_FORMAT.format(request.period().to()));
 	}
 
@@ -41,12 +41,4 @@ public final class CollectionActivity {
 		}
 	}
 
-	private String sourceName() {
-		return switch (sourceMode) {
-			case PDV_DIRECTORIES -> "Diretório PDV";
-			case NFE_DIRECTORIES -> "Diretório NFe";
-			case SINGLE_DIRECTORY -> "Diretório Único";
-			case SERVER_DIRECTORY -> "Diretório Servidor";
-		};
-	}
 }
