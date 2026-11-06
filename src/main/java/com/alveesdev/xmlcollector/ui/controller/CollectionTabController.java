@@ -71,6 +71,8 @@ public class CollectionTabController {
 	private static final int STATUS_COLUMN = COLUMN_PROPERTIES.indexOf("status");
 	private static final String COLLECTION_DONE = "Coleta concluída";
 	private static final String READING_DONE = "Leitura concluída";
+	private static final String ARCHIVE_IS_NOT_COLLECTED = "Este diretório fica dentro de Arquivos_XML, onde o programa guarda os XML já coletados,"
+			+ " e não pode ser coletado de novo. Para ver esses arquivos, use Ler Diretório.\n\n";
 
 	private final CollectionService collectionService;
 	private final SettingsService settingsService;
@@ -324,6 +326,16 @@ public class CollectionTabController {
 		Optional<List<CollectionRequest>> nfeRequests = buildNfeRequests();
 
 		if (nfeRequests.isEmpty()) {
+			return;
+		}
+
+		// Reading it is fine, but collecting it would copy the files onto themselves.
+		Optional<String> insideTheArchive = Stream.concat(request.stream(), nfeRequests.get().stream())
+				.flatMap(each -> each.directoryInsideTheArchive().stream())
+				.findFirst();
+
+		if (insideTheArchive.isPresent()) {
+			Dialogs.warning(ARCHIVE_IS_NOT_COLLECTED + insideTheArchive.get());
 			return;
 		}
 
