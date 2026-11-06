@@ -8,6 +8,7 @@ import com.alveesdev.xmlcollector.application.dispatch.DispatchService;
 import com.alveesdev.xmlcollector.application.port.DocumentArchive;
 import com.alveesdev.xmlcollector.application.port.DocumentReader;
 import com.alveesdev.xmlcollector.application.port.IssuedNumberRepository;
+import com.alveesdev.xmlcollector.application.port.ThemeRepository;
 import com.alveesdev.xmlcollector.application.settings.AppPaths;
 import com.alveesdev.xmlcollector.application.settings.service.SearchModelCatalog;
 import com.alveesdev.xmlcollector.application.settings.service.SettingsService;
@@ -23,6 +24,7 @@ import com.alveesdev.xmlcollector.infra.search.SearchModelLoader;
 import com.alveesdev.xmlcollector.infra.sefaz.SefazVoidingGatewayFactory;
 import com.alveesdev.xmlcollector.infra.settings.BundledEmailAccount;
 import com.alveesdev.xmlcollector.infra.settings.PropertiesSettingsRepository;
+import com.alveesdev.xmlcollector.infra.settings.PropertiesThemeRepository;
 import com.alveesdev.xmlcollector.infra.xml.FiscalXmlReader;
 import com.alveesdev.xmlcollector.infra.xml.XmlFileScanner;
 import com.alveesdev.xmlcollector.ui.controller.CertificateTabController;
@@ -49,6 +51,7 @@ public final class AppContext {
 	private final SearchModelCatalog searchModels;
 	private final DirectoryTester directoryTester;
 	private final SettingsWindow settingsWindow;
+	private final ThemeRepository themes;
 
 	public AppContext(AppPaths paths) {
 		this.paths = paths;
@@ -72,6 +75,7 @@ public final class AppContext {
 		this.searchModels = new SearchModelCatalog(SearchModelLoader.load());
 		this.directoryTester = new DirectoryTester(new XmlFileScanner(), archive, clock, DirectoryTester.DEFAULT_TIMEOUT);
 		this.settingsWindow = new SettingsWindow(this::createController);
+		this.themes = new PropertiesThemeRepository(paths.appearanceFile());
 	}
 
 	public AppPaths paths() {
@@ -80,6 +84,10 @@ public final class AppContext {
 
 	public SettingsService settings() {
 		return settingsService;
+	}
+
+	public ThemeRepository themes() {
+		return themes;
 	}
 
 	public IssuedNumberRepository issuedNumbers() {

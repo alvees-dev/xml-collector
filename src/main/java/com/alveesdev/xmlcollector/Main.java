@@ -58,6 +58,8 @@ public class Main extends Application {
         startLog(paths);
 
         AppContext context = new AppContext(paths);
+        Themes.preview(context.themes().load());
+        Themes.setOnSaved(theme -> saveTheme(context, theme));
 
         try {
             context.issuedNumbers().initialize();
@@ -85,6 +87,15 @@ public class Main extends Application {
         stage.setTitle(APP_TITLE);
         stage.setScene(scene);
         stage.show();
+    }
+
+    // A theme that could not be saved only comes back as the default next time, so it is not worth a message.
+    private static void saveTheme(AppContext context, Theme theme) {
+        try {
+            context.themes().save(theme);
+        } catch (IOException e) {
+            LOG.log(Level.WARNING, "O tema não pôde ser salvo: " + e.getMessage());
+        }
     }
 
     @Override

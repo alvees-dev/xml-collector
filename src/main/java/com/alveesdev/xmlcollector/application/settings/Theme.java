@@ -24,4 +24,9 @@ public enum Theme {
 	public boolean isDark() {
 		return dark;
 	}
+
+	// The sun button goes between the light and the dark theme; from Discreto it goes to the dark one.
+	public Theme toggled() {
+		return dark ? DEEP_BLUE : NIGHT;
+	}
 }
