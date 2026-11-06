@@ -55,13 +55,22 @@
                   <Insets top="30.0" />
                </VBox.margin>
             </Label>
-            <CheckBox fx:id="chkValuesNfce" mnemonicParsing="false" selected="true" text="Valores NFCe">
+            <!-- Gerar PDF on the left of the reports it prints. -->
+            <HBox alignment="CENTER_LEFT" spacing="20.0">
                <VBox.margin>
                   <Insets top="5.0" />
                </VBox.margin>
-            </CheckBox>
-            <CheckBox fx:id="chkValuesNfeSales" mnemonicParsing="false" text="Valores NFe Vendas" />
-            <CheckBox fx:id="chkValuesNfePurchases" mnemonicParsing="false" text="Valores NFe Compras" />
+               <children>
+                  <Button fx:id="btnGeneratePdf" mnemonicParsing="false" onAction="#onGeneratePdf" text="Gerar PDF" />
+                  <VBox spacing="5.0">
+                     <children>
+                        <CheckBox fx:id="chkValuesNfce" mnemonicParsing="false" selected="true" text="Valores NFCe" />
+                        <CheckBox fx:id="chkValuesNfeSales" mnemonicParsing="false" text="Valores NFe Vendas" />
+                        <CheckBox fx:id="chkValuesNfePurchases" mnemonicParsing="false" text="Valores NFe Compras" />
+                     </children>
+                  </VBox>
+               </children>
+            </HBox>
             <Label text="Diretório de Envio">
                <VBox.margin>
                   <Insets top="30.0" />

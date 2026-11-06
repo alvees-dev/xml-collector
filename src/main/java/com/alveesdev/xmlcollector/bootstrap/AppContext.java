@@ -5,6 +5,7 @@ import java.time.Clock;
 import com.alveesdev.xmlcollector.application.collection.CollectionService;
 import com.alveesdev.xmlcollector.application.connection.DirectoryTester;
 import com.alveesdev.xmlcollector.application.dispatch.DispatchService;
+import com.alveesdev.xmlcollector.application.dispatch.ValuesReportService;
 import com.alveesdev.xmlcollector.application.port.DocumentArchive;
 import com.alveesdev.xmlcollector.application.port.DocumentReader;
 import com.alveesdev.xmlcollector.application.port.IssuedNumberRepository;
@@ -20,6 +21,7 @@ import com.alveesdev.xmlcollector.infra.archive.XmlArchivedDocuments;
 import com.alveesdev.xmlcollector.infra.drive.GoogleDriveStorage;
 import com.alveesdev.xmlcollector.infra.email.SmtpEmailSender;
 import com.alveesdev.xmlcollector.infra.persistence.SqliteIssuedNumberRepository;
+import com.alveesdev.xmlcollector.infra.report.PdfBoxReportWriter;
 import com.alveesdev.xmlcollector.infra.search.SearchModelLoader;
 import com.alveesdev.xmlcollector.infra.sefaz.SefazVoidingGatewayFactory;
 import com.alveesdev.xmlcollector.infra.settings.BundledEmailAccount;
@@ -47,6 +49,7 @@ public final class AppContext {
 	private final VoidingBatch voidingBatch;
 	private final VoidingPlanner voidingPlanner;
 	private final DispatchService dispatchService;
+	private final ValuesReportService valuesReportService;
 	private final SettingsService settingsService;
 	private final SearchModelCatalog searchModels;
 	private final DirectoryTester directoryTester;
@@ -70,6 +73,7 @@ public final class AppContext {
 				new MonthZipArchiver(),
 				new SmtpEmailSender(),
 				new GoogleDriveStorage(paths.googleCredentialsFile(), paths.googleTokensDir()));
+		this.valuesReportService = new ValuesReportService(new XmlArchivedDocuments(reader), new PdfBoxReportWriter());
 		this.settingsService = new SettingsService(
 				new PropertiesSettingsRepository(paths.settingsFile(), BundledEmailAccount.load()));
 		this.searchModels = new SearchModelCatalog(SearchModelLoader.load());
@@ -108,7 +112,7 @@ public final class AppContext {
 		}
 
 		if (type == DispatchTabController.class) {
-			return new DispatchTabController(dispatchService, collectionService, settingsService, searchModels, paths);
+			return new DispatchTabController(dispatchService, valuesReportService, collectionService, settingsService, searchModels, paths);
 		}
 
 		if (type == SettingsController.class) {

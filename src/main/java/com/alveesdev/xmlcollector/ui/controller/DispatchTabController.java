@@ -1,5 +1,6 @@
 package com.alveesdev.xmlcollector.ui.controller;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -8,6 +9,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.Consumer;
 
 import com.alveesdev.xmlcollector.application.collection.CollectionService;
 import com.alveesdev.xmlcollector.application.dispatch.DispatchMonth;
@@ -15,6 +17,8 @@ import com.alveesdev.xmlcollector.application.dispatch.DispatchProgress;
 import com.alveesdev.xmlcollector.application.dispatch.DispatchRequest;
 import com.alveesdev.xmlcollector.application.dispatch.DispatchService;
 import com.alveesdev.xmlcollector.application.dispatch.ReportOptions;
+import com.alveesdev.xmlcollector.application.dispatch.ValuesReportService;
+import com.alveesdev.xmlcollector.application.dispatch.ValuesReportText;
 import com.alveesdev.xmlcollector.application.port.DirectoryCompressor.CompressedFile;
 import com.alveesdev.xmlcollector.application.port.DispatchException;
 import com.alveesdev.xmlcollector.application.settings.AppPaths;
@@ -37,14 +41,17 @@ import javafx.scene.control.ChoiceBox;
 import javafx.scene.control.RadioButton;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
+import javafx.stage.FileChooser;
 
 public class DispatchTabController {
 
 	private static final String FUNCTION = "Envio";
+	private static final String PDF_FUNCTION = "Gerar PDF";
 	private static final double STEP_LABEL_WIDTH = 140;
 	private static final int LISTED_YEARS = 6;
 
 	private final DispatchService service;
+	private final ValuesReportService valuesReports;
 	private final CollectionService collectionService;
 	private final SettingsService settingsService;
 	private final SearchModelCatalog searchModels;
@@ -80,9 +87,13 @@ public class DispatchTabController {
 	@FXML
 	private Button btnSend;
 
-	public DispatchTabController(DispatchService service, CollectionService collectionService, SettingsService settingsService,
+	@FXML
+	private Button btnGeneratePdf;
+
+	public DispatchTabController(DispatchService service, ValuesReportService valuesReports, CollectionService collectionService, SettingsService settingsService,
 			SearchModelCatalog searchModels, AppPaths paths) {
 		this.service = service;
+		this.valuesReports = valuesReports;
 		this.collectionService = collectionService;
 		this.settingsService = settingsService;
 		this.searchModels = searchModels;
@@ -123,23 +134,86 @@ public class DispatchTabController {
 			return;
 		}
 
-		if (radioServerSource.isSelected()) {
-			sendFromServer(month, monthLabel);
-			return;
-		}
-
-		DispatchMonth collected = DispatchMonth.collected(paths.xmlArchiveDir(), month);
-
-		if (!Files.isDirectory(collected.documents())) {
-			Dialogs.warning("Não há pasta coletada para " + monthLabel + ". Faça a coleta desse mês antes de enviar.");
-			return;
-		}
-
-		askAboutExistingZipAndSend(collected, monthLabel);
+		withSourceMonth(btnSend, FUNCTION, month, monthLabel, "enviar", found -> askAboutExistingZipAndSend(found, monthLabel));
 	}
 
-	// The server is a folder of another system on the network, so finding its month does not hold the screen.
-	private void sendFromServer(YearMonth month, String monthLabel) {
+	@FXML
+	private void onGeneratePdf() {
+
+		Integer year = choiceYear.getSelectionModel().getSelectedItem();
+		int monthIndex = choiceMonth.getSelectionModel().getSelectedIndex();
+
+		if (year == null || monthIndex < 0) {
+			Dialogs.warning("Selecione o ano e o mês do relatório.");
+			return;
+		}
+
+		ReportOptions options = selectedReports();
+
+		if (!options.anySelected()) {
+			Dialogs.warning("Marque ao menos um relatório para gerar o PDF.");
+			return;
+		}
+
+		String monthLabel = choiceMonth.getSelectionModel().getSelectedItem() + " de " + year;
+		YearMonth month = YearMonth.of(year, monthIndex + 1);
+
+		withSourceMonth(btnGeneratePdf, PDF_FUNCTION, month, monthLabel, "gerar o relatório", found -> savePdf(found, monthLabel, options));
+	}
+
+	private void savePdf(DispatchMonth month, String monthLabel, ReportOptions options) {
+
+		FileChooser chooser = new FileChooser();
+		chooser.setTitle("Salvar relatório em PDF");
+		chooser.setInitialFileName(ValuesReportText.pdfFileName(month));
+		chooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("PDF", "*.pdf"));
+
+		if (Files.isDirectory(month.zipFolder())) {
+			chooser.setInitialDirectory(month.zipFolder().toFile());
+		} else if (Files.isDirectory(paths.xmlArchiveDir())) {
+			chooser.setInitialDirectory(paths.xmlArchiveDir().toFile());
+		}
+
+		File chosen = chooser.showSaveDialog(btnGeneratePdf.getScene().getWindow());
+
+		if (chosen == null) {
+			return;
+		}
+
+		Path file = chosen.toPath();
+		btnGeneratePdf.setDisable(true);
+
+		TaskRunner.inBackground("xml-values-pdf", () -> {
+			valuesReports.writePdf(month, options, file);
+			return file;
+		}, saved -> {
+			btnGeneratePdf.setDisable(false);
+			ActivityLog.record(PDF_FUNCTION + ": relatório de " + monthLabel + " salvo em " + saved);
+			Dialogs.info(PDF_FUNCTION, "Relatório de " + monthLabel + " salvo em:\n" + saved);
+		}, error -> {
+			btnGeneratePdf.setDisable(false);
+			Dialogs.error(PDF_FUNCTION, "Não foi possível gerar o PDF: " + FailureText.of(error));
+		});
+	}
+
+	private ReportOptions selectedReports() {
+		return new ReportOptions(chkValuesNfce.isSelected(), chkValuesNfeSales.isSelected(), chkValuesNfePurchases.isSelected());
+	}
+
+	// The month of the chosen source; the server is a folder of another system on the network, so finding it does not hold the screen.
+	private void withSourceMonth(Button trigger, String function, YearMonth month, String monthLabel, String action, Consumer<DispatchMonth> then) {
+
+		if (!radioServerSource.isSelected()) {
+			DispatchMonth collected = DispatchMonth.collected(paths.xmlArchiveDir(), month);
+
+			if (!Files.isDirectory(collected.documents())) {
+				Dialogs.warning("Não há pasta coletada para " + monthLabel + ". Faça a coleta desse mês antes de " + action + ".");
+				return;
+			}
+
+			then.accept(collected);
+			return;
+		}
 
 		AppSettings settings = settingsService.current();
 		List<String> serverFolders = searchModels.pdvModel(settings.pdvModelId()).serverFolders();
@@ -154,22 +228,22 @@ public class DispatchTabController {
 			return;
 		}
 
-		btnSend.setDisable(true);
+		trigger.setDisable(true);
 
 		TaskRunner.inBackground("xml-server-month", () -> collectionService.monthFolderOf(settings.serverDirectory(), serverFolders, month),
 				found -> {
-					btnSend.setDisable(false);
+					trigger.setDisable(false);
 
 					if (found.isEmpty()) {
 						Dialogs.warning("Não há pasta do servidor para " + monthLabel + " em:\n" + settings.serverDirectory());
 						return;
 					}
 
-					askAboutExistingZipAndSend(DispatchMonth.server(found.get(), paths.xmlArchiveDir(), month), monthLabel);
+					then.accept(DispatchMonth.server(found.get(), paths.xmlArchiveDir(), month));
 				},
 				error -> {
-					btnSend.setDisable(false);
-					Dialogs.error(FUNCTION, "Não foi possível abrir o diretório do Servidor: " + FailureText.of(error));
+					trigger.setDisable(false);
+					Dialogs.error(function, "Não foi possível abrir o diretório do Servidor: " + FailureText.of(error));
 				});
 	}
 
@@ -208,7 +282,7 @@ public class DispatchTabController {
 
 		DispatchRequest request = new DispatchRequest(
 				List.of(month), settings.emailAccount(), draft.recipient().trim(), draft.subject(), draft.body(), reuseExistingZip,
-				new ReportOptions(chkValuesNfce.isSelected(), chkValuesNfeSales.isSelected(), chkValuesNfePurchases.isSelected()));
+				selectedReports());
 
 		ActivityLog.record(DispatchText.started(monthLabel, sourceName(month), request.recipient(), reuseExistingZip, request.reports()));
 
