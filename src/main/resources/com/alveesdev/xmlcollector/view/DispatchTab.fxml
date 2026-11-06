@@ -9,9 +9,11 @@
 <?import javafx.scene.control.TextArea?>
 <?import javafx.scene.control.TextField?>
 <?import javafx.scene.control.ToggleGroup?>
+<?import javafx.scene.control.Tooltip?>
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.Region?>
 <?import javafx.scene.layout.VBox?>
+<?import javafx.scene.shape.SVGPath?>
 
 <HBox xmlns="http://javafx.com/javafx/26" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.alveesdev.xmlcollector.ui.controller.DispatchTabController">
    <fx:define>
@@ -24,7 +26,19 @@
          </padding>
          <children>
             <Label text="Destinatário" />
-            <TextField fx:id="txtRecipient" maxWidth="300.0" />
+            <HBox alignment="CENTER_LEFT" spacing="6.0">
+               <children>
+                  <TextField fx:id="txtRecipient" prefWidth="300.0" />
+                  <Button fx:id="btnRecipientHelp" mnemonicParsing="false" onAction="#onRecipientHelp" maxHeight="25.0" maxWidth="26.0" minHeight="25.0" minWidth="26.0" prefHeight="25.0" prefWidth="26.0" style="-fx-padding: 0;">
+                     <graphic>
+                        <SVGPath content="M11,18h2v-2h-2V18z M12,2C6.48,2,2,6.48,2,12s4.48,10,10,10s10-4.48,10-10S17.52,2,12,2z M12,20c-4.41,0-8-3.59-8-8s3.59-8,8-8s8,3.59,8,8S16.41,20,12,20z M12,6c-2.21,0-4,1.79-4,4h2c0-1.1,0.9-2,2-2s2,0.9,2,2c0,2-3,1.75-3,5h2c0-2.25,3-2.5,3-5C16,7.79,14.21,6,12,6z" styleClass="gear-icon" scaleX="0.75" scaleY="0.75" />
+                     </graphic>
+                     <tooltip>
+                        <Tooltip text="Como enviar para mais de um e-mail" />
+                     </tooltip>
+                  </Button>
+               </children>
+            </HBox>
             <Label text="Assunto">
                <VBox.margin>
                   <Insets top="15.0" />
