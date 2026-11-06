@@ -118,7 +118,7 @@ class SourceProcessor {
 		return rules.issuedNumbers();
 	}
 
-	int voidedNumbers() {
+	SortedMap<Integer, List<NumberRange>> voidedInPeriod() {
 		return rules.voidedInPeriod();
 	}
 

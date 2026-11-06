@@ -16,4 +16,9 @@ public record DocumentEntry(DocumentStatus status, String fileName, XmlDocument.
 	public static DocumentEntry error(String fileName) {
 		return new DocumentEntry(DocumentStatus.ERROR, fileName, null);
 	}
+
+	// A voided number has no file of its own on the list, only its number.
+	public static DocumentEntry voided() {
+		return new DocumentEntry(DocumentStatus.VOIDED, "", null);
+	}
 }

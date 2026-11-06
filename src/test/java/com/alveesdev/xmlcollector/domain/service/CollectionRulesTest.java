@@ -100,7 +100,7 @@ class CollectionRulesTest {
 		rules.decide(0, "c.xml", new XmlDocument.Voiding(
 				"ID1", "12345678000190", "65", 1, new NumberRange(2, 4), IN_PERIOD.atTime(12, 0).atOffset(java.time.ZoneOffset.ofHours(-3))));
 
-		assertEquals(3, rules.voidedInPeriod());
+		assertEquals(Map.of(1, java.util.List.of(new NumberRange(2, 4))), rules.voidedInPeriod());
 	}
 
 	@Test

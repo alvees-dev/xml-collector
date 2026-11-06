@@ -1,6 +1,7 @@
 package com.alveesdev.xmlcollector.ui.controller;
 
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.nio.file.Path;
 import java.time.LocalDate;
 import java.time.YearMonth;
@@ -586,13 +587,19 @@ public class CollectionTabController {
 		long cancelled = onScreen.stream().filter(entry -> entry.status() == DocumentStatus.CANCELLED).count();
 		long errors = onScreen.stream().filter(entry -> entry.status() == DocumentStatus.ERROR).count();
 
-		onCounted.accept(new CollectionCounts(countedAction, xml, cancelled, voidedNumbers, errors, countedPeriod.from(), countedPeriod.to()));
+		BigDecimal total = collected.authorizedTotal()
+				.add(nfeCollected.getOrDefault(DocumentCategory.NFE_SALES, new CollectedDocuments()).authorizedTotal());
+
+		onCounted.accept(new CollectionCounts(countedAction, xml, cancelled, voidedNumbers, errors, total, countedPeriod.from(), countedPeriod.to()));
 	}
 
+	// The voided numbers have no file of their own, so they come in as rows of their own.
 	private static ObservableList<DocumentRow> rowsOf(Stream<CollectedDocuments> documents) {
 		return FXCollections.observableArrayList(documents
-				.flatMap(ofCategory -> ofCategory.entries().stream())
-				.map(DocumentRowMapper::toRow)
+				.flatMap(ofCategory -> Stream.concat(
+						ofCategory.entries().stream().map(DocumentRowMapper::toRow),
+						DocumentRowMapper.voidedRows(ofCategory.voidedInPeriod()).stream()))
+				.sorted(DocumentRowMapper.BY_SERIES_AND_NUMBER)
 				.toList());
 	}
 

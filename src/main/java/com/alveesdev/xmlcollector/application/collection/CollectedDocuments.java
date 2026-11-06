@@ -2,24 +2,30 @@ package com.alveesdev.xmlcollector.application.collection;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.SortedMap;
+import java.util.TreeMap;
 
 import com.alveesdev.xmlcollector.domain.model.AccessKey;
 import com.alveesdev.xmlcollector.domain.model.DocumentEntry;
 import com.alveesdev.xmlcollector.domain.model.DocumentStatus;
+import com.alveesdev.xmlcollector.domain.model.NumberRange;
 
 public final class CollectedDocuments {
 
 	private final List<DocumentEntry> entries = new ArrayList<>();
 	private final Set<AccessKey> keys = new HashSet<>();
 	private final Set<AccessKey> cancelledKeys = new HashSet<>();
+	private final SortedMap<Integer, List<NumberRange>> voidedInPeriod = new TreeMap<>();
 
 	public static CollectedDocuments from(CollectionResult result) {
 		CollectedDocuments collected = new CollectedDocuments();
 
 		collected.cancelledKeys.addAll(result.cancelledKeys());
+		collected.voidedInPeriod.putAll(result.voidedInPeriod());
 
 		for (DocumentEntry entry : result.entries()) {
 			if (entry.invoice() == null) {
@@ -46,6 +52,10 @@ public final class CollectedDocuments {
 		return entries.stream()
 				.map(this::withCurrentStatus)
 				.toList();
+	}
+
+	public SortedMap<Integer, List<NumberRange>> voidedInPeriod() {
+		return Collections.unmodifiableSortedMap(voidedInPeriod);
 	}
 
 	public BigDecimal authorizedTotal() {
