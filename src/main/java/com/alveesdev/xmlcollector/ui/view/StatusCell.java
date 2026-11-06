@@ -33,6 +33,7 @@ public final class StatusCell extends TableCell<DocumentRow, String> {
 			case AUTHORIZED -> "status-authorized";
 			case CANCELLED -> "status-cancelled";
 			case ERROR -> "status-error";
+			case VOIDED -> "status-voided";
 		};
 	}
 }

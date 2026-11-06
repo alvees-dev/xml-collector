@@ -14,6 +14,7 @@ import org.junit.jupiter.api.Test;
 
 import com.alveesdev.xmlcollector.domain.model.AccessKey;
 import com.alveesdev.xmlcollector.domain.model.DocumentEntry;
+import com.alveesdev.xmlcollector.domain.model.NumberRange;
 import com.alveesdev.xmlcollector.domain.model.DocumentStatus;
 
 class CollectedDocumentsTest {
@@ -68,6 +69,18 @@ class CollectedDocumentsTest {
 
 		assertEquals(List.of("coleta.xml"), collected.entries().stream().map(DocumentEntry::fileName).toList());
 		assertEquals(BigDecimal.ZERO, collected.authorizedTotal());
+	}
+
+	@Test
+	void keepsTheVoidedRangesOfTheCollectionApartFromTheNotes() {
+		CollectionResult result = new CollectionResult(List.of(new CollectionResult.SourceResult(0, List.of(authorized(1)))), new TreeMap<>(),
+				new CollectionSummary(0, 0, 0, 0, 0, 0, 0, 0, List.of()), List.of(), null, Set.of(),
+				new TreeMap<>(java.util.Map.of(1, List.of(new NumberRange(2, 3)))));
+
+		CollectedDocuments collected = CollectedDocuments.from(result);
+
+		assertEquals(java.util.Map.of(1, List.of(new NumberRange(2, 3))), collected.voidedInPeriod());
+		assertEquals(1, collected.entries().size());
 	}
 
 	private static DocumentEntry authorized(int number) {

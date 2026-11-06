@@ -161,3 +161,8 @@
 .status-footer .footer-errors {
 	-fx-text-fill: -cx-warning;
 }
+
+.status-voided {
+	-fx-background-color: -cx-voided-bg;
+	-fx-text-fill: -cx-voided;
+}

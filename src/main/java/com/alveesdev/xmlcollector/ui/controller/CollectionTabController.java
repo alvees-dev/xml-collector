@@ -589,10 +589,13 @@ public class CollectionTabController {
 		onCounted.accept(new CollectionCounts(countedAction, xml, cancelled, voidedNumbers, errors, countedPeriod.from(), countedPeriod.to()));
 	}
 
+	// The voided numbers have no file of their own, so they come in as rows of their own.
 	private static ObservableList<DocumentRow> rowsOf(Stream<CollectedDocuments> documents) {
 		return FXCollections.observableArrayList(documents
-				.flatMap(ofCategory -> ofCategory.entries().stream())
-				.map(DocumentRowMapper::toRow)
+				.flatMap(ofCategory -> Stream.concat(
+						ofCategory.entries().stream().map(DocumentRowMapper::toRow),
+						DocumentRowMapper.voidedRows(ofCategory.voidedInPeriod()).stream()))
+				.sorted(DocumentRowMapper.BY_SERIES_AND_NUMBER)
 				.toList());
 	}
 

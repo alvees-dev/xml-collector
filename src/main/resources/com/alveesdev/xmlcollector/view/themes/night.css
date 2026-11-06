@@ -47,6 +47,8 @@
 	-cx-ok-bg: #0f3a2a;
 	-cx-warning-bg: #3a2a10;
 	-cx-danger-bg: #3d1620;
+	-cx-voided: #7fd8ff;
+	-cx-voided-bg: #12305f;
 }
 
 .button.primary {
