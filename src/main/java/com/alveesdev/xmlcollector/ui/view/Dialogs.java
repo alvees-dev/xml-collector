@@ -22,6 +22,7 @@ import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
 import javafx.scene.control.ButtonBar;
 import javafx.scene.control.ButtonType;
+import javafx.scene.control.Dialog;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextInputDialog;
@@ -33,6 +34,7 @@ import javafx.scene.paint.Color;
 import javafx.scene.shape.Circle;
 import javafx.scene.shape.SVGPath;
 import javafx.scene.text.Text;
+import javafx.stage.Stage;
 import javafx.stage.Window;
 
 public final class Dialogs {
@@ -131,7 +133,21 @@ public final class Dialogs {
 	private static Alert alertWith(Node content, Alert.AlertType type, String message, ButtonType... buttons) {
 		Alert alert = new Alert(type, message, buttons);
 		alert.getDialogPane().setContent(content);
+		ownByTheProgram(alert);
 		return alert;
+	}
+
+	// Without an owner Windows takes a message for a program of its own, with a button of its own on the taskbar.
+	private static void ownByTheProgram(Dialog<?> dialog) {
+		List<Stage> showing = Window.getWindows().stream()
+				.filter(window -> window instanceof Stage && window.isShowing())
+				.map(Stage.class::cast)
+				.toList();
+
+		// The window in use, or else the main one, which has no owner of its own.
+		showing.stream().filter(Window::isFocused).findFirst()
+				.or(() -> showing.stream().filter(stage -> stage.getOwner() == null).findFirst())
+				.ifPresent(dialog::initOwner);
 	}
 
 	public static void dispatchCompleted(String message) {
@@ -267,6 +283,7 @@ public final class Dialogs {
 
 		if (environment == FiscalEnvironment.PRODUCTION) {
 			TextInputDialog dialog = new TextInputDialog();
+			ownByTheProgram(dialog);
 			dialog.setTitle("Inutilizar notas");
 			dialog.setHeaderText("Confirme a inutilização em PRODUÇÃO");
 			TextArea area = messageArea(text);
