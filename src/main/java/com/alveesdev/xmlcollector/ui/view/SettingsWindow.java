@@ -4,7 +4,9 @@ import java.io.IOException;
 import java.net.URL;
 
 import javafx.fxml.FXMLLoader;
+import javafx.scene.Parent;
 import javafx.scene.Scene;
+import javafx.scene.control.TabPane;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
 import javafx.stage.Window;
@@ -21,6 +23,11 @@ public final class SettingsWindow {
 	}
 
 	public void showAndWait(Window owner) {
+		showAndWait(owner, null);
+	}
+
+	// With the tab already open, for a shortcut that leads to one part of the settings.
+	public void showAndWait(Window owner, String tabName) {
 		try {
 			URL fxmlLocation = SettingsWindow.class.getResource(SETTINGS_FXML);
 
@@ -32,7 +39,15 @@ public final class SettingsWindow {
 			FXMLLoader loader = new FXMLLoader(fxmlLocation);
 			loader.setControllerFactory(controllerFactory);
 
-			Scene scene = new Scene(loader.load());
+			Parent root = loader.load();
+			Scene scene = new Scene(root);
+
+			if (tabName != null && root.lookup(".tab-pane") instanceof TabPane tabs) {
+				tabs.getTabs().stream()
+						.filter(tab -> tabName.equals(tab.getText()))
+						.findFirst()
+						.ifPresent(tab -> tabs.getSelectionModel().select(tab));
+			}
 
 			Stage stage = new Stage();
 			stage.setTitle("Configurações");

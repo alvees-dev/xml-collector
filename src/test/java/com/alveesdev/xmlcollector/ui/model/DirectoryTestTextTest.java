@@ -2,7 +2,9 @@ package com.alveesdev.xmlcollector.ui.model;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.junit.jupiter.api.Test;
 
@@ -10,6 +12,17 @@ import com.alveesdev.xmlcollector.application.connection.DirectoryTestResult.Out
 import com.alveesdev.xmlcollector.application.connection.DirectoryTestResult;
 
 class DirectoryTestTextTest {
+
+	@Test
+	void theSummaryHasOneLinePerDirectoryInOrder() {
+		Map<String, DirectoryTestResult> results = new LinkedHashMap<>();
+		results.put("PDV 01", new DirectoryTestResult(Outcome.CONNECTED, true, List.of(), true));
+		results.put("PDV 02", DirectoryTestResult.of(Outcome.NO_CONNECTION));
+		results.put("PDV 03", new DirectoryTestResult(Outcome.CONNECTED, true, List.of("a", "b"), true));
+
+		assertEquals("PDV 01: OK\nPDV 02: Sem conexão ou diretório não encontrado\nPDV 03: Conectou, mas falta a pasta a; Conectou, mas falta a pasta b",
+				DirectoryTestText.summary(results));
+	}
 
 	@Test
 	void describesEachFailure() {

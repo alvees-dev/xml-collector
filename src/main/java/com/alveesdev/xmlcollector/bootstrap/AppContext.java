@@ -92,7 +92,7 @@ public final class AppContext {
 		}
 
 		if (type == CollectionTabController.class) {
-			return new CollectionTabController(collectionService, settingsService, searchModels, paths);
+			return new CollectionTabController(collectionService, settingsService, searchModels, directoryTester, paths);
 		}
 
 		if (type == MissingTabController.class) {

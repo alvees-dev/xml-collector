@@ -6,6 +6,7 @@ import java.time.LocalDate;
 import java.time.YearMonth;
 import java.util.ArrayList;
 import java.util.EnumMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -17,6 +18,9 @@ import com.alveesdev.xmlcollector.application.collection.CollectionRequest;
 import com.alveesdev.xmlcollector.application.collection.CollectionResult;
 import com.alveesdev.xmlcollector.application.collection.CollectionService;
 import com.alveesdev.xmlcollector.application.collection.CollectionTarget;
+import com.alveesdev.xmlcollector.application.connection.DirectoryTarget;
+import com.alveesdev.xmlcollector.application.connection.DirectoryTestResult;
+import com.alveesdev.xmlcollector.application.connection.DirectoryTester;
 import com.alveesdev.xmlcollector.application.settings.AppPaths;
 import com.alveesdev.xmlcollector.application.settings.AppSettings;
 import com.alveesdev.xmlcollector.application.settings.service.SearchModelCatalog;
@@ -25,10 +29,13 @@ import com.alveesdev.xmlcollector.domain.model.DateRange;
 import com.alveesdev.xmlcollector.domain.model.DocumentCategory;
 import com.alveesdev.xmlcollector.domain.model.DocumentEntry;
 import com.alveesdev.xmlcollector.domain.model.NfeSearchModel;
+import com.alveesdev.xmlcollector.domain.model.PdvSearchModel;
 import com.alveesdev.xmlcollector.domain.model.SeparationMode;
+import com.alveesdev.xmlcollector.ui.model.DirectoryTestText;
 import com.alveesdev.xmlcollector.ui.model.DocumentRow;
 import com.alveesdev.xmlcollector.ui.model.DocumentRowMapper;
 import com.alveesdev.xmlcollector.ui.model.FailureText;
+import com.alveesdev.xmlcollector.ui.model.SourceLabels;
 import com.alveesdev.xmlcollector.ui.model.SourceMode;
 import com.alveesdev.xmlcollector.ui.view.Dialogs;
 import com.alveesdev.xmlcollector.ui.view.FileExplorer;
@@ -53,11 +60,14 @@ import javafx.scene.input.DataFormat;
 
 public class CollectionTabController {
 
+	private static final String TEST_PATHS = "Testar Caminhos";
+
 	private static final List<String> COLUMN_PROPERTIES = List.of("number", "series", "totalValue", "emissionDate", "accessKey", "status");
 
 	private final CollectionService collectionService;
 	private final SettingsService settingsService;
 	private final SearchModelCatalog searchModels;
+	private final DirectoryTester directoryTester;
 	private final AppPaths paths;
 
 	private CollectedDocuments collected = new CollectedDocuments();
@@ -93,6 +103,12 @@ public class CollectionTabController {
 	private Button btnRead;
 
 	@FXML
+	private Button btnTestPaths;
+
+	private Runnable onOpenDirectories = () -> {
+	};
+
+	@FXML
 	private CheckBox chkNfeSales;
 
 	@FXML
@@ -114,11 +130,61 @@ public class CollectionTabController {
 	private TableView<DocumentRow> nfeTable;
 
 	public CollectionTabController(CollectionService collectionService, SettingsService settingsService,
-			SearchModelCatalog searchModels, AppPaths paths) {
+			SearchModelCatalog searchModels, DirectoryTester directoryTester, AppPaths paths) {
 		this.collectionService = collectionService;
 		this.settingsService = settingsService;
 		this.searchModels = searchModels;
+		this.directoryTester = directoryTester;
 		this.paths = paths;
+	}
+
+	public void setOnOpenDirectories(Runnable onOpenDirectories) {
+		this.onOpenDirectories = onOpenDirectories;
+	}
+
+	@FXML
+	private void onOpenDirectories() {
+		onOpenDirectories.run();
+	}
+
+	// The same test as Testar Todos in the settings, for the PDVs saved there, without opening them.
+	@FXML
+	private void onTestPaths() {
+
+		AppSettings settings = settingsService.current();
+		PdvSearchModel model = searchModels.pdvModel(settings.pdvModelId());
+		List<String> directories = settings.pdvDirectories();
+
+		btnTestPaths.setDisable(true);
+		btnTestPaths.setText(DirectoryTestText.RUNNING);
+
+		TaskRunner.inBackground("pdv-paths-test", () -> {
+			Map<String, DirectoryTestResult> results = new LinkedHashMap<>();
+
+			for (int index = 0; index < directories.size(); index++) {
+				results.put(SourceLabels.label(index, SourceMode.PDV_DIRECTORIES), directoryTester.test(DirectoryTarget.ofPdv(directories.get(index).trim(), model)));
+			}
+
+			return results;
+		}, results -> {
+			restoreTestPathsButton();
+
+			String text = DirectoryTestText.summary(results);
+
+			if (results.values().stream().allMatch(result -> result.status() == DirectoryTestResult.Status.OK)) {
+				Dialogs.info(TEST_PATHS, text);
+			} else {
+				Dialogs.warning(TEST_PATHS, text);
+			}
+		}, error -> {
+			restoreTestPathsButton();
+			Dialogs.error(TEST_PATHS, FailureText.of(error));
+		});
+	}
+
+	private void restoreTestPathsButton() {
+		btnTestPaths.setDisable(false);
+		btnTestPaths.setText(TEST_PATHS);
 	}
 
 	public void setOnCollected(BiConsumer<CollectionRequest, CollectionResult> onCollected) {
