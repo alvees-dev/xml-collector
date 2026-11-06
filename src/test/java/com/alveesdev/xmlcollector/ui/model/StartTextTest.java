@@ -27,6 +27,12 @@ class StartTextTest {
 	@Test
 	void theReadingSaysNothingIsCopied() {
 		assertEquals("Ler: NFCe\nOrigem: Diretório Servidor\nPeríodo: 01/10/2026 a 31/10/2026\n\nNenhum arquivo será copiado.",
-				StartText.reading(SourceMode.SERVER_DIRECTORY, FROM, TO));
+				StartText.reading(SourceMode.SERVER_DIRECTORY, null, FROM, TO));
+	}
+
+	@Test
+	void anEmptyDiretorioUnicoSaysItReadsTheFolderOfTheProgram() {
+		assertEquals("Ler: NFCe\nOrigem: Diretório Único\nDiretório: Arquivos_XML do Coletor\nPeríodo: 01/10/2026 a 31/10/2026\n\nNenhum arquivo será copiado.",
+				StartText.reading(SourceMode.SINGLE_DIRECTORY, "Arquivos_XML do Coletor", FROM, TO));
 	}
 }

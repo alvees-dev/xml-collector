@@ -45,6 +45,9 @@ public class XmlFileScanner implements SourceFiles {
 		}
 
 		Path excluded = excludedRoot.toAbsolutePath().normalize();
+
+		// The archive is left out only when the search passes through it; a directory chosen inside it is read like any other.
+		boolean insideTheArchive = directory.toAbsolutePath().normalize().startsWith(excluded);
 		List<SourceFile> files = new ArrayList<>();
 		List<Path> inaccessible = new ArrayList<>();
 
@@ -52,7 +55,7 @@ public class XmlFileScanner implements SourceFiles {
 
 			@Override
 			public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) {
-				return dir.toAbsolutePath().normalize().startsWith(excluded)
+				return !insideTheArchive && dir.toAbsolutePath().normalize().startsWith(excluded)
 						? FileVisitResult.SKIP_SUBTREE
 						: FileVisitResult.CONTINUE;
 			}

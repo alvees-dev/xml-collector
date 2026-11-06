@@ -73,20 +73,28 @@ class XmlFileScannerScanTest {
 	}
 
 	@Test
+	void readsADirectoryChosenInsideTheArchive() throws IOException {
+		Path month = Files.createDirectories(archive.resolve("2026").resolve("Outubro_2026"));
+		Path note = write(month.resolve("a.xml"));
+		Path error = write(Files.createDirectories(month.resolve("Erros")).resolve("b.xml"));
+
+		assertEquals(Set.of(note, error), pathsOf(scanner.scan(month, archive).files()));
+	}
+
+	@Test
+	void readsTheArchiveItselfWhenItIsTheChosenDirectory() throws IOException {
+		Path note = write(Files.createDirectories(archive.resolve("2026")).resolve("a.xml"));
+
+		assertEquals(Set.of(note), pathsOf(scanner.scan(archive, archive).files()));
+	}
+
+	@Test
 	void doesNotEnterTheArchiveWhenItIsInsideTheSource() throws IOException {
 		Path kept = write(source.resolve("a.xml"));
 		Path archiveInside = Files.createDirectories(source.resolve("arquivo"));
 		write(Files.createDirectories(archiveInside.resolve("2026")).resolve("copia.xml"));
 
 		assertEquals(Set.of(kept), pathsOf(scanner.scan(source, archiveInside).files()));
-	}
-
-	@Test
-	void aSourceInsideTheArchiveFindsNothing() throws IOException {
-		Path inside = Files.createDirectories(archive.resolve("2026"));
-		write(inside.resolve("copia.xml"));
-
-		assertEquals(Set.of(), pathsOf(scanner.scan(inside, archive).files()));
 	}
 
 	@Test
