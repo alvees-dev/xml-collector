@@ -15,6 +15,7 @@
           <Menu mnemonicParsing="false" text="Arquivo">
             <items>
               <MenuItem mnemonicParsing="false" onAction="#onOpenSettings" text="Configurações" />
+              <MenuItem mnemonicParsing="false" onAction="#onOpenPersonalization" text="Personalização" />
               <SeparatorMenuItem mnemonicParsing="false" />
               <MenuItem mnemonicParsing="false" onAction="#onExit" text="Sair" />
             </items>

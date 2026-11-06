@@ -1,6 +1,7 @@
 package com.alveesdev.xmlcollector.ui.controller;
 
 import com.alveesdev.xmlcollector.ui.model.ActivityLog;
+import com.alveesdev.xmlcollector.ui.view.PersonalizationWindow;
 import com.alveesdev.xmlcollector.ui.view.SettingsWindow;
 
 import javafx.application.Platform;
@@ -43,6 +44,12 @@ public class MainScreenController {
 		settingsWindow.showAndWait(root.getScene().getWindow(), tabName);
 		missingTabController.refreshPdvColumns();
 		collectionTabController.refreshServerDirectory();
+	}
+
+	@FXML
+	private void onOpenPersonalization() {
+		ActivityLog.record("Abriu personalização");
+		PersonalizationWindow.showAndWait(root.getScene().getWindow());
 	}
 
 	@FXML
