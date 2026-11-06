@@ -132,6 +132,24 @@ class CollectionAndDispatchFlowTest {
 	}
 
 	@Test
+	void readingFindsTheGapsLikeACollectionWithoutCopying() throws IOException {
+		writeAMonthOfNotes();
+
+		CollectionRequest request = new CollectionRequest(List.of(firstPdv.toString()), DocumentCategory.NFCE, JANUARY,
+				OrganizeMode.SINGLE_FOLDER, archiveRoot, List.of(), CollectionTarget.ALL, SeparationMode.ALL_TOGETHER);
+
+		CollectionResult read = collection.read(request, progress -> {
+		}, () -> false);
+
+		assertEquals(Map.of(1, DocumentStatus.AUTHORIZED, 2, DocumentStatus.CANCELLED, 3, DocumentStatus.AUTHORIZED, 6, DocumentStatus.AUTHORIZED),
+				statusOfSeries(1, read));
+		assertEquals(List.of(new NumberRange(5, 5)), read.missingBySeries().get(1));
+		assertEquals(0, read.summary().copied());
+		assertFalse(Files.exists(archiveRoot), "nothing may be written in the archive");
+		assertEquals(Set.of(1, 2, 3, 6), history.issuedIn(CNPJ, NFCE, 1, new NumberRange(1, 6)));
+	}
+
+	@Test
 	void sendsTheCollectedMonthWithTheReportOfValues() throws Exception {
 		writeAMonthOfNotes();
 		collect(JANUARY);

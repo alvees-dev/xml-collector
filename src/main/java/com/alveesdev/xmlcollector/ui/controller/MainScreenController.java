@@ -35,6 +35,7 @@ public class MainScreenController {
 		ActivityLog.record("Abriu configurações");
 		settingsWindow.showAndWait(root.getScene().getWindow());
 		missingTabController.refreshPdvColumns();
+		collectionTabController.refreshServerDirectory();
 	}
 
 	@FXML

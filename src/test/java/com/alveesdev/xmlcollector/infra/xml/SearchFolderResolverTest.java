@@ -33,6 +33,15 @@ class SearchFolderResolverTest {
 	}
 
 	@Test
+	void findsTheMonthWrittenAsANumber() throws IOException {
+		create("xml/2026/01");
+		create("xml/2026/02");
+		create("xml/2026/03");
+
+		assertEquals(Set.of(root.resolve("xml/2026/01"), root.resolve("xml/2026/02")), resolve("xml/{AAAA}/{MM}"));
+	}
+
+	@Test
 	void keepsAccentsInFolderNames() throws IOException {
 		create("produção/inutilização");
 

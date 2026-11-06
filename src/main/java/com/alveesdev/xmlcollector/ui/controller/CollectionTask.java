@@ -10,6 +10,7 @@ import com.alveesdev.xmlcollector.application.collection.CollectionProgress;
 import com.alveesdev.xmlcollector.application.collection.CollectionRequest;
 import com.alveesdev.xmlcollector.application.collection.CollectionResult;
 import com.alveesdev.xmlcollector.application.collection.CollectionService;
+import com.alveesdev.xmlcollector.application.collection.ProgressListener;
 
 import javafx.application.Platform;
 import javafx.concurrent.Task;
@@ -17,6 +18,7 @@ import javafx.concurrent.Task;
 public class CollectionTask extends Task<CollectionResult> {
 
 	private final CollectionService service;
+	private final boolean onlyReading;
 	private final CollectionRequest request;
 	private final Consumer<CollectionProgress> onProgress;
 	private final Consumer<CollectionProgress> onEveryEvent;
@@ -25,8 +27,10 @@ public class CollectionTask extends Task<CollectionResult> {
 	private final Map<Integer, CollectionProgress> pending = new ConcurrentHashMap<>();
 	private final AtomicBoolean deliveryScheduled = new AtomicBoolean();
 
-	public CollectionTask(CollectionService service, CollectionRequest request, Consumer<CollectionProgress> onProgress, Consumer<CollectionProgress> onEveryEvent) {
+	public CollectionTask(CollectionService service, CollectionRequest request, boolean onlyReading, Consumer<CollectionProgress> onProgress,
+			Consumer<CollectionProgress> onEveryEvent) {
 		this.service = service;
+		this.onlyReading = onlyReading;
 		this.request = request;
 		this.onProgress = onProgress;
 		this.onEveryEvent = onEveryEvent;
@@ -34,10 +38,12 @@ public class CollectionTask extends Task<CollectionResult> {
 
 	@Override
 	protected CollectionResult call() {
-		return service.collect(request, progress -> {
+		ProgressListener listener = progress -> {
 			onEveryEvent.accept(progress);
 			publishProgress(progress);
-		}, this::isCancelled);
+		};
+
+		return onlyReading ? service.read(request, listener, this::isCancelled) : service.collect(request, listener, this::isCancelled);
 	}
 
 	private void publishProgress(CollectionProgress progress) {
