@@ -90,7 +90,7 @@ class ArchiveLayoutTest {
 
 	@Test
 	void organizingByDayAddsTheFolderOfTheDay() {
-		assertEquals(MARCH.resolve("NFe_Vendas").resolve("Dia_05"),
+		assertEquals(MARCH.resolve("NFe").resolve("Vendas").resolve("Dia_05"),
 				ArchiveLayout.directoryFor(ROOT, DAY, OrganizeMode.BY_DAY, DocumentCategory.NFE_SALES));
 	}
 

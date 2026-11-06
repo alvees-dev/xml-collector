@@ -77,14 +77,9 @@ public class XmlArchivedDocuments implements ArchivedDocuments {
 		return documents;
 	}
 
+	// The purchases sit in NFe\Compras, right inside the month, whatever day folders come below it.
 	private static boolean isPurchase(Path directory, Path file) {
-		for (Path folder : directory.relativize(file)) {
-			if (folder.toString().equalsIgnoreCase(DocumentCategory.NFE_PURCHASES.folderName())) {
-				return true;
-			}
-		}
-
-		return false;
+		return directory.relativize(file).startsWith(directory.getFileSystem().getPath(DocumentCategory.NFE_PURCHASES.folderName()));
 	}
 
 	private static List<Path> xmlFilesIn(Path directory) throws IOException {

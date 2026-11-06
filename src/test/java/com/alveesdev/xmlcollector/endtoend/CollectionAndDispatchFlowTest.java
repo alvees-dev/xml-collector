@@ -117,7 +117,7 @@ class CollectionAndDispatchFlowTest {
 		assertEquals(1, filesIn(month.resolve("Inutilizadas")).size());
 
 		// The broken file is kept apart, with its content as it was, and the counts still call it an error.
-		assertEquals("<nfeProc><NFe>", Files.readString(month.resolve("Erro").resolve("quebrado.xml")));
+		assertEquals("<nfeProc><NFe>", Files.readString(month.resolve("Erros").resolve("quebrado.xml")));
 
 		assertEquals(Set.of(1, 2, 3, 6), history.issuedIn(CNPJ, NFCE, 1, new NumberRange(1, 6)));
 		assertEquals(Set.of(1, 2), history.issuedIn(CNPJ, NFCE, 2, new NumberRange(1, 6)));
@@ -174,7 +174,7 @@ class CollectionAndDispatchFlowTest {
 
 		try (ZipFile file = new ZipFile(zip.toFile())) {
 			assertEquals(STORED_FILES, file.stream().filter(entry -> entry.getName().endsWith(".xml")).count());
-			assertTrue(file.stream().noneMatch(entry -> entry.getName().contains("/Erro/")), "the broken files stay out of the zip");
+			assertTrue(file.stream().noneMatch(entry -> entry.getName().contains("/Erros/")), "the broken files stay out of the zip");
 
 			String report = textOf(file, "Janeiro_2026/" + ValuesReportText.FILE_NAME);
 
@@ -217,7 +217,7 @@ class CollectionAndDispatchFlowTest {
 		try (ZipFile file = new ZipFile(emails.get(0).attachments().get(0).toFile())) {
 			assertNull(file.getEntry("Janeiro_2026/" + ValuesReportText.FILE_NAME));
 			assertEquals(STORED_FILES, file.stream().filter(entry -> entry.getName().endsWith(".xml")).count());
-			assertTrue(file.stream().noneMatch(entry -> entry.getName().contains("/Erro/")), "the broken files stay out of the zip");
+			assertTrue(file.stream().noneMatch(entry -> entry.getName().contains("/Erros/")), "the broken files stay out of the zip");
 		}
 	}
 
@@ -254,11 +254,11 @@ class CollectionAndDispatchFlowTest {
 	private void writeNfeOfTheMonth() throws IOException {
 		Path month = ArchiveLayout.monthDirectory(archiveRoot, JANUARY_DAY);
 
-		writeNfe(month.resolve("NFe_Vendas"), CNPJ, 1, JANUARY_DAY);
-		writeNfe(month.resolve("NFe_Vendas"), CNPJ, 2, JANUARY_DAY);
-		writeNfe(month.resolve("NFe_Compras"), "98765432000110", 7, JANUARY_DAY);
-		writeNfe(month.resolve("NFe_Compras"), "98765432000110", 8, JANUARY_DAY);
-		writeNfe(month.resolve("NFe_Compras"), "11222333000181", 9, JANUARY_DAY);
+		writeNfe(month.resolve("NFe").resolve("Vendas"), CNPJ, 1, JANUARY_DAY);
+		writeNfe(month.resolve("NFe").resolve("Vendas"), CNPJ, 2, JANUARY_DAY);
+		writeNfe(month.resolve("NFe").resolve("Compras"), "98765432000110", 7, JANUARY_DAY);
+		writeNfe(month.resolve("NFe").resolve("Compras"), "98765432000110", 8, JANUARY_DAY);
+		writeNfe(month.resolve("NFe").resolve("Compras"), "11222333000181", 9, JANUARY_DAY);
 	}
 
 	private DispatchRequest dispatchRequestWith(ReportOptions reports) {

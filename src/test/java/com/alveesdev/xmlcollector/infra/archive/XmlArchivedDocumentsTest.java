@@ -64,8 +64,8 @@ class XmlArchivedDocumentsTest {
 
 	@Test
 	void leavesTheSuppliersOfThePurchasesOut() throws IOException {
-		Path sales = Files.createDirectories(directory.resolve("NFe_Vendas"));
-		Path purchases = Files.createDirectories(directory.resolve("NFe_Compras"));
+		Path sales = Files.createDirectories(directory.resolve("NFe").resolve("Vendas"));
+		Path purchases = Files.createDirectories(directory.resolve("NFe").resolve("Compras"));
 		Files.writeString(sales.resolve(KEY + ".xml"), "");
 		Files.writeString(purchases.resolve(OTHER_KEY + ".xml"), "");
 
@@ -75,7 +75,7 @@ class XmlArchivedDocumentsTest {
 	@Test
 	void readsTheDocumentsOfTheCompanyWithoutThePurchases() throws IOException {
 		Path sales = Files.createDirectories(directory.resolve("NFCe"));
-		Path purchases = Files.createDirectories(directory.resolve("NFe_Compras"));
+		Path purchases = Files.createDirectories(directory.resolve("NFe").resolve("Compras"));
 		Files.writeString(sales.resolve("nota.xml"), "invoice");
 		Files.writeString(sales.resolve("leia-me.txt"), "invoice");
 		Files.writeString(purchases.resolve("compra.xml"), "invoice");
@@ -85,8 +85,8 @@ class XmlArchivedDocumentsTest {
 
 	@Test
 	void readsOnlyThePurchases() throws IOException {
-		Path sales = Files.createDirectories(directory.resolve("NFe_Vendas"));
-		Path purchases = Files.createDirectories(directory.resolve("NFe_Compras"));
+		Path sales = Files.createDirectories(directory.resolve("NFe").resolve("Vendas"));
+		Path purchases = Files.createDirectories(directory.resolve("NFe").resolve("Compras"));
 		Files.writeString(sales.resolve("venda.xml"), "event");
 		Files.writeString(purchases.resolve("compra.xml"), "invoice");
 		Files.writeString(purchases.resolve("leia-me.txt"), "event");

@@ -24,7 +24,7 @@ public final class ArchiveLayout {
 	private static final String ZIP_PREFIX = "ArquivoXML";
 	private static final String VOIDING_FILE_SUFFIX = "-procInutNFe.xml";
 	private static final String PDV_FOLDER_PREFIX = "PDV";
-	private static final String ERROR_FOLDER = "Erro";
+	private static final String ERROR_FOLDER = "Erros";
 
 	private ArchiveLayout() {
 	}

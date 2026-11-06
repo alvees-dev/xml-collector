@@ -336,7 +336,7 @@ class CollectionServiceTest {
 		service.collect(request(DocumentCategory.NFE_SALES, "nfe"), NO_PROGRESS, () -> false);
 
 		assertEquals(Set.of(Set.of(DocumentModel.NFE)), sources.requestedModels);
-		assertEquals(ARCHIVE.resolve("2026").resolve("Janeiro_2026").resolve("NFe_Vendas"), archive.stored.get(0).directory());
+		assertEquals(ARCHIVE.resolve("2026").resolve("Janeiro_2026").resolve("NFe").resolve("Vendas"), archive.stored.get(0).directory());
 	}
 
 	@Test
