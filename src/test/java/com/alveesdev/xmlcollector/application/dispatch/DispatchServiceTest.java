@@ -294,7 +294,8 @@ class DispatchServiceTest {
 	void usesTheStandardBodyWhenNoneWasWritten() throws Exception {
 		service(compressor).dispatch(REQUEST, NO_PROGRESS, () -> false);
 
-		assertEquals("Olá, prezados.\n\nSegue o arquivo XML.\nAtenciosamente,", sent.get(0).body());
+		assertEquals("Olá, prezados.\n\nSegue o arquivo XML.\n\nEmail usado apenas para envio de arquivos. não responder.\n"
+				+ "Em caso de dúvidas envie para suporte@unitecautomacao.com.\n\nAtenciosamente,", sent.get(0).body());
 	}
 
 	@Test
