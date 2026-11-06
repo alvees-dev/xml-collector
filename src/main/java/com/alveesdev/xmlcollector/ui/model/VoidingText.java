@@ -93,8 +93,14 @@ public final class VoidingText {
 
 		if (!notSent.isEmpty()) {
 			startBlock(text);
-			text.append("Não enviadas:");
-			notSent.forEach(outcome -> text.append('\n').append(rangeLabel(outcome.request())));
+			text.append("Não enviadas (nada chegou à Sefaz):");
+			notSent.forEach(outcome -> {
+				text.append('\n').append(rangeLabel(outcome.request()));
+
+				if (outcome.detail() != null) {
+					text.append(" (").append(outcome.detail()).append(')');
+				}
+			});
 		}
 
 		appendSaveFailures(text, outcomes);

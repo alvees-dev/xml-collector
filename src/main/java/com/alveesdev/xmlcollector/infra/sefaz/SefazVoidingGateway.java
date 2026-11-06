@@ -1,10 +1,15 @@
 package com.alveesdev.xmlcollector.infra.sefaz;
 
 import java.io.IOException;
+import java.net.ConnectException;
 import java.net.URI;
+import java.net.UnknownHostException;
+import java.net.http.HttpConnectTimeoutException;
 import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
 import java.time.Clock;
+
+import javax.net.ssl.SSLHandshakeException;
 
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
@@ -14,6 +19,7 @@ import org.xml.sax.SAXException;
 
 import com.alveesdev.xmlcollector.application.port.VoidingException;
 import com.alveesdev.xmlcollector.application.port.VoidingGateway;
+import com.alveesdev.xmlcollector.application.port.VoidingNotSentException;
 import com.alveesdev.xmlcollector.domain.model.FiscalEnvironment;
 import com.alveesdev.xmlcollector.domain.model.VoidingReceipt;
 import com.alveesdev.xmlcollector.domain.model.VoidingRequest;
@@ -75,11 +81,27 @@ public class SefazVoidingGateway implements VoidingGateway {
 		try {
 			return transport.post(url, envelope);
 		} catch (IOException e) {
+			if (failedBeforeSending(e)) {
+				throw new VoidingNotSentException("Não foi possível conectar à Sefaz: " + e.getMessage() + ". Nada foi enviado, pode tentar de novo.", e);
+			}
+
 			throw new VoidingException("Falha ao comunicar com a Sefaz: " + e.getMessage() + "." + UNCONFIRMED_HINT, e);
 		} catch (InterruptedException e) {
 			Thread.currentThread().interrupt();
 			throw new VoidingException("O envio foi interrompido." + UNCONFIRMED_HINT, e);
 		}
+	}
+
+	// Without a connection, a secure channel or the address of the server, the request never left the computer.
+	private static boolean failedBeforeSending(IOException e) {
+		for (Throwable cause = e; cause != null; cause = cause.getCause()) {
+			if (cause instanceof SSLHandshakeException || cause instanceof ConnectException || cause instanceof UnknownHostException
+					|| cause instanceof HttpConnectTimeoutException) {
+				return true;
+			}
+		}
+
+		return false;
 	}
 
 	private VoidingReceipt parse(String response, String signedRequest) throws VoidingException {

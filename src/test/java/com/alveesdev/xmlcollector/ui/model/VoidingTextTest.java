@@ -73,11 +73,19 @@ class VoidingTextTest {
 	}
 
 	@Test
+	void aRangeThatCouldNotConnectSaysWhy() {
+		String text = VoidingText.summary(List.of(
+				new VoidingOutcome(SINGLE, Stage.NOT_SENT, "sem conexão")), FiscalEnvironment.PRODUCTION);
+
+		assertEquals("Não enviadas (nada chegou à Sefaz):\nSérie 1: 7 (sem conexão)", text);
+	}
+
+	@Test
 	void theReportDoesNotClaimTheNumbersWereVoidedWhenTheyWereNotSent() {
 		String text = VoidingText.summary(List.of(
 				new VoidingOutcome(SINGLE, Stage.NOT_SENT, null)), FiscalEnvironment.PRODUCTION);
 
-		assertEquals("Não enviadas:\nSérie 1: 7", text);
+		assertEquals("Não enviadas (nada chegou à Sefaz):\nSérie 1: 7", text);
 	}
 
 	@Test
@@ -99,7 +107,7 @@ class VoidingTextTest {
 		assertTrue(text.contains("NÃO foi salvo na pasta do PDV"));
 		assertTrue(text.contains("pdv1: sem acesso"));
 		assertTrue(text.contains("Série 2: 10 a 12 (sem resposta)"));
-		assertTrue(text.contains("Não enviadas:\nSérie 3: 5"));
+		assertTrue(text.contains("Não enviadas (nada chegou à Sefaz):\nSérie 3: 5"));
 	}
 
 	@Test
