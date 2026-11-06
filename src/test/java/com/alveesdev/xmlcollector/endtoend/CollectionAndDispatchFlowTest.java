@@ -153,8 +153,8 @@ class CollectionAndDispatchFlowTest {
 
 			String report = textOf(file, "Janeiro_2026/" + ValuesReportText.FILE_NAME);
 
-			assertTrue(report.contains("Notas canceladas: 2"), report);
-			assertTrue(report.contains("Notas inutilizadas: 4"), report);
+			assertTrue(report.contains("Notas canceladas: 1 nota\r\n"), report);
+			assertTrue(report.contains("Notas inutilizadas: 1 nota\r\n"), report);
 			assertTrue(report.contains("Última nota emitida: 6"), report);
 			assertTrue(report.contains("Total de vendas: 5 notas"), report);
 			assertTrue(report.contains("Valor total das vendas: R$ 52,50"), report);
