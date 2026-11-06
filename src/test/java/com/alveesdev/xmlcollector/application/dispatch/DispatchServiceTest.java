@@ -128,10 +128,10 @@ class DispatchServiceTest {
 				.dispatch(REQUEST, NO_PROGRESS, () -> false);
 
 		assertEquals(1, received.size());
-		assertEquals("Relatório de valores.txt", received.get(0).name());
+		assertEquals("Relatório NFCe Janeiro 2026.txt", received.get(0).name());
 
 		String text = new String(received.get(0).content(), StandardCharsets.UTF_8);
-		assertTrue(text.contains("RELATÓRIO DE VALORES - Janeiro de 2026"), text);
+		assertTrue(text.contains("RELATÓRIO NFCe - Janeiro de 2026"), text);
 		assertTrue(text.contains("Primeira nota emitida: 7"), text);
 	}
 

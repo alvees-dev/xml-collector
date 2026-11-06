@@ -198,7 +198,7 @@ public class DispatchService {
 				cnpjs.addAll(ofMonth);
 
 				Path zipFile = month.zipFolder().resolve(ArchiveLayout.zipName(ofMonth, month.zipLabel()) + ZIP_EXTENSION);
-				List<DirectoryCompressor.ExtraFile> extras = reports.anySelected() ? List.of(valuesReportOf(month, reports)) : List.of();
+				List<DirectoryCompressor.ExtraFile> extras = reports.anySelected() ? valuesReportsOf(month, reports) : List.of();
 				Optional<CompressedFile> file = compressor.compress(month.documents(), zipFile, month.name(), extras);
 
 				if (file.isEmpty()) {
@@ -215,12 +215,12 @@ public class DispatchService {
 		return compressed;
 	}
 
-	private DirectoryCompressor.ExtraFile valuesReportOf(DispatchMonth month, ReportOptions reports) throws IOException {
+	private List<DirectoryCompressor.ExtraFile> valuesReportsOf(DispatchMonth month, ReportOptions reports) throws IOException {
 
 		ValuesReport company = reports.anySales() ? ValuesReport.of(archivedDocuments.documentsOfTheCompanyIn(month.documents())) : ValuesReport.of(List.of());
 		ValuesReport purchases = reports.nfePurchases() ? ValuesReport.of(archivedDocuments.purchasesIn(month.documents())) : ValuesReport.of(List.of());
 
-		return new DirectoryCompressor.ExtraFile(ValuesReportText.FILE_NAME, ValuesReportText.bytesOf(month.label(), company, purchases, reports));
+		return ValuesReportText.filesOf(month, company, purchases, reports);
 	}
 
 	private static String bodyOf(DispatchRequest request) {

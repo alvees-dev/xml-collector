@@ -40,7 +40,6 @@ import com.alveesdev.xmlcollector.application.dispatch.DispatchRequest;
 import com.alveesdev.xmlcollector.application.dispatch.DispatchResult;
 import com.alveesdev.xmlcollector.application.dispatch.DispatchService;
 import com.alveesdev.xmlcollector.application.dispatch.ReportOptions;
-import com.alveesdev.xmlcollector.application.dispatch.ValuesReportText;
 import com.alveesdev.xmlcollector.application.port.DocumentReader;
 import com.alveesdev.xmlcollector.application.port.EmailMessage;
 import com.alveesdev.xmlcollector.application.settings.EmailAccount;
@@ -67,6 +66,8 @@ class CollectionAndDispatchFlowTest {
 	private static final DateRange JANUARY = new DateRange(LocalDate.of(2026, 1, 1), LocalDate.of(2026, 1, 31));
 	private static final DateRange FEBRUARY = new DateRange(LocalDate.of(2026, 2, 1), LocalDate.of(2026, 2, 28));
 	private static final int STORED_FILES = 8;
+	private static final String NFCE_REPORT = "Janeiro_2026/Relatório NFCe Janeiro 2026.txt";
+	private static final String NFE_REPORT = "Janeiro_2026/Relatório NFe Janeiro 2026.txt";
 
 	@TempDir
 	Path root;
@@ -176,7 +177,7 @@ class CollectionAndDispatchFlowTest {
 			assertEquals(STORED_FILES, file.stream().filter(entry -> entry.getName().endsWith(".xml")).count());
 			assertTrue(file.stream().noneMatch(entry -> entry.getName().contains("/Erros/")), "the broken files stay out of the zip");
 
-			String report = textOf(file, "Janeiro_2026/" + ValuesReportText.FILE_NAME);
+			String report = textOf(file, NFCE_REPORT);
 
 			assertTrue(report.contains("Notas canceladas: 1 nota\r\n"), report);
 			assertTrue(report.contains("Notas inutilizadas: 1 nota\r\n"), report);
@@ -196,13 +197,16 @@ class CollectionAndDispatchFlowTest {
 		}, () -> false);
 
 		try (ZipFile file = new ZipFile(emails.get(0).attachments().get(0).toFile())) {
-			String report = textOf(file, "Janeiro_2026/" + ValuesReportText.FILE_NAME);
+			String nfce = textOf(file, NFCE_REPORT);
+			String nfe = textOf(file, NFE_REPORT);
 
-			assertTrue(report.contains("- NFC-e - Série 1"), report);
-			assertTrue(report.contains("NF-e - VENDAS\r\nValor total das vendas: R$ 21,00"), report);
-			assertTrue(report.contains("NF-e - COMPRAS\r\nValor total das compras: R$ 31,50"), report);
-			assertTrue(report.contains("TOTAL DO MÊS\r\nTotal de vendas: 7 notas\r\nValor total das vendas: R$ 73,50"), report);
-			assertFalse(report.contains("- NF-e - Série"), report);
+			assertTrue(nfce.contains("- NFC-e - Série 1"), nfce);
+			assertTrue(nfce.contains("TOTAL DO MÊS\r\nTotal de vendas: 5 notas\r\nValor total das vendas: R$ 52,50"), nfce);
+			assertFalse(nfce.contains("NF-e"), nfce);
+
+			assertTrue(nfe.contains("NF-e - VENDAS\r\nTotal de vendas: 2 notas\r\nValor total das vendas: R$ 21,00"), nfe);
+			assertTrue(nfe.contains("NF-e - COMPRAS\r\nValor total das compras: R$ 31,50"), nfe);
+			assertFalse(nfe.contains("NFC-e"), nfe);
 		}
 	}
 
@@ -215,7 +219,8 @@ class CollectionAndDispatchFlowTest {
 		}, () -> false);
 
 		try (ZipFile file = new ZipFile(emails.get(0).attachments().get(0).toFile())) {
-			assertNull(file.getEntry("Janeiro_2026/" + ValuesReportText.FILE_NAME));
+			assertNull(file.getEntry(NFCE_REPORT));
+			assertNull(file.getEntry(NFE_REPORT));
 			assertEquals(STORED_FILES, file.stream().filter(entry -> entry.getName().endsWith(".xml")).count());
 			assertTrue(file.stream().noneMatch(entry -> entry.getName().contains("/Erros/")), "the broken files stay out of the zip");
 		}
@@ -299,7 +304,7 @@ class CollectionAndDispatchFlowTest {
 		assertEquals(3, filesIn(server).size());
 
 		try (ZipFile file = new ZipFile(zip.toFile())) {
-			assertTrue(textOf(file, "Janeiro_2026/" + ValuesReportText.FILE_NAME).contains("Total de vendas: 2 notas"));
+			assertTrue(textOf(file, NFCE_REPORT).contains("Total de vendas: 2 notas"));
 		}
 	}
 
@@ -357,7 +362,7 @@ class CollectionAndDispatchFlowTest {
 		assertEquals("ArquivoXML_" + cnpj + "_Janeiro_2026p.zip", zip.getFileName().toString());
 
 		try (ZipFile file = new ZipFile(zip.toFile())) {
-			assertTrue(textOf(file, "Janeiro_2026/" + ValuesReportText.FILE_NAME).contains("Valor total das vendas: R$ 21,00"));
+			assertTrue(textOf(file, NFE_REPORT).contains("Valor total das vendas: R$ 21,00"));
 		}
 	}
 

@@ -42,6 +42,11 @@ public record DispatchMonth(Path documents, YearMonth month, Source source, Path
 		return ArchiveLayout.monthNames().get(month.getMonthValue() - 1) + " de " + month.getYear();
 	}
 
+	// As in "Janeiro 2026", for the names of the reports.
+	public String monthAndYear() {
+		return ArchiveLayout.monthNames().get(month.getMonthValue() - 1) + " " + month.getYear();
+	}
+
 	public String zipLabel() {
 		return ArchiveLayout.zipLabel(month, source.mark());
 	}

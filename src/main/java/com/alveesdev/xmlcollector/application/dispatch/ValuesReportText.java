@@ -8,13 +8,14 @@ import java.util.List;
 import java.util.Locale;
 import java.util.stream.Collectors;
 
+import com.alveesdev.xmlcollector.application.port.DirectoryCompressor;
 import com.alveesdev.xmlcollector.domain.model.DocumentModel;
 import com.alveesdev.xmlcollector.domain.model.NumberRange;
 import com.alveesdev.xmlcollector.domain.service.ValuesReport;
 
 public final class ValuesReportText {
 
-	public static final String FILE_NAME = "Relatório de valores.txt";
+	private static final String FILE_EXTENSION = ".txt";
 
 	private static final Locale BRAZIL = Locale.forLanguageTag("pt-BR");
 	private static final String LINE_BREAK = "\r\n";
@@ -25,27 +26,44 @@ public final class ValuesReportText {
 	private ValuesReportText() {
 	}
 
-	// The mark makes every Windows program open the accents correctly.
-	public static byte[] bytesOf(String monthLabel, ValuesReport company, ValuesReport purchases, ReportOptions options) {
-		return (BYTE_ORDER_MARK + textOf(monthLabel, company, purchases, options)).getBytes(StandardCharsets.UTF_8);
-	}
+	// One file for the NFCe and another for the NFe, each only when one of its kinds is checked.
+	public static List<DirectoryCompressor.ExtraFile> filesOf(DispatchMonth month, ValuesReport company, ValuesReport purchases, ReportOptions options) {
 
-	static String textOf(String monthLabel, ValuesReport company, ValuesReport purchases, ReportOptions options) {
+		List<DirectoryCompressor.ExtraFile> files = new ArrayList<>();
 
-		List<ValuesReport.Section> detailed = options.nfce() ? sectionsOtherThanNfe(company) : List.of();
-		List<ValuesReport.Section> nfeSales = options.nfeSales() ? nfeSectionsOf(company) : List.of();
-
-		List<String> lines = new ArrayList<>();
-		lines.add("RELATÓRIO DE VALORES - " + monthLabel);
-
-		int unreadable = company.unreadableFiles() + purchases.unreadableFiles();
-
-		if (unreadable > 0) {
-			lines.add("");
-			lines.add("ATENÇÃO: " + unreadable + " arquivo(s) não puderam ser lidos e não entram nestes números.");
+		if (options.nfce()) {
+			files.add(new DirectoryCompressor.ExtraFile(nfceFileName(month), bytesOf(nfceTextOf(month.label(), company, purchases))));
 		}
 
-		if (detailed.isEmpty() && !options.nfeSales() && !options.nfePurchases()) {
+		if (options.nfeSales() || options.nfePurchases()) {
+			files.add(new DirectoryCompressor.ExtraFile(nfeFileName(month), bytesOf(nfeTextOf(month.label(), company, purchases, options))));
+		}
+
+		return files;
+	}
+
+	public static String nfceFileName(DispatchMonth month) {
+		return "Relatório NFCe " + month.monthAndYear() + FILE_EXTENSION;
+	}
+
+	public static String nfeFileName(DispatchMonth month) {
+		return "Relatório NFe " + month.monthAndYear() + FILE_EXTENSION;
+	}
+
+	// The mark makes every Windows program open the accents correctly.
+	static byte[] bytesOf(String text) {
+		return (BYTE_ORDER_MARK + text).getBytes(StandardCharsets.UTF_8);
+	}
+
+	static String nfceTextOf(String monthLabel, ValuesReport company, ValuesReport purchases) {
+
+		List<ValuesReport.Section> detailed = sectionsOtherThanNfe(company);
+
+		List<String> lines = new ArrayList<>();
+		lines.add("RELATÓRIO NFCe - " + monthLabel);
+		addUnreadable(lines, company, purchases);
+
+		if (detailed.isEmpty()) {
 			lines.add("");
 			lines.add("Nenhuma nota encontrada.");
 		}
@@ -61,10 +79,30 @@ public final class ValuesReportText {
 			lines.add("Valor total das vendas: " + currency(section.salesValue()));
 		}
 
+		if (!detailed.isEmpty()) {
+			lines.add("");
+			lines.add("TOTAL DO MÊS");
+			lines.add("Total de vendas: " + salesOf(detailed.stream().mapToInt(ValuesReport.Section::sales).sum()));
+			lines.add("Valor total das vendas: " + currency(valueOf(detailed)));
+		}
+
+		return String.join(LINE_BREAK, lines) + LINE_BREAK;
+	}
+
+	// A purchase is money going out, so it stays apart from the sales.
+	static String nfeTextOf(String monthLabel, ValuesReport company, ValuesReport purchases, ReportOptions options) {
+
+		List<String> lines = new ArrayList<>();
+		lines.add("RELATÓRIO NFe - " + monthLabel);
+		addUnreadable(lines, company, purchases);
+
 		if (options.nfeSales()) {
+			List<ValuesReport.Section> sales = nfeSectionsOf(company);
+
 			lines.add("");
 			lines.add("NF-e - VENDAS");
-			lines.add("Valor total das vendas: " + currency(valueOf(nfeSales)));
+			lines.add("Total de vendas: " + salesOf(sales.stream().mapToInt(ValuesReport.Section::sales).sum()));
+			lines.add("Valor total das vendas: " + currency(valueOf(sales)));
 		}
 
 		if (options.nfePurchases()) {
@@ -73,18 +111,17 @@ public final class ValuesReportText {
 			lines.add("Valor total das compras: " + currency(purchases.totalValue()));
 		}
 
-		// A purchase is money going out, so it never joins the total of the sales.
-		if (options.anySales()) {
-			List<ValuesReport.Section> sales = new ArrayList<>(detailed);
-			sales.addAll(nfeSales);
-
-			lines.add("");
-			lines.add("TOTAL DO MÊS");
-			lines.add("Total de vendas: " + salesOf(sales.stream().mapToInt(ValuesReport.Section::sales).sum()));
-			lines.add("Valor total das vendas: " + currency(valueOf(sales)));
-		}
-
 		return String.join(LINE_BREAK, lines) + LINE_BREAK;
+	}
+
+	private static void addUnreadable(List<String> lines, ValuesReport company, ValuesReport purchases) {
+
+		int unreadable = company.unreadableFiles() + purchases.unreadableFiles();
+
+		if (unreadable > 0) {
+			lines.add("");
+			lines.add("ATENÇÃO: " + unreadable + " arquivo(s) não puderam ser lidos e não entram nestes números.");
+		}
 	}
 
 	private static List<ValuesReport.Section> sectionsOtherThanNfe(ValuesReport report) {
