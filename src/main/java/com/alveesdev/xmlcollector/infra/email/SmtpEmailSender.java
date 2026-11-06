@@ -3,14 +3,18 @@ package com.alveesdev.xmlcollector.infra.email;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
+import java.security.GeneralSecurityException;
 import java.util.Date;
 import java.util.Properties;
+
+import javax.net.ssl.SSLSocketFactory;
 
 import com.alveesdev.xmlcollector.application.port.DispatchException;
 import com.alveesdev.xmlcollector.application.port.EmailMessage;
 import com.alveesdev.xmlcollector.application.port.EmailSender;
 import com.alveesdev.xmlcollector.application.settings.EmailAccount;
 import com.alveesdev.xmlcollector.application.settings.EmailSecurity;
+import com.alveesdev.xmlcollector.infra.security.SystemTrust;
 
 import jakarta.mail.AuthenticationFailedException;
 import jakarta.mail.Authenticator;
@@ -75,9 +79,11 @@ public class SmtpEmailSender implements EmailSender {
 		}
 	}
 
-	private static Properties properties(EmailAccount account) {
+	static Properties properties(EmailAccount account) throws DispatchException {
 
 		Properties properties = new Properties();
+		// The same socket factory serves the SSL from the start and the STARTTLS.
+		properties.put("mail.smtp.ssl.socketFactory", socketFactory());
 		properties.put("mail.smtp.host", account.host());
 		properties.put("mail.smtp.port", String.valueOf(account.port()));
 		properties.put("mail.smtp.auth", "true");
@@ -94,5 +100,15 @@ public class SmtpEmailSender implements EmailSender {
 		}
 
 		return properties;
+	}
+
+	// An antivirus that checks the emails, like Avast, answers with its own certificate, which it installed in Windows.
+	// Java alone does not know it, so the connection trusts the roots of Windows too.
+	private static SSLSocketFactory socketFactory() throws DispatchException {
+		try {
+			return SystemTrust.context().getSocketFactory();
+		} catch (GeneralSecurityException | IOException e) {
+			throw new DispatchException("Não foi possível preparar a conexão segura com o servidor de e-mail: " + e.getMessage(), e);
+		}
 	}
 }
