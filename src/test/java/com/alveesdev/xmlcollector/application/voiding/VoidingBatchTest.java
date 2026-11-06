@@ -20,6 +20,7 @@ import org.junit.jupiter.api.Test;
 import com.alveesdev.xmlcollector.application.port.DocumentArchive;
 import com.alveesdev.xmlcollector.application.port.StubDocumentArchive;
 import com.alveesdev.xmlcollector.application.port.VoidingException;
+import com.alveesdev.xmlcollector.application.port.VoidingNotSentException;
 import com.alveesdev.xmlcollector.application.port.VoidingGateway;
 import com.alveesdev.xmlcollector.application.port.VoidingGatewayFactory;
 import com.alveesdev.xmlcollector.application.settings.CertificateSettings;
@@ -91,6 +92,19 @@ class VoidingBatchTest {
 
 		assertEquals(List.of(FIRST, SECOND), sent);
 		assertEquals(List.of(Stage.APPROVED, Stage.FAILED, Stage.NOT_SENT), outcomes.stream().map(VoidingOutcome::stage).toList());
+	}
+
+	@Test
+	void aRangeThatNeverReachedTheSefazIsNotSentAndStopsTheOthers() throws Exception {
+		List<VoidingOutcome> outcomes = batch("12345678000190", request -> {
+			if (request == SECOND) {
+				throw new VoidingNotSentException("sem conexão", new IOException("sem conexão"));
+			}
+			return APPROVED;
+		}).run(List.of(FIRST, SECOND, THIRD), SETTINGS, ROOT, COLLECTED, Map.of(), events::add, () -> false);
+
+		assertEquals(List.of(Stage.APPROVED, Stage.NOT_SENT, Stage.NOT_SENT), outcomes.stream().map(VoidingOutcome::stage).toList());
+		assertEquals("sem conexão", outcomes.get(1).detail());
 	}
 
 	@Test

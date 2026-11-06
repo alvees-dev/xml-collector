@@ -16,6 +16,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
+import javax.net.ssl.SSLHandshakeException;
 import javax.xml.crypto.dsig.XMLSignature;
 import javax.xml.crypto.dsig.XMLSignatureFactory;
 import javax.xml.crypto.dsig.dom.DOMValidateContext;
@@ -29,6 +30,7 @@ import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
 
 import com.alveesdev.xmlcollector.application.port.VoidingException;
+import com.alveesdev.xmlcollector.application.port.VoidingNotSentException;
 import com.alveesdev.xmlcollector.application.port.VoidingGatewayFactory;
 import com.alveesdev.xmlcollector.application.settings.CertificateSettings;
 import com.alveesdev.xmlcollector.domain.model.DocumentModel;
@@ -129,6 +131,16 @@ class SefazVoidingGatewayTest {
 
 		assertTrue(error.getMessage().contains("timeout"));
 		assertTrue(error.getMessage().contains("antes de tentar de novo"));
+	}
+
+	@Test
+	void aSecureConnectionThatFailsSaysNothingWasSent() {
+		transport.failure = new SSLHandshakeException("PKIX path building failed");
+
+		VoidingException error = assertThrows(VoidingNotSentException.class, () -> gateway(FiscalEnvironment.HOMOLOGATION).voidRange(REQUEST));
+
+		assertTrue(error.getMessage().contains("PKIX path building failed"));
+		assertTrue(error.getMessage().contains("Nada foi enviado"));
 	}
 
 	@Test

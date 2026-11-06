@@ -15,6 +15,7 @@ import java.util.logging.Logger;
 import com.alveesdev.xmlcollector.application.port.DocumentArchive;
 import com.alveesdev.xmlcollector.application.port.Failures;
 import com.alveesdev.xmlcollector.application.port.VoidingException;
+import com.alveesdev.xmlcollector.application.port.VoidingNotSentException;
 import com.alveesdev.xmlcollector.application.port.VoidingGatewayFactory;
 import com.alveesdev.xmlcollector.application.settings.CertificateSettings;
 import com.alveesdev.xmlcollector.application.voiding.VoidingProgress.Stage;
@@ -109,6 +110,13 @@ public class VoidingBatch {
 
 				// The file of this range is not safe yet, so no other one goes out until that is solved.
 				stopped = !result.pdvFailures().isEmpty();
+
+			} catch (VoidingNotSentException e) {
+				// Nothing reached the Sefaz, and the others would not get through either.
+				stopped = true;
+				LOG.log(Level.WARNING, "Inutilização " + request.id() + " não enviada: " + e.getMessage());
+				record(outcomes, new VoidingOutcome(request, Stage.NOT_SENT, e.getMessage()), settings);
+				listener.accept(new VoidingProgress(index, Stage.NOT_SENT));
 
 			} catch (VoidingException | RuntimeException e) {
 				// The answer is unknown, so nothing else goes out until someone checks the Sefaz, and what was already answered is kept.
