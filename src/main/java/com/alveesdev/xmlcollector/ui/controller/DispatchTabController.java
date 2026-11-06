@@ -142,6 +142,11 @@ public class DispatchTabController {
 	}
 
 	@FXML
+	private void onRecipientHelp() {
+		Dialogs.info("Destinatário", DispatchText.RECIPIENTS_HELP);
+	}
+
+	@FXML
 	private void onGeneratePdf() {
 
 		Integer year = choiceYear.getSelectionModel().getSelectedItem();

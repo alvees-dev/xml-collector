@@ -11,6 +11,11 @@ import com.alveesdev.xmlcollector.application.port.DispatchException;
 
 public final class DispatchText {
 
+	// The mail library splits the addresses only at commas; a semicolon stops the sending.
+	public static final String RECIPIENTS_HELP = "Para enviar para mais de um e-mail, separe os endereços por vírgula."
+			+ "\n\nExemplo: contador@exemplo.com, fiscal@exemplo.com"
+			+ "\n\nNão use ponto e vírgula (;) nem só espaço entre os endereços: o envio não funciona.";
+
 	private static final long MEGABYTE = 1024L * 1024;
 
 	private DispatchText() {
