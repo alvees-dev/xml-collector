@@ -1,5 +1,6 @@
 ### Credentials ###
 src/main/resources/default-email.properties
+private/
 
 ### Private search models ###
 src/main/java/com/alveesdev/xmlcollector/infra/search/models/
