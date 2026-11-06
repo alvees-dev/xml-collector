@@ -19,7 +19,7 @@ class ArchiveLayoutTest {
 
 	private static final Path ROOT = Path.of("arquivos");
 	private static final LocalDate DAY = LocalDate.of(2026, 3, 5);
-	private static final Path MARCH = ROOT.resolve("2026").resolve("Março");
+	private static final Path MARCH = ROOT.resolve("2026").resolve("Março_2026");
 	private static final YearMonth MARCH_2026 = YearMonth.of(2026, 3);
 
 	@Test
@@ -49,9 +49,9 @@ class ArchiveLayoutTest {
 		DateRange period = new DateRange(LocalDate.of(2025, 12, 20), LocalDate.of(2026, 2, 1));
 
 		assertEquals(List.of(
-				ROOT.resolve("2025").resolve("Dezembro"),
-				ROOT.resolve("2026").resolve("Janeiro"),
-				ROOT.resolve("2026").resolve("Fevereiro")), ArchiveLayout.monthDirectories(ROOT, period));
+				ROOT.resolve("2025").resolve("Dezembro_2025"),
+				ROOT.resolve("2026").resolve("Janeiro_2026"),
+				ROOT.resolve("2026").resolve("Fevereiro_2026")), ArchiveLayout.monthDirectories(ROOT, period));
 	}
 
 	@Test

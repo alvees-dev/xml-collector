@@ -111,7 +111,7 @@ class CollectionServiceTest {
 	void looksForTheStoredFileInTheMonthOfTheNote() throws IOException {
 		DocumentEntry entry = DocumentEntry.of(invoice(1, 7, IN_PERIOD), false, "nota.xml");
 
-		assertEquals(Optional.of(Path.of("archive", "2026", "Janeiro", key(1, 7).value())), service.storedFileOf(ARCHIVE, entry));
+		assertEquals(Optional.of(Path.of("archive", "2026", "Janeiro_2026", key(1, 7).value())), service.storedFileOf(ARCHIVE, entry));
 	}
 
 	@Test
@@ -279,7 +279,7 @@ class CollectionServiceTest {
 		assertEquals("a.xml", stored.preferredName());
 		assertEquals(key + ".xml", stored.canonicalName());
 		assertEquals(key, stored.identity());
-		assertEquals(ARCHIVE.resolve("2026").resolve("Janeiro").resolve("NFCe"), stored.directory());
+		assertEquals(ARCHIVE.resolve("2026").resolve("Janeiro_2026").resolve("NFCe"), stored.directory());
 	}
 
 	@Test
@@ -336,7 +336,7 @@ class CollectionServiceTest {
 		service.collect(request(DocumentCategory.NFE_SALES, "nfe"), NO_PROGRESS, () -> false);
 
 		assertEquals(Set.of(Set.of(DocumentModel.NFE)), sources.requestedModels);
-		assertEquals(ARCHIVE.resolve("2026").resolve("Janeiro").resolve("NFe_Vendas"), archive.stored.get(0).directory());
+		assertEquals(ARCHIVE.resolve("2026").resolve("Janeiro_2026").resolve("NFe_Vendas"), archive.stored.get(0).directory());
 	}
 
 	@Test
@@ -618,7 +618,7 @@ class CollectionServiceTest {
 
 		collectBy(SeparationMode.BY_PDV, OrganizeMode.SINGLE_FOLDER);
 
-		Path january = ARCHIVE.resolve("2026").resolve("Janeiro");
+		Path january = ARCHIVE.resolve("2026").resolve("Janeiro_2026");
 
 		assertEquals(Map.of(
 				"a.xml", january.resolve("PDV1"),
@@ -634,7 +634,7 @@ class CollectionServiceTest {
 				List.of("", "pdv2"), DocumentCategory.NFCE, JANUARY, OrganizeMode.SINGLE_FOLDER, ARCHIVE,
 				List.of(), CollectionTarget.ALL, SeparationMode.BY_PDV), NO_PROGRESS, () -> false);
 
-		assertEquals(ARCHIVE.resolve("2026").resolve("Janeiro").resolve("PDV2"), archive.stored.get(0).directory());
+		assertEquals(ARCHIVE.resolve("2026").resolve("Janeiro_2026").resolve("PDV2"), archive.stored.get(0).directory());
 	}
 
 	@Test
@@ -644,7 +644,7 @@ class CollectionServiceTest {
 		collectBy(SeparationMode.BY_PDV, OrganizeMode.BY_DAY);
 
 		assertEquals(
-				ARCHIVE.resolve("2026").resolve("Janeiro").resolve("PDV1").resolve("Dia_15"),
+				ARCHIVE.resolve("2026").resolve("Janeiro_2026").resolve("PDV1").resolve("Dia_15"),
 				archive.stored.get(0).directory());
 	}
 
@@ -655,7 +655,7 @@ class CollectionServiceTest {
 
 		collectBy(SeparationMode.ALL_TOGETHER, OrganizeMode.BY_DAY);
 
-		assertEquals(ARCHIVE.resolve("2026").resolve("Janeiro").resolve("Inutilizadas"), archive.stored.get(0).directory());
+		assertEquals(ARCHIVE.resolve("2026").resolve("Janeiro_2026").resolve("Inutilizadas"), archive.stored.get(0).directory());
 	}
 
 	@Test
@@ -665,7 +665,7 @@ class CollectionServiceTest {
 
 		collectBy(SeparationMode.BY_PDV, OrganizeMode.BY_DAY);
 
-		assertEquals(ARCHIVE.resolve("2026").resolve("Janeiro").resolve("PDV1"), archive.stored.get(0).directory());
+		assertEquals(ARCHIVE.resolve("2026").resolve("Janeiro_2026").resolve("PDV1"), archive.stored.get(0).directory());
 	}
 
 	@Test
@@ -689,7 +689,7 @@ class CollectionServiceTest {
 
 		collectBy(SeparationMode.ALL_TOGETHER, OrganizeMode.SINGLE_FOLDER);
 
-		assertEquals(ARCHIVE.resolve("2026").resolve("Janeiro").resolve("NFCe"), archive.stored.get(0).directory());
+		assertEquals(ARCHIVE.resolve("2026").resolve("Janeiro_2026").resolve("NFCe"), archive.stored.get(0).directory());
 	}
 
 	private void collectBy(SeparationMode separation, OrganizeMode organize) {

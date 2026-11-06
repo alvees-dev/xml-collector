@@ -37,7 +37,7 @@ public final class ArchiveLayout {
 	}
 
 	public static Path monthDirectory(Path archiveRoot, LocalDate date) {
-		return archiveRoot.resolve(String.valueOf(date.getYear())).resolve(MONTH_NAMES[date.getMonthValue() - 1]);
+		return archiveRoot.resolve(String.valueOf(date.getYear())).resolve(monthYearName(date));
 	}
 
 	public static List<Path> monthDirectories(Path archiveRoot, DateRange period) {

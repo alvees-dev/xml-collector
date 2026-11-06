@@ -111,6 +111,7 @@ class CollectionAndDispatchFlowTest {
 				statusOfSeries(1, result));
 
 		Path month = ArchiveLayout.monthDirectory(archiveRoot, JANUARY_DAY);
+		assertEquals(month, archiveRoot.resolve("2026").resolve("Janeiro_2026"));
 		assertEquals(STORED_FILES, filesIn(month).size());
 		assertTrue(Files.isRegularFile(month.resolve("NFCe").resolve(SyntheticXml.keyOf(1, 1, JANUARY_DAY) + "-nfe.xml")));
 		assertEquals(1, filesIn(month.resolve("Inutilizadas")).size());
