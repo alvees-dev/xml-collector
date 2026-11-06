@@ -35,6 +35,7 @@ import com.alveesdev.xmlcollector.ui.model.ActivityLog;
 import com.alveesdev.xmlcollector.ui.model.FailureText;
 import com.alveesdev.xmlcollector.ui.model.MissingTableModel;
 import com.alveesdev.xmlcollector.ui.model.SourceMode;
+import com.alveesdev.xmlcollector.ui.model.VoidingRangeInput;
 import com.alveesdev.xmlcollector.ui.model.VoidingText;
 import com.alveesdev.xmlcollector.ui.view.Dialogs;
 import com.alveesdev.xmlcollector.ui.view.ProgressWindow;
@@ -114,6 +115,9 @@ public class MissingTabController {
 	@FXML
 	public void initialize() {
 		refreshPdvColumns();
+
+		txtVoidStart.textProperty().addListener((observable, oldStart, newStart) ->
+				txtVoidEnd.setText(VoidingRangeInput.endAfterStartChanged(oldStart, newStart, txtVoidEnd.getText())));
 	}
 
 	public void show(CollectionRequest request, CollectionResult result) {
