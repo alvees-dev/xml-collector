@@ -1,13 +1,17 @@
 package com.alveesdev.xmlcollector.ui.model;
 
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 import com.alveesdev.xmlcollector.application.dispatch.DispatchResult;
 import com.alveesdev.xmlcollector.application.dispatch.ReportOptions;
 import com.alveesdev.xmlcollector.application.port.DispatchException;
 
 public final class DispatchText {
+
+	private static final long MEGABYTE = 1024L * 1024;
 
 	private DispatchText() {
 	}
@@ -51,6 +55,22 @@ public final class DispatchText {
 
 		return success + "\n\nAtenção: o arquivo anterior não foi removido da pasta e continua ocupando espaço. "
 				+ "\nMotivo: " + result.driveCleanupFailure();
+	}
+
+	public static String compressed(String monthLabel, Path file, long bytes) {
+		return "O arquivo XML de " + monthLabel + " foi compactado em:\n" + file
+				+ "\n\nTamanho: " + sizeOf(bytes)
+				+ "\n\nNada foi enviado.";
+	}
+
+	private static String sizeOf(long bytes) {
+		Locale brazil = Locale.of("pt", "BR");
+
+		if (bytes < MEGABYTE) {
+			return String.format(brazil, "%d KB", Math.max(1, Math.round(bytes / 1024.0)));
+		}
+
+		return String.format(brazil, "%.1f MB", bytes / (double) MEGABYTE);
 	}
 
 	public static String failure(Throwable error) {

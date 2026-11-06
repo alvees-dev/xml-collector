@@ -47,6 +47,7 @@ public class DispatchTabController {
 
 	private static final String FUNCTION = "Envio";
 	private static final String PDF_FUNCTION = "Gerar PDF";
+	private static final String COMPRESS_FUNCTION = "Compactar";
 	private static final double STEP_LABEL_WIDTH = 140;
 	private static final int LISTED_YEARS = 6;
 
@@ -89,6 +90,9 @@ public class DispatchTabController {
 
 	@FXML
 	private Button btnGeneratePdf;
+
+	@FXML
+	private Button btnCompress;
 
 	public DispatchTabController(DispatchService service, ValuesReportService valuesReports, CollectionService collectionService, SettingsService settingsService,
 			SearchModelCatalog searchModels, AppPaths paths) {
@@ -159,6 +163,54 @@ public class DispatchTabController {
 		YearMonth month = YearMonth.of(year, monthIndex + 1);
 
 		withSourceMonth(btnGeneratePdf, PDF_FUNCTION, month, monthLabel, "gerar o relatório", found -> savePdf(found, monthLabel, options));
+	}
+
+	@FXML
+	private void onCompress() {
+
+		Integer year = choiceYear.getSelectionModel().getSelectedItem();
+		int monthIndex = choiceMonth.getSelectionModel().getSelectedIndex();
+
+		if (year == null || monthIndex < 0) {
+			Dialogs.warning("Selecione o ano e o mês do XML a ser compactado.");
+			return;
+		}
+
+		String monthLabel = choiceMonth.getSelectionModel().getSelectedItem() + " de " + year;
+		YearMonth month = YearMonth.of(year, monthIndex + 1);
+
+		withSourceMonth(btnCompress, COMPRESS_FUNCTION, month, monthLabel, "compactar", found -> compress(found, monthLabel));
+	}
+
+	private void compress(DispatchMonth month, String monthLabel) {
+
+		Optional<CompressedFile> existingZip;
+
+		try {
+			existingZip = service.existingZipOf(month);
+		} catch (DispatchException e) {
+			Dialogs.error(COMPRESS_FUNCTION, e.getMessage());
+			return;
+		}
+
+		if (existingZip.isPresent() && !Dialogs.confirmReplacingZip(existingZip.get().file())) {
+			return;
+		}
+
+		ReportOptions reports = selectedReports();
+		btnCompress.setDisable(true);
+		btnSend.setDisable(true);
+
+		TaskRunner.inBackground("xml-compress", () -> service.compress(month, reports), file -> {
+			btnCompress.setDisable(false);
+			btnSend.setDisable(false);
+			ActivityLog.record(COMPRESS_FUNCTION + ": XML de " + monthLabel + " do " + sourceName(month) + " compactado em " + file.file());
+			Dialogs.info(COMPRESS_FUNCTION, DispatchText.compressed(monthLabel, file.file(), file.bytes()));
+		}, error -> {
+			btnCompress.setDisable(false);
+			btnSend.setDisable(false);
+			Dialogs.error(COMPRESS_FUNCTION, DispatchText.failure(error));
+		});
 	}
 
 	private void savePdf(DispatchMonth month, String monthLabel, ReportOptions options) {
