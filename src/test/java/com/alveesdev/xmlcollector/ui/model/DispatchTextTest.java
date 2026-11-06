@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.nio.file.Path;
 import java.util.List;
 
 import org.junit.jupiter.api.Test;
@@ -15,6 +16,19 @@ import com.alveesdev.xmlcollector.application.port.DispatchException;
 class DispatchTextTest {
 
 	private static final long THREE_AND_A_HALF_MEGABYTES = 3_670_016;
+
+	@Test
+	void onlyCompressingSaysWhereTheZipIsItsSizeAndThatNothingWasSent() {
+		assertEquals("O arquivo XML de Janeiro de 2026 foi compactado em:\n" + Path.of("arquivos", "ArquivoXML_Janeiro_2026p.zip")
+				+ "\n\nTamanho: 3,5 MB\n\nNada foi enviado.",
+				DispatchText.compressed("Janeiro de 2026", Path.of("arquivos", "ArquivoXML_Janeiro_2026p.zip"), THREE_AND_A_HALF_MEGABYTES));
+	}
+
+	@Test
+	void aSmallZipShowsItsSizeInKilobytes() {
+		assertTrue(DispatchText.compressed("Janeiro de 2026", Path.of("a.zip"), 52_224).contains("Tamanho: 51 KB"));
+		assertTrue(DispatchText.compressed("Janeiro de 2026", Path.of("a.zip"), 100).contains("Tamanho: 1 KB"));
+	}
 
 	@Test
 	void anAttachedFileSaysWhatWasSentAndToWhomWithoutItsSize() {

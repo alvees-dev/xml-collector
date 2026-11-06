@@ -93,6 +93,11 @@ public class DispatchService {
 		return new DispatchResult(DispatchResult.Method.DRIVE_LINK, zipFiles, totalBytes, upload.link(), upload.cleanupFailure());
 	}
 
+	// Only the zip of the month, with the reports checked, in the same place the sending puts it; nothing is sent.
+	public CompressedFile compress(DispatchMonth month, ReportOptions reports) throws DispatchException {
+		return compressAll(List.of(month), reports, new TreeSet<>()).get(0);
+	}
+
 	// The folder keeps only its last file, so a shared folder without a CNPJ would erase the files of other companies.
 	private static String driveFolderOf(Set<String> cnpjs) throws DispatchException {
 

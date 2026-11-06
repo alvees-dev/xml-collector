@@ -334,6 +334,23 @@ class DispatchServiceTest {
 		assertEquals(List.of(), sent);
 	}
 
+	@Test
+	void onlyCompressingMakesTheZipOfTheMonthWithoutSendingOrUploading() throws Exception {
+		DirectoryCompressor.CompressedFile file = service(compressor).compress(JANUARY, ReportOptions.STANDARD);
+
+		assertEquals(List.of("ArquivoXML_12345678000190_Janeiro_2026p"), zipNames);
+		assertEquals(MONTH.resolveSibling("ArquivoXML_12345678000190_Janeiro_2026p.zip"), file.file());
+		assertEquals(List.of(), sent);
+		assertEquals(0, uploads);
+	}
+
+	@Test
+	void onlyCompressingAnEmptyMonthSaysThereIsNothingToCompress() {
+		DirectoryCompressor empty = (StubDirectoryCompressor) (directory, zipFile, rootName, extraFiles) -> Optional.empty();
+
+		assertThrows(DispatchException.class, () -> service(empty).compress(JANUARY, ReportOptions.STANDARD));
+	}
+
 	private static DispatchRequest reusingTheZip() {
 		return new DispatchRequest(List.of(JANUARY), ACCOUNT, "destino@exemplo.com", "Assunto", "", true, ReportOptions.STANDARD);
 	}

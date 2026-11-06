@@ -270,6 +270,18 @@ public final class Dialogs {
 		return confirmed;
 	}
 
+	public static boolean confirmReplacingZip(Path existingZip) {
+
+		ButtonType replace = new ButtonType("Substituir", ButtonBar.ButtonData.OK_DONE);
+		ButtonType cancel = new ButtonType("Cancelar", ButtonBar.ButtonData.CANCEL_CLOSE);
+
+		Alert alert = alert(Alert.AlertType.CONFIRMATION, "Já existe um arquivo compactado deste mês:\n" + existingZip
+				+ "\n\nDeseja compactar de novo e substituí-lo?", cancel, replace);
+		alert.setHeaderText("Arquivo compactado existente");
+
+		return alert.showAndWait().filter(replace::equals).isPresent();
+	}
+
 	public static boolean confirmVoidingWithoutSearch() {
 
 		ButtonType yes = new ButtonType("Sim", ButtonBar.ButtonData.YES);
