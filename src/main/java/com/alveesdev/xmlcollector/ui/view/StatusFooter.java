@@ -17,6 +17,7 @@ public final class StatusFooter extends HBox {
 	private final Label cancelled = new Label();
 	private final Label voided = new Label();
 	private final Label errors = new Label();
+	private final Label total = new Label();
 	private final Label period = new Label();
 
 	public StatusFooter() {
@@ -27,6 +28,7 @@ public final class StatusFooter extends HBox {
 
 		xml.getStyleClass().add("footer-number");
 		errors.getStyleClass().add("footer-errors");
+		total.getStyleClass().add("footer-number");
 
 		Region space = new Region();
 		HBox.setHgrow(space, Priority.ALWAYS);
@@ -34,8 +36,8 @@ public final class StatusFooter extends HBox {
 		HBox done = new HBox(5, action, xml);
 		done.setAlignment(Pos.CENTER_LEFT);
 
-		getChildren().addAll(done, cancelled, voided, errors, space, period);
-		for (Label count : new Label[] {xml, cancelled, voided, errors, period}) {
+		getChildren().addAll(done, cancelled, voided, errors, total, space, period);
+		for (Label count : new Label[] {xml, cancelled, voided, errors, total, period}) {
 			setShown(count, false);
 		}
 	}
@@ -46,9 +48,10 @@ public final class StatusFooter extends HBox {
 		cancelled.setText(counts.cancelledText());
 		voided.setText(counts.voidedText());
 		errors.setText(counts.errorsText());
+		total.setText(counts.totalText());
 		period.setText(counts.periodText());
 
-		for (Label label : new Label[] {xml, cancelled, voided, period}) {
+		for (Label label : new Label[] {xml, cancelled, voided, total, period}) {
 			setShown(label, true);
 		}
 
