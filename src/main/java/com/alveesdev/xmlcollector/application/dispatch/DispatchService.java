@@ -32,6 +32,7 @@ public class DispatchService {
 
 	private static final long HEADERS_AND_BODY_RESERVE_BYTES = 256L * 1024;
 	private static final int BASE64_LINE_LENGTH = 76;
+	private static final String ZIP_EXTENSION = ".zip";
 
 	private final ArchivedDocuments archivedDocuments;
 	private final DirectoryCompressor compressor;
@@ -56,10 +57,10 @@ public class DispatchService {
 
 		if (request.reuseExistingZip()) {
 			listener.accept(new DispatchProgress(Step.COMPRESSING, Stage.SKIPPED));
-			compressed = existingOf(request.monthDirectories(), cnpjs);
+			compressed = existingOf(request.months(), cnpjs);
 		} else {
 			listener.accept(new DispatchProgress(Step.COMPRESSING, Stage.RUNNING));
-			compressed = compressAll(request.monthDirectories(), request.reports(), cnpjs);
+			compressed = compressAll(request.months(), request.reports(), cnpjs);
 			listener.accept(new DispatchProgress(Step.COMPRESSING, Stage.DONE));
 		}
 
@@ -137,7 +138,7 @@ public class DispatchService {
 
 	private void validate(DispatchRequest request) throws DispatchException {
 
-		if (request.monthDirectories().isEmpty()) {
+		if (request.months().isEmpty()) {
 			throw new DispatchException("Não há pasta de mês coletada para enviar.");
 		}
 
@@ -156,29 +157,29 @@ public class DispatchService {
 		}
 	}
 
-	public Optional<CompressedFile> existingZipOf(Path monthDirectory) throws DispatchException {
+	public Optional<CompressedFile> existingZipOf(DispatchMonth month) throws DispatchException {
 		try {
-			return compressor.existing(monthDirectory);
+			return compressor.existing(month.zipFolder(), month.zipLabel());
 		} catch (IOException e) {
-			throw new DispatchException("Não foi possível verificar o arquivo compactado de " + ArchiveLayout.monthLabel(monthDirectory) + ": " + e.getMessage(), e);
+			throw new DispatchException("Não foi possível verificar o arquivo compactado de " + month.name() + ": " + e.getMessage(), e);
 		}
 	}
 
-	private List<CompressedFile> existingOf(List<Path> monthDirectories, Set<String> cnpjs) throws DispatchException {
+	private List<CompressedFile> existingOf(List<DispatchMonth> months, Set<String> cnpjs) throws DispatchException {
 
 		List<CompressedFile> existing = new ArrayList<>();
 
-		for (Path directory : monthDirectories) {
-			Optional<CompressedFile> file = existingZipOf(directory);
+		for (DispatchMonth month : months) {
+			Optional<CompressedFile> file = existingZipOf(month);
 
 			if (file.isEmpty()) {
-				throw new DispatchException("O arquivo compactado de " + ArchiveLayout.monthLabel(directory) + " não foi encontrado.");
+				throw new DispatchException("O arquivo compactado de " + month.name() + " não foi encontrado.");
 			}
 
 			try {
-				cnpjs.addAll(archivedDocuments.cnpjsIn(directory));
+				cnpjs.addAll(archivedDocuments.cnpjsIn(month.documents()));
 			} catch (IOException e) {
-				throw new DispatchException("Não foi possível ler a pasta " + ArchiveLayout.monthLabel(directory) + ": " + e.getMessage(), e);
+				throw new DispatchException("Não foi possível ler a pasta " + month.name() + ": " + e.getMessage(), e);
 			}
 
 			existing.add(file.get());
@@ -187,40 +188,39 @@ public class DispatchService {
 		return existing;
 	}
 
-	private List<CompressedFile> compressAll(List<Path> monthDirectories, ReportOptions reports, Set<String> cnpjs) throws DispatchException {
+	private List<CompressedFile> compressAll(List<DispatchMonth> months, ReportOptions reports, Set<String> cnpjs) throws DispatchException {
 
 		List<CompressedFile> compressed = new ArrayList<>();
 
-		for (Path directory : monthDirectories) {
+		for (DispatchMonth month : months) {
 			try {
-				Set<String> ofMonth = archivedDocuments.cnpjsIn(directory);
+				Set<String> ofMonth = archivedDocuments.cnpjsIn(month.documents());
 				cnpjs.addAll(ofMonth);
 
-				String zipName = ArchiveLayout.zipName(ofMonth, directory);
-				List<DirectoryCompressor.ExtraFile> extras = reports.anySelected() ? List.of(valuesReportOf(directory, reports)) : List.of();
-				Optional<CompressedFile> file = compressor.compress(directory, zipName, extras);
+				Path zipFile = month.zipFolder().resolve(ArchiveLayout.zipName(ofMonth, month.zipLabel()) + ZIP_EXTENSION);
+				List<DirectoryCompressor.ExtraFile> extras = reports.anySelected() ? List.of(valuesReportOf(month, reports)) : List.of();
+				Optional<CompressedFile> file = compressor.compress(month.documents(), zipFile, month.name(), extras);
 
 				if (file.isEmpty()) {
-					throw new DispatchException("A pasta " + ArchiveLayout.monthLabel(directory) + " não tem arquivos para enviar.");
+					throw new DispatchException("A pasta " + month.name() + " não tem arquivos para enviar.");
 				}
 
 				compressed.add(file.get());
 
 			} catch (IOException e) {
-				throw new DispatchException("Falha ao compactar a pasta " + ArchiveLayout.monthLabel(directory) + ": " + e.getMessage(), e);
+				throw new DispatchException("Falha ao compactar a pasta " + month.name() + ": " + e.getMessage(), e);
 			}
 		}
 
 		return compressed;
 	}
 
-	private DirectoryCompressor.ExtraFile valuesReportOf(Path directory, ReportOptions reports) throws IOException {
+	private DirectoryCompressor.ExtraFile valuesReportOf(DispatchMonth month, ReportOptions reports) throws IOException {
 
-		ValuesReport company = reports.anySales() ? ValuesReport.of(archivedDocuments.documentsOfTheCompanyIn(directory)) : ValuesReport.of(List.of());
-		ValuesReport purchases = reports.nfePurchases() ? ValuesReport.of(archivedDocuments.purchasesIn(directory)) : ValuesReport.of(List.of());
-		String month = directory.getFileName() + " de " + directory.getParent().getFileName();
+		ValuesReport company = reports.anySales() ? ValuesReport.of(archivedDocuments.documentsOfTheCompanyIn(month.documents())) : ValuesReport.of(List.of());
+		ValuesReport purchases = reports.nfePurchases() ? ValuesReport.of(archivedDocuments.purchasesIn(month.documents())) : ValuesReport.of(List.of());
 
-		return new DirectoryCompressor.ExtraFile(ValuesReportText.FILE_NAME, ValuesReportText.bytesOf(month, company, purchases, reports));
+		return new DirectoryCompressor.ExtraFile(ValuesReportText.FILE_NAME, ValuesReportText.bytesOf(month.label(), company, purchases, reports));
 	}
 
 	private static String bodyOf(DispatchRequest request) {

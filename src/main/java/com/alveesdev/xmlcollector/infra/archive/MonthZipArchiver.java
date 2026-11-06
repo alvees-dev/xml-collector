@@ -23,22 +23,19 @@ import com.alveesdev.xmlcollector.domain.service.ArchiveLayout;
 
 public class MonthZipArchiver implements DirectoryCompressor {
 
-	private static final String ZIP_SUFFIX = ".zip";
 	private static final String TEMP_SUFFIX = ".part";
 
 	@Override
-	public Optional<CompressedFile> existing(Path monthDirectory) throws IOException {
+	public Optional<CompressedFile> existing(Path zipFolder, String zipLabel) throws IOException {
 
-		Path yearDirectory = monthDirectory.getParent();
-
-		if (!Files.isDirectory(yearDirectory)) {
+		if (!Files.isDirectory(zipFolder)) {
 			return Optional.empty();
 		}
 
-		try (Stream<Path> files = Files.list(yearDirectory)) {
+		try (Stream<Path> files = Files.list(zipFolder)) {
 			Optional<Path> newest = files
 					.filter(Files::isRegularFile)
-					.filter(file -> ArchiveLayout.isZipOfMonth(file.getFileName().toString(), monthDirectory))
+					.filter(file -> ArchiveLayout.isZipOf(file.getFileName().toString(), zipLabel))
 					.max(Comparator.comparing(MonthZipArchiver::modifiedTime));
 
 			return newest.isPresent() ? Optional.of(new CompressedFile(newest.get(), Files.size(newest.get()))) : Optional.empty();
@@ -57,12 +54,13 @@ public class MonthZipArchiver implements DirectoryCompressor {
 	}
 
 	@Override
-	public Optional<CompressedFile> compress(Path monthDirectory, String zipName, List<ExtraFile> extraFiles) throws IOException {
+	public Optional<CompressedFile> compress(Path monthDirectory, Path zipFile, String rootName, List<ExtraFile> extraFiles) throws IOException {
 
-		String rootName = ArchiveLayout.monthLabel(monthDirectory);
-		Path zipFile = monthDirectory.resolveSibling(zipName + ZIP_SUFFIX);
+		Path zipFolder = zipFile.toAbsolutePath().getParent();
+		Files.createDirectories(zipFolder);
+
 		// Its own temporary file, because a cancelled compression can still be ending when the next one starts.
-		Path temp = Files.createTempFile(monthDirectory.toAbsolutePath().getParent(), zipName + ZIP_SUFFIX + ".", TEMP_SUFFIX);
+		Path temp = Files.createTempFile(zipFolder, zipFile.getFileName() + ".", TEMP_SUFFIX);
 		int[] entries = {0};
 
 		try (ZipOutputStream output = new ZipOutputStream(Files.newOutputStream(temp))) {

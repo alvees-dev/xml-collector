@@ -14,7 +14,9 @@ public interface DirectoryCompressor {
 	record ExtraFile(String name, byte[] content) {
 	}
 
-	Optional<CompressedFile> compress(Path directory, String zipName, List<ExtraFile> extraFiles) throws IOException;
+	// The files go inside a folder named rootName, and the zip is written apart from the directory it reads.
+	Optional<CompressedFile> compress(Path directory, Path zipFile, String rootName, List<ExtraFile> extraFiles) throws IOException;
 
-	Optional<CompressedFile> existing(Path directory) throws IOException;
+	// The newest zip in the folder whose name ends with the label, whatever CNPJs it names.
+	Optional<CompressedFile> existing(Path zipFolder, String zipLabel) throws IOException;
 }

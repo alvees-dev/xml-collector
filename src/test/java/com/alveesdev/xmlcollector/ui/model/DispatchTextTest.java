@@ -49,14 +49,14 @@ class DispatchTextTest {
 
 	@Test
 	void theStartSaysWhatGoesOutAndToWhom() {
-		assertEquals("Envio iniciado: XML de Janeiro de 2026 para contador@exemplo.com, com um novo arquivo compactado, relatório de valores: NFCe, NFe Compras",
-				DispatchText.started("Janeiro de 2026", "contador@exemplo.com", false, new ReportOptions(true, false, true)));
+		assertEquals("Envio iniciado: XML de Janeiro de 2026 do Diretório Coletado para contador@exemplo.com, com um novo arquivo compactado, relatório de valores: NFCe, NFe Compras",
+				DispatchText.started("Janeiro de 2026", "Diretório Coletado", "contador@exemplo.com", false, new ReportOptions(true, false, true)));
 	}
 
 	@Test
 	void theStartSaysWhenThereIsNoReportAndTheFileIsReused() {
-		assertEquals("Envio iniciado: XML de Janeiro de 2026 para contador@exemplo.com, usando o arquivo compactado existente, sem relatório de valores",
-				DispatchText.started("Janeiro de 2026", "contador@exemplo.com", true, new ReportOptions(false, false, false)));
+		assertEquals("Envio iniciado: XML de Janeiro de 2026 do Diretório Coletado para contador@exemplo.com, usando o arquivo compactado existente, sem relatório de valores",
+				DispatchText.started("Janeiro de 2026", "Diretório Coletado", "contador@exemplo.com", true, new ReportOptions(false, false, false)));
 	}
 
 	@Test

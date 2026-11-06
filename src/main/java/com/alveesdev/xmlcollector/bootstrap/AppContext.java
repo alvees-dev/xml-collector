@@ -100,7 +100,7 @@ public final class AppContext {
 		}
 
 		if (type == DispatchTabController.class) {
-			return new DispatchTabController(dispatchService, settingsService, paths);
+			return new DispatchTabController(dispatchService, collectionService, settingsService, searchModels, paths);
 		}
 
 		if (type == SettingsController.class) {

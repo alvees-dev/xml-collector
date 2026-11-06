@@ -7,6 +7,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.time.LocalDate;
+import java.time.YearMonth;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -36,41 +37,42 @@ class DispatchServiceTest {
 	};
 
 	private static final Path MONTH = Path.of("arquivos", "2026", "Janeiro");
+	private static final DispatchMonth JANUARY = DispatchMonth.collected(Path.of("arquivos"), YearMonth.of(2026, 1));
 	private static final EmailAccount ACCOUNT = new EmailAccount(
 			"smtp.gmail.com", 587, EmailSecurity.STARTTLS, "envio@exemplo.com", "senha-de-teste");
 
-	private static final DispatchRequest REQUEST = new DispatchRequest(List.of(MONTH), ACCOUNT, "destino@exemplo.com", "Assunto", "", false, ReportOptions.STANDARD);
+	private static final DispatchRequest REQUEST = new DispatchRequest(List.of(JANUARY), ACCOUNT, "destino@exemplo.com", "Assunto", "", false, ReportOptions.STANDARD);
 
 	private int uploads;
 	private final List<String> driveFolders = new ArrayList<>();
 	private final List<String> zipNames = new ArrayList<>();
 	private final List<EmailMessage> sent = new ArrayList<>();
 
-	private final DirectoryCompressor compressor = (StubDirectoryCompressor) (directory, zipName, extraFiles) -> {
-		zipNames.add(zipName);
-		return Optional.of(new DirectoryCompressor.CompressedFile(directory.resolveSibling(zipName + ".zip"), 10));
+	private final DirectoryCompressor compressor = (StubDirectoryCompressor) (directory, zipFile, rootName, extraFiles) -> {
+		zipNames.add(nameOf(zipFile));
+		return Optional.of(new DirectoryCompressor.CompressedFile(zipFile, 10));
 	};
 
 	@Test
 	void namesTheZipWithTheCnpjTheMonthAndTheYear() throws Exception {
 		dispatch(Set.of("12345678000190"));
 
-		assertEquals(List.of("ArquivoXML_12345678000190_Janeiro_2026"), zipNames);
-		assertEquals(List.of(MONTH.resolveSibling("ArquivoXML_12345678000190_Janeiro_2026.zip")), sent.get(0).attachments());
+		assertEquals(List.of("ArquivoXML_12345678000190_Janeiro_2026p"), zipNames);
+		assertEquals(List.of(MONTH.resolveSibling("ArquivoXML_12345678000190_Janeiro_2026p.zip")), sent.get(0).attachments());
 	}
 
 	@Test
 	void namesEveryCnpjWhenTheMonthHasMoreThanOne() throws Exception {
 		dispatch(Set.of("98765432000110", "12345678000190"));
 
-		assertEquals(List.of("ArquivoXML_12345678000190_98765432000110_Janeiro_2026"), zipNames);
+		assertEquals(List.of("ArquivoXML_12345678000190_98765432000110_Janeiro_2026p"), zipNames);
 	}
 
 	@Test
 	void leavesTheCnpjOutWhenNoneIsFound() throws Exception {
 		dispatch(Set.of());
 
-		assertEquals(List.of("ArquivoXML_Janeiro_2026"), zipNames);
+		assertEquals(List.of("ArquivoXML_Janeiro_2026p"), zipNames);
 	}
 
 	@Test
@@ -119,9 +121,9 @@ class DispatchServiceTest {
 			}
 		};
 
-		new DispatchService(documents, (StubDirectoryCompressor) (directory, zipName, extraFiles) -> {
+		new DispatchService(documents, (StubDirectoryCompressor) (directory, zipFile, rootName, extraFiles) -> {
 			received.addAll(extraFiles);
-			return Optional.of(new DirectoryCompressor.CompressedFile(directory.resolveSibling(zipName + ".zip"), 10));
+			return Optional.of(new DirectoryCompressor.CompressedFile(zipFile, 10));
 		}, (account, message) -> sent.add(message), (accountEmail, folderName, files) -> new CloudStorage.UploadResult("link", null))
 				.dispatch(REQUEST, NO_PROGRESS, () -> false);
 
@@ -152,11 +154,11 @@ class DispatchServiceTest {
 			}
 		};
 
-		new DispatchService(documents, (StubDirectoryCompressor) (directory, zipName, extraFiles) -> {
+		new DispatchService(documents, (StubDirectoryCompressor) (directory, zipFile, rootName, extraFiles) -> {
 			received.addAll(extraFiles);
-			return Optional.of(new DirectoryCompressor.CompressedFile(directory.resolveSibling(zipName + ".zip"), 10));
+			return Optional.of(new DirectoryCompressor.CompressedFile(zipFile, 10));
 		}, (account, message) -> sent.add(message), (accountEmail, folderName, files) -> new CloudStorage.UploadResult("link", null))
-				.dispatch(new DispatchRequest(List.of(MONTH), ACCOUNT, "destino@exemplo.com", "Assunto", "", false, new ReportOptions(false, false, false)), NO_PROGRESS, () -> false);
+				.dispatch(new DispatchRequest(List.of(JANUARY), ACCOUNT, "destino@exemplo.com", "Assunto", "", false, new ReportOptions(false, false, false)), NO_PROGRESS, () -> false);
 
 		assertEquals(List.of(), received);
 		assertEquals(0, reads[0]);
@@ -182,15 +184,15 @@ class DispatchServiceTest {
 			}
 		};
 
-		DispatchService service = new DispatchService(documents, (StubDirectoryCompressor) (directory, zipName, extraFiles) -> {
+		DispatchService service = new DispatchService(documents, (StubDirectoryCompressor) (directory, zipFile, rootName, extraFiles) -> {
 			extraFiles.forEach(file -> report.add(new String(file.content(), StandardCharsets.UTF_8)));
-			return Optional.of(new DirectoryCompressor.CompressedFile(directory.resolveSibling(zipName + ".zip"), 10));
+			return Optional.of(new DirectoryCompressor.CompressedFile(zipFile, 10));
 		}, (account, message) -> sent.add(message), (accountEmail, folderName, files) -> new CloudStorage.UploadResult("link", null));
 
 		service.dispatch(REQUEST, NO_PROGRESS, () -> false);
 		assertEquals(0, purchaseReads[0]);
 
-		service.dispatch(new DispatchRequest(List.of(MONTH), ACCOUNT, "destino@exemplo.com", "Assunto", "", false, new ReportOptions(false, false, true)), NO_PROGRESS, () -> false);
+		service.dispatch(new DispatchRequest(List.of(JANUARY), ACCOUNT, "destino@exemplo.com", "Assunto", "", false, new ReportOptions(false, false, true)), NO_PROGRESS, () -> false);
 		assertEquals(1, purchaseReads[0]);
 		assertTrue(report.get(1).contains("Valor total das compras: R$ 10,50"), report.get(1));
 	}
@@ -270,7 +272,7 @@ class DispatchServiceTest {
 	@Test
 	void doesNotSendOrCompressWithoutASubject() {
 		for (String subject : new String[] {"", "   ", null}) {
-			DispatchRequest request = new DispatchRequest(List.of(MONTH), ACCOUNT, "destino@exemplo.com", subject, "", false, ReportOptions.STANDARD);
+			DispatchRequest request = new DispatchRequest(List.of(JANUARY), ACCOUNT, "destino@exemplo.com", subject, "", false, ReportOptions.STANDARD);
 
 			DispatchException error = assertThrows(DispatchException.class, () -> service(compressor).dispatch(request, NO_PROGRESS, () -> false));
 
@@ -283,7 +285,7 @@ class DispatchServiceTest {
 
 	@Test
 	void sendsTheSubjectTheUserWrote() throws Exception {
-		service(compressor).dispatch(new DispatchRequest(List.of(MONTH), ACCOUNT, "destino@exemplo.com", "  XML de Janeiro ", "", false, ReportOptions.STANDARD), NO_PROGRESS, () -> false);
+		service(compressor).dispatch(new DispatchRequest(List.of(JANUARY), ACCOUNT, "destino@exemplo.com", "  XML de Janeiro ", "", false, ReportOptions.STANDARD), NO_PROGRESS, () -> false);
 
 		assertEquals("XML de Janeiro", sent.get(0).subject());
 	}
@@ -297,14 +299,14 @@ class DispatchServiceTest {
 
 	@Test
 	void keepsTheBodyTheUserWrote() throws Exception {
-		service(compressor).dispatch(new DispatchRequest(List.of(MONTH), ACCOUNT, "destino@exemplo.com", "Assunto", "Meu texto", false, ReportOptions.STANDARD), NO_PROGRESS, () -> false);
+		service(compressor).dispatch(new DispatchRequest(List.of(JANUARY), ACCOUNT, "destino@exemplo.com", "Assunto", "Meu texto", false, ReportOptions.STANDARD), NO_PROGRESS, () -> false);
 
 		assertEquals("Meu texto", sent.get(0).body());
 	}
 
 	@Test
 	void sendsTheExistingZipWithoutCompressingAgain() throws Exception {
-		Path existingZip = MONTH.resolveSibling("ArquivoXML_12345678000190_Janeiro_2026.zip");
+		Path existingZip = MONTH.resolveSibling("ArquivoXML_12345678000190_Janeiro_2026p.zip");
 		List<DispatchProgress> events = new ArrayList<>();
 
 		service(compressorWith(existingZip, 10)).dispatch(reusingTheZip(), events::add, () -> false);
@@ -316,7 +318,7 @@ class DispatchServiceTest {
 
 	@Test
 	void sendsALargeExistingZipThroughTheDriveInTheFolderOfTheCnpj() throws Exception {
-		Path existingZip = MONTH.resolveSibling("ArquivoXML_12345678000190_Janeiro_2026.zip");
+		Path existingZip = MONTH.resolveSibling("ArquivoXML_12345678000190_Janeiro_2026p.zip");
 
 		DispatchResult result = service(compressorWith(existingZip, DispatchService.MAX_MESSAGE_BYTES)).dispatch(reusingTheZip(), NO_PROGRESS, () -> false);
 
@@ -333,28 +335,33 @@ class DispatchServiceTest {
 	}
 
 	private static DispatchRequest reusingTheZip() {
-		return new DispatchRequest(List.of(MONTH), ACCOUNT, "destino@exemplo.com", "Assunto", "", true, ReportOptions.STANDARD);
+		return new DispatchRequest(List.of(JANUARY), ACCOUNT, "destino@exemplo.com", "Assunto", "", true, ReportOptions.STANDARD);
 	}
 
 	private DirectoryCompressor compressorWith(Path existingZip, long bytes) {
 		return new StubDirectoryCompressor() {
 
 			@Override
-			public Optional<CompressedFile> compress(Path directory, String zipName, List<ExtraFile> extraFiles) {
-				zipNames.add(zipName);
+			public Optional<CompressedFile> compress(Path directory, Path zipFile, String rootName, List<ExtraFile> extraFiles) {
+				zipNames.add(nameOf(zipFile));
 				return Optional.empty();
 			}
 
 			@Override
-			public Optional<CompressedFile> existing(Path directory) {
+			public Optional<CompressedFile> existing(Path zipFolder, String zipLabel) {
 				return Optional.of(new CompressedFile(existingZip, bytes));
 			}
 		};
 	}
 
 	private DirectoryCompressor largeCompressor() {
-		return (StubDirectoryCompressor) (directory, zipName, extraFiles) -> Optional.of(new DirectoryCompressor.CompressedFile(
-				directory.resolveSibling(zipName + ".zip"), DispatchService.MAX_MESSAGE_BYTES));
+		return (StubDirectoryCompressor) (directory, zipFile, rootName, extraFiles) -> Optional.of(new DirectoryCompressor.CompressedFile(
+				zipFile, DispatchService.MAX_MESSAGE_BYTES));
+	}
+
+	private static String nameOf(Path zipFile) {
+		String name = zipFile.getFileName().toString();
+		return name.substring(0, name.length() - ".zip".length());
 	}
 
 	private DispatchService service(DirectoryCompressor chosen) {

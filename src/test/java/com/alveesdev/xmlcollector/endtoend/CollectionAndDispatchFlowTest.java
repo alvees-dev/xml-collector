@@ -16,6 +16,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.LocalDate;
+import java.time.YearMonth;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -34,6 +35,7 @@ import com.alveesdev.xmlcollector.application.collection.CollectionResult;
 import com.alveesdev.xmlcollector.application.collection.CollectionService;
 import com.alveesdev.xmlcollector.application.collection.CollectionSummary;
 import com.alveesdev.xmlcollector.application.collection.CollectionTarget;
+import com.alveesdev.xmlcollector.application.dispatch.DispatchMonth;
 import com.alveesdev.xmlcollector.application.dispatch.DispatchRequest;
 import com.alveesdev.xmlcollector.application.dispatch.DispatchResult;
 import com.alveesdev.xmlcollector.application.dispatch.DispatchService;
@@ -164,7 +166,7 @@ class CollectionAndDispatchFlowTest {
 		assertEquals(1, email.attachments().size());
 
 		Path zip = email.attachments().get(0);
-		assertEquals("ArquivoXML_" + CNPJ + "_Janeiro_2026.zip", zip.getFileName().toString());
+		assertEquals("ArquivoXML_" + CNPJ + "_Janeiro_2026p.zip", zip.getFileName().toString());
 
 		try (ZipFile file = new ZipFile(zip.toFile())) {
 			assertEquals(STORED_FILES, file.stream().filter(entry -> entry.getName().endsWith(".xml")).count());
@@ -256,7 +258,7 @@ class CollectionAndDispatchFlowTest {
 	private DispatchRequest dispatchRequestWith(ReportOptions reports) {
 		DispatchRequest request = dispatchRequest();
 
-		return new DispatchRequest(request.monthDirectories(), request.account(), request.recipient(), request.subject(), request.body(), false, reports);
+		return new DispatchRequest(request.months(), request.account(), request.recipient(), request.subject(), request.body(), false, reports);
 	}
 
 	private CollectionResult collect(DateRange period) {
@@ -265,6 +267,34 @@ class CollectionAndDispatchFlowTest {
 
 		return collection.collect(request, progress -> {
 		}, () -> false);
+	}
+
+	@Test
+	void sendsTheMonthOfTheServerWithoutWritingInIt() throws Exception {
+		Path server = root.resolve("servidor");
+		Path serverMonth = server.resolve("2026").resolve("01");
+		writeInvoice(serverMonth, 1, 1, JANUARY_DAY);
+		writeInvoice(serverMonth, 1, 2, JANUARY_DAY);
+		writeInvoice(server.resolve("2026").resolve("02"), 1, 3, LocalDate.of(2026, 2, 10));
+
+		Path found = collection.monthFolderOf(server.toString(), List.of("{AAAA}/{MM}"), YearMonth.of(2026, 1)).orElseThrow();
+		assertEquals(serverMonth, found);
+
+		EmailAccount account = new EmailAccount("smtp.exemplo.com", 587, EmailSecurity.STARTTLS, "envio@exemplo.com", "senha-de-teste");
+		DispatchRequest request = new DispatchRequest(List.of(DispatchMonth.server(found, archiveRoot, YearMonth.of(2026, 1))), account,
+				"contador@exemplo.com", "XML de janeiro", "Segue o arquivo.", false, ReportOptions.STANDARD);
+
+		dispatchService().dispatch(request, progress -> {
+		}, () -> false);
+
+		Path zip = emails.get(0).attachments().get(0);
+		assertEquals(archiveRoot.resolve("2026").resolve("ArquivoXML_" + CNPJ + "_Janeiro_2026s.zip"), zip);
+		assertEquals(2, filesIn(serverMonth).size());
+		assertEquals(3, filesIn(server).size());
+
+		try (ZipFile file = new ZipFile(zip.toFile())) {
+			assertTrue(textOf(file, "Janeiro_2026/" + ValuesReportText.FILE_NAME).contains("Total de vendas: 2 notas"));
+		}
 	}
 
 	private DispatchService dispatchService() {
@@ -277,7 +307,7 @@ class CollectionAndDispatchFlowTest {
 	private DispatchRequest dispatchRequest() {
 		EmailAccount account = new EmailAccount("smtp.exemplo.com", 587, EmailSecurity.STARTTLS, "envio@exemplo.com", "senha-de-teste");
 
-		return new DispatchRequest(List.of(ArchiveLayout.monthDirectory(archiveRoot, JANUARY_DAY)), account, "contador@exemplo.com", "XML de janeiro",
+		return new DispatchRequest(List.of(DispatchMonth.collected(archiveRoot, YearMonth.from(JANUARY_DAY))), account, "contador@exemplo.com", "XML de janeiro",
 				"Segue o arquivo.", false, ReportOptions.STANDARD);
 	}
 
@@ -318,7 +348,7 @@ class CollectionAndDispatchFlowTest {
 		}, () -> false);
 
 		Path zip = emails.get(0).attachments().get(0);
-		assertEquals("ArquivoXML_" + cnpj + "_Janeiro_2026.zip", zip.getFileName().toString());
+		assertEquals("ArquivoXML_" + cnpj + "_Janeiro_2026p.zip", zip.getFileName().toString());
 
 		try (ZipFile file = new ZipFile(zip.toFile())) {
 			assertTrue(textOf(file, "Janeiro_2026/" + ValuesReportText.FILE_NAME).contains("Valor total das vendas: R$ 21,00"));

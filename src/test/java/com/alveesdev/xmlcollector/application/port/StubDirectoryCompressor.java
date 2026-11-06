@@ -7,7 +7,7 @@ import java.util.Optional;
 public interface StubDirectoryCompressor extends DirectoryCompressor {
 
 	@Override
-	default Optional<CompressedFile> existing(Path directory) throws IOException {
+	default Optional<CompressedFile> existing(Path zipFolder, String zipLabel) throws IOException {
 		return Optional.empty();
 	}
 }

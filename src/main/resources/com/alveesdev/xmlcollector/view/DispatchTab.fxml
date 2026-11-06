@@ -5,13 +5,18 @@
 <?import javafx.scene.control.CheckBox?>
 <?import javafx.scene.control.ChoiceBox?>
 <?import javafx.scene.control.Label?>
+<?import javafx.scene.control.RadioButton?>
 <?import javafx.scene.control.TextArea?>
 <?import javafx.scene.control.TextField?>
+<?import javafx.scene.control.ToggleGroup?>
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.Region?>
 <?import javafx.scene.layout.VBox?>
 
 <HBox xmlns="http://javafx.com/javafx/26" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.alveesdev.xmlcollector.ui.controller.DispatchTabController">
+   <fx:define>
+      <ToggleGroup fx:id="sourceGroup" />
+   </fx:define>
    <children>
       <VBox minWidth="450.0" prefWidth="450.0" spacing="5.0">
          <padding>
@@ -57,6 +62,17 @@
             </CheckBox>
             <CheckBox fx:id="chkValuesNfeSales" mnemonicParsing="false" text="Valores NFe Vendas" />
             <CheckBox fx:id="chkValuesNfePurchases" mnemonicParsing="false" text="Valores NFe Compras" />
+            <Label text="Diretório de Envio">
+               <VBox.margin>
+                  <Insets top="30.0" />
+               </VBox.margin>
+            </Label>
+            <RadioButton fx:id="radioCollectedSource" mnemonicParsing="false" selected="true" text="Diretório Coletado" toggleGroup="$sourceGroup">
+               <VBox.margin>
+                  <Insets top="5.0" />
+               </VBox.margin>
+            </RadioButton>
+            <RadioButton fx:id="radioServerSource" mnemonicParsing="false" text="Diretório Servidor" toggleGroup="$sourceGroup" />
             <Region VBox.vgrow="ALWAYS" />
             <HBox alignment="CENTER_RIGHT">
                <children>

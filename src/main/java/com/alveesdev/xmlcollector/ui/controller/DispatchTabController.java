@@ -9,6 +9,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+import com.alveesdev.xmlcollector.application.collection.CollectionService;
+import com.alveesdev.xmlcollector.application.dispatch.DispatchMonth;
 import com.alveesdev.xmlcollector.application.dispatch.DispatchProgress;
 import com.alveesdev.xmlcollector.application.dispatch.DispatchRequest;
 import com.alveesdev.xmlcollector.application.dispatch.DispatchService;
@@ -18,11 +20,13 @@ import com.alveesdev.xmlcollector.application.port.DispatchException;
 import com.alveesdev.xmlcollector.application.settings.AppPaths;
 import com.alveesdev.xmlcollector.application.settings.AppSettings;
 import com.alveesdev.xmlcollector.application.settings.EmailDraft;
+import com.alveesdev.xmlcollector.application.settings.service.SearchModelCatalog;
 import com.alveesdev.xmlcollector.application.settings.service.SettingsService;
 import com.alveesdev.xmlcollector.domain.service.ArchiveLayout;
 import com.alveesdev.xmlcollector.ui.model.ActivityLog;
 import com.alveesdev.xmlcollector.ui.model.DispatchProgressText;
 import com.alveesdev.xmlcollector.ui.model.DispatchText;
+import com.alveesdev.xmlcollector.ui.model.FailureText;
 import com.alveesdev.xmlcollector.ui.view.Dialogs;
 import com.alveesdev.xmlcollector.ui.view.ProgressWindow;
 
@@ -30,6 +34,7 @@ import javafx.fxml.FXML;
 import javafx.scene.control.Button;
 import javafx.scene.control.CheckBox;
 import javafx.scene.control.ChoiceBox;
+import javafx.scene.control.RadioButton;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
 
@@ -40,8 +45,13 @@ public class DispatchTabController {
 	private static final int LISTED_YEARS = 6;
 
 	private final DispatchService service;
+	private final CollectionService collectionService;
 	private final SettingsService settingsService;
+	private final SearchModelCatalog searchModels;
 	private final AppPaths paths;
+
+	@FXML
+	private RadioButton radioServerSource;
 
 	@FXML
 	private TextField txtRecipient;
@@ -70,9 +80,12 @@ public class DispatchTabController {
 	@FXML
 	private Button btnSend;
 
-	public DispatchTabController(DispatchService service, SettingsService settingsService, AppPaths paths) {
+	public DispatchTabController(DispatchService service, CollectionService collectionService, SettingsService settingsService,
+			SearchModelCatalog searchModels, AppPaths paths) {
 		this.service = service;
+		this.collectionService = collectionService;
 		this.settingsService = settingsService;
+		this.searchModels = searchModels;
 		this.paths = paths;
 	}
 
@@ -102,12 +115,7 @@ public class DispatchTabController {
 		}
 
 		String monthLabel = choiceMonth.getSelectionModel().getSelectedItem() + " de " + year;
-		Path monthDirectory = ArchiveLayout.monthDirectory(paths.xmlArchiveDir(), YearMonth.of(year, monthIndex + 1).atDay(1));
-
-		if (!Files.isDirectory(monthDirectory)) {
-			Dialogs.warning("Não há pasta coletada para " + monthLabel + ". Faça a coleta desse mês antes de enviar.");
-			return;
-		}
+		YearMonth month = YearMonth.of(year, monthIndex + 1);
 
 		if (txtSubject.getText().isBlank()) {
 			Dialogs.warning(DispatchService.SUBJECT_REQUIRED);
@@ -115,30 +123,82 @@ public class DispatchTabController {
 			return;
 		}
 
+		if (radioServerSource.isSelected()) {
+			sendFromServer(month, monthLabel);
+			return;
+		}
+
+		DispatchMonth collected = DispatchMonth.collected(paths.xmlArchiveDir(), month);
+
+		if (!Files.isDirectory(collected.documents())) {
+			Dialogs.warning("Não há pasta coletada para " + monthLabel + ". Faça a coleta desse mês antes de enviar.");
+			return;
+		}
+
+		askAboutExistingZipAndSend(collected, monthLabel);
+	}
+
+	// The server is a folder of another system on the network, so finding its month does not hold the screen.
+	private void sendFromServer(YearMonth month, String monthLabel) {
+
+		AppSettings settings = settingsService.current();
+		List<String> serverFolders = searchModels.pdvModel(settings.pdvModelId()).serverFolders();
+
+		if (settings.serverDirectory().isBlank()) {
+			Dialogs.warning("Informe o diretório do Servidor em Configurações > Diretórios.");
+			return;
+		}
+
+		if (serverFolders.isEmpty()) {
+			Dialogs.warning("O Modelo de Busca PDV selecionado não informa as pastas do servidor.");
+			return;
+		}
+
+		btnSend.setDisable(true);
+
+		TaskRunner.inBackground("xml-server-month", () -> collectionService.monthFolderOf(settings.serverDirectory(), serverFolders, month),
+				found -> {
+					btnSend.setDisable(false);
+
+					if (found.isEmpty()) {
+						Dialogs.warning("Não há pasta do servidor para " + monthLabel + " em:\n" + settings.serverDirectory());
+						return;
+					}
+
+					askAboutExistingZipAndSend(DispatchMonth.server(found.get(), paths.xmlArchiveDir(), month), monthLabel);
+				},
+				error -> {
+					btnSend.setDisable(false);
+					Dialogs.error(FUNCTION, "Não foi possível abrir o diretório do Servidor: " + FailureText.of(error));
+				});
+	}
+
+	private void askAboutExistingZipAndSend(DispatchMonth month, String monthLabel) {
+
 		Optional<CompressedFile> existingZip;
 
 		try {
-			existingZip = service.existingZipOf(monthDirectory);
+			existingZip = service.existingZipOf(month);
 		} catch (DispatchException e) {
 			Dialogs.error(FUNCTION, e.getMessage());
 			return;
 		}
 
 		if (existingZip.isEmpty()) {
-			send(monthDirectory, monthLabel, false, DispatchProgressText.stepLabels());
+			send(month, monthLabel, false, DispatchProgressText.stepLabels());
 			return;
 		}
 
 		switch (Dialogs.askAboutExistingZip()) {
-			case REPLACE -> send(monthDirectory, monthLabel, false, DispatchProgressText.stepLabels());
-			case SEND_EXISTING -> send(monthDirectory, monthLabel, true,
+			case REPLACE -> send(month, monthLabel, false, DispatchProgressText.stepLabels());
+			case SEND_EXISTING -> send(month, monthLabel, true,
 					DispatchProgressText.stepLabelsOfExistingFile(!DispatchService.fitsInMessage(List.of(existingZip.get()))));
 			case CANCEL -> {
 			}
 		}
 	}
 
-	private void send(Path monthDirectory, String monthLabel, boolean reuseExistingZip, Map<Integer, String> steps) {
+	private void send(DispatchMonth month, String monthLabel, boolean reuseExistingZip, Map<Integer, String> steps) {
 
 		updateDraft();
 		saveSettings();
@@ -147,10 +207,10 @@ public class DispatchTabController {
 		EmailDraft draft = settings.emailDraft();
 
 		DispatchRequest request = new DispatchRequest(
-				List.of(monthDirectory), settings.emailAccount(), draft.recipient().trim(), draft.subject(), draft.body(), reuseExistingZip,
+				List.of(month), settings.emailAccount(), draft.recipient().trim(), draft.subject(), draft.body(), reuseExistingZip,
 				new ReportOptions(chkValuesNfce.isSelected(), chkValuesNfeSales.isSelected(), chkValuesNfePurchases.isSelected()));
 
-		ActivityLog.record(DispatchText.started(monthLabel, request.recipient(), reuseExistingZip, request.reports()));
+		ActivityLog.record(DispatchText.started(monthLabel, sourceName(month), request.recipient(), reuseExistingZip, request.reports()));
 
 		TaskRunner.withProgress(btnSend, "xml-dispatch",
 				() -> new ProgressWindow(btnSend.getScene().getWindow(), "Enviando arquivo XML de " + monthLabel, steps, STEP_LABEL_WIDTH)
@@ -162,6 +222,10 @@ public class DispatchTabController {
 				new TaskRunner.Handlers<>(result -> Dialogs.dispatchCompleted(DispatchText.success(monthLabel, request.recipient(), result)),
 						error -> Dialogs.error(FUNCTION, DispatchText.failure(error)),
 						() -> Dialogs.warning("Envio cancelado. O e-mail não foi enviado.")));
+	}
+
+	private static String sourceName(DispatchMonth month) {
+		return month.source() == DispatchMonth.Source.SERVER ? "Diretório Servidor" : "Diretório Coletado";
 	}
 
 	private static void recordStep(DispatchProgress progress) {
