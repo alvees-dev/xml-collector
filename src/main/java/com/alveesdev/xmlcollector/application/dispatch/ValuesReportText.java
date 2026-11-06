@@ -9,6 +9,7 @@ import java.util.Locale;
 import java.util.stream.Collectors;
 
 import com.alveesdev.xmlcollector.application.port.DirectoryCompressor;
+import com.alveesdev.xmlcollector.application.port.ReportPdfWriter;
 import com.alveesdev.xmlcollector.domain.model.DocumentModel;
 import com.alveesdev.xmlcollector.domain.model.NumberRange;
 import com.alveesdev.xmlcollector.domain.service.ValuesReport;
@@ -48,6 +49,43 @@ public final class ValuesReportText {
 
 	public static String nfeFileName(DispatchMonth month) {
 		return "Relatório NFe " + month.monthAndYear() + FILE_EXTENSION;
+	}
+
+	public static String pdfFileName(DispatchMonth month) {
+		return "Relatório " + month.monthAndYear() + ".pdf";
+	}
+
+	// The same text as the files of the zip, the parts that are checked one after the other in a single document.
+	public static List<ReportPdfWriter.Line> pdfLinesOf(DispatchMonth month, ValuesReport company, ValuesReport purchases, ReportOptions options) {
+
+		List<String> texts = new ArrayList<>();
+
+		if (options.nfce()) {
+			texts.add(nfceTextOf(month.label(), company, purchases));
+		}
+
+		if (options.nfeSales() || options.nfePurchases()) {
+			texts.add(nfeTextOf(month.label(), company, purchases, options));
+		}
+
+		List<ReportPdfWriter.Line> lines = new ArrayList<>();
+
+		for (String text : texts) {
+			if (!lines.isEmpty()) {
+				lines.add(new ReportPdfWriter.Line("", false));
+			}
+
+			for (String line : text.split(LINE_BREAK)) {
+				lines.add(new ReportPdfWriter.Line(line, isHeading(line)));
+			}
+		}
+
+		return lines;
+	}
+
+	private static boolean isHeading(String line) {
+		return line.startsWith("RELATÓRIO ") || line.startsWith("NF-e - ") || line.startsWith("TOTAL DO MÊS")
+				|| line.startsWith("CNPJ ") || line.startsWith("ATENÇÃO:");
 	}
 
 	// The mark makes every Windows program open the accents correctly.
