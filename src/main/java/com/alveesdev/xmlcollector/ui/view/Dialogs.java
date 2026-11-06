@@ -35,6 +35,7 @@ import javafx.scene.shape.Circle;
 import javafx.scene.shape.SVGPath;
 import javafx.scene.text.Text;
 import javafx.stage.Stage;
+import javafx.stage.StageStyle;
 import javafx.stage.Window;
 
 public final class Dialogs {
@@ -134,7 +135,14 @@ public final class Dialogs {
 		Alert alert = new Alert(type, message, buttons);
 		alert.getDialogPane().setContent(content);
 		ownByTheProgram(alert);
+		withThinBar(alert);
 		return alert;
+	}
+
+	// Only the messages: a thin bar with just the close button, without the icon and the name of the type of message.
+	private static void withThinBar(Dialog<?> dialog) {
+		dialog.initStyle(StageStyle.UTILITY);
+		dialog.setTitle("");
 	}
 
 	// Without an owner Windows takes a message for a program of its own, with a button of its own on the taskbar.
@@ -152,7 +160,6 @@ public final class Dialogs {
 
 	public static void dispatchCompleted(String message) {
 		Alert alert = summary(Alert.AlertType.INFORMATION, DISPATCH_COMPLETED, message);
-		alert.setTitle(DISPATCH_COMPLETED);
 		alert.setGraphic(greenCheck());
 		alert.showAndWait();
 	}
@@ -185,7 +192,7 @@ public final class Dialogs {
 
 		Alert alert = new Alert(Alert.AlertType.NONE, message, close);
 		alert.initOwner(owner);
-		alert.setTitle("Mensagem completa");
+		withThinBar(alert);
 		alert.getDialogPane().setContent(messageArea(message));
 		alert.getDialogPane().setPrefWidth(WHOLE_MESSAGE_WIDTH);
 		alert.showAndWait();
@@ -284,7 +291,7 @@ public final class Dialogs {
 		if (environment == FiscalEnvironment.PRODUCTION) {
 			TextInputDialog dialog = new TextInputDialog();
 			ownByTheProgram(dialog);
-			dialog.setTitle("Inutilizar notas");
+			withThinBar(dialog);
 			dialog.setHeaderText("Confirme a inutilização em PRODUÇÃO");
 			TextArea area = messageArea(text);
 			VBox.setVgrow(area, Priority.ALWAYS);
