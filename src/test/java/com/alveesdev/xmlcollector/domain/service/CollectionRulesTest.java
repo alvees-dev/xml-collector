@@ -92,6 +92,18 @@ class CollectionRulesTest {
 	}
 
 	@Test
+	void onlyTheVoidingsOfThePeriodCountTheirNumbers() {
+		rules.decide(0, "a.xml", new XmlDocument.Voiding(
+				"ID1", "12345678000190", "65", 1, new NumberRange(2, 4), IN_PERIOD.atTime(12, 0).atOffset(java.time.ZoneOffset.ofHours(-3))));
+		rules.decide(0, "b.xml", new XmlDocument.Voiding(
+				"ID2", "12345678000190", "65", 1, new NumberRange(9, 9), AFTER_PERIOD.atTime(12, 0).atOffset(java.time.ZoneOffset.ofHours(-3))));
+		rules.decide(0, "c.xml", new XmlDocument.Voiding(
+				"ID1", "12345678000190", "65", 1, new NumberRange(2, 4), IN_PERIOD.atTime(12, 0).atOffset(java.time.ZoneOffset.ofHours(-3))));
+
+		assertEquals(3, rules.voidedInPeriod());
+	}
+
+	@Test
 	void aVoidingOutsideTheCollectedNumbersDoesNotCreateAGap() {
 		rules.decide(0, "a.xml", invoice(1, IN_PERIOD));
 		rules.decide(0, "b.xml", invoice(2, IN_PERIOD));
