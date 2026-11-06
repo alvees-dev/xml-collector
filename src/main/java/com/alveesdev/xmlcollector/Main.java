@@ -58,8 +58,8 @@ public class Main extends Application {
         startLog(paths);
 
         AppContext context = new AppContext(paths);
-        Themes.use(context.themes().load());
-        Themes.currentProperty().addListener((observable, oldTheme, newTheme) -> saveTheme(context, newTheme));
+        Themes.preview(context.themes().load());
+        Themes.setOnSaved(theme -> saveTheme(context, theme));
 
         try {
             context.issuedNumbers().initialize();

@@ -37,9 +37,11 @@ public final class PersonalizationWindow {
 	private PersonalizationWindow() {
 	}
 
-	// The theme changes as soon as it is chosen, so the window shows how it looks before it is closed.
+	// The theme shows as soon as it is chosen, but only Salvar keeps it; otherwise the saved one comes back.
 	public static void showAndWait(Window owner) {
 		Stage stage = new Stage();
+		Theme saved = Themes.current();
+		boolean[] keep = {false};
 
 		ToggleGroup group = new ToggleGroup();
 		VBox options = new VBox(12);
@@ -59,20 +61,40 @@ public final class PersonalizationWindow {
 		}
 
 		group.selectedToggleProperty().addListener((observable, oldOption, newOption) -> {
-			if (newOption != null && newOption.getUserData() instanceof Theme theme && theme != Themes.current()) {
-				ActivityLog.record("Tema alterado para " + theme.label());
-				Themes.use(theme);
+			if (newOption != null && newOption.getUserData() instanceof Theme theme) {
+				Themes.preview(theme);
 			}
 		});
 
 		Label title = new Label("Tema");
 		title.getStyleClass().add("progress-title");
 
-		Button close = new Button("Fechar");
-		close.setDefaultButton(true);
-		close.setOnAction(event -> stage.close());
+		Button save = new Button("Salvar");
+		save.setDefaultButton(true);
+		save.setOnAction(event -> {
+			Theme chosen = Themes.current();
 
-		HBox buttons = new HBox(close);
+			if (chosen != saved) {
+				ActivityLog.record("Tema alterado para " + chosen.label());
+			}
+
+			Themes.use(chosen);
+			keep[0] = true;
+			stage.close();
+		});
+
+		Button cancel = new Button("Cancelar");
+		cancel.setCancelButton(true);
+		cancel.setOnAction(event -> stage.close());
+
+		// Closing by the X of the window is the same as Cancelar.
+		stage.setOnHidden(event -> {
+			if (!keep[0]) {
+				Themes.preview(saved);
+			}
+		});
+
+		HBox buttons = new HBox(8, save, cancel);
 		buttons.setAlignment(Pos.CENTER_RIGHT);
 
 		VBox root = new VBox(16, title, options, buttons);

@@ -1,6 +1,7 @@
 package com.alveesdev.xmlcollector.ui.view;
 
 import java.net.URL;
+import java.util.function.Consumer;
 
 import com.alveesdev.xmlcollector.application.settings.Theme;
 
@@ -17,6 +18,9 @@ public final class Themes {
 	private static final String FOLDER = "/com/alveesdev/xmlcollector/view/themes/";
 
 	private static final ReadOnlyObjectWrapper<Theme> CURRENT = new ReadOnlyObjectWrapper<>(Theme.DEFAULT);
+
+	private static Consumer<Theme> onSaved = theme -> {
+	};
 
 	private Themes() {
 	}
@@ -35,8 +39,19 @@ public final class Themes {
 		CURRENT.addListener((observable, oldTheme, newTheme) -> Window.getWindows().forEach(Themes::apply));
 	}
 
+	// Saves the theme too, so the program opens with it next time.
 	public static void use(Theme theme) {
 		CURRENT.set(theme);
+		onSaved.accept(theme);
+	}
+
+	// Only shows the theme, as while it is being chosen; the saved one stays as it was.
+	public static void preview(Theme theme) {
+		CURRENT.set(theme);
+	}
+
+	public static void setOnSaved(Consumer<Theme> onSaved) {
+		Themes.onSaved = onSaved;
 	}
 
 	public static Theme current() {
