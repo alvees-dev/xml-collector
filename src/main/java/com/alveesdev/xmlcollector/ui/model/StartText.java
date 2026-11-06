@@ -30,9 +30,11 @@ public final class StartText {
 		return text.toString();
 	}
 
-	public static String reading(SourceMode source, LocalDate from, LocalDate to) {
+	// The directory is told only when the source does not already name it, as the folder of the program for an empty Diretório Único.
+	public static String reading(SourceMode source, String directory, LocalDate from, LocalDate to) {
 		return "Ler: NFCe"
 				+ "\nOrigem: " + SourceLabels.name(source)
+				+ (directory == null ? "" : "\nDiretório: " + directory)
 				+ "\nPeríodo: " + periodOf(from, to)
 				+ "\n\nNenhum arquivo será copiado.";
 	}

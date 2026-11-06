@@ -53,7 +53,7 @@
                      </children>
                   </HBox>
                   <ChoiceBox fx:id="choiceSource" prefWidth="170.0" GridPane.rowIndex="1" />
-                  <TextField fx:id="txtDirectory" prefWidth="170.0" GridPane.rowIndex="2" />
+                  <TextField fx:id="txtDirectory" prefWidth="170.0" promptText="Vazio: ler Arquivos_XML" GridPane.rowIndex="2" />
                   <Button fx:id="btnRead" mnemonicParsing="false" onAction="#onRead" prefWidth="105.0" text="Ler Diretório" GridPane.columnIndex="1" GridPane.rowIndex="1" />
                   <Button fx:id="btnCollect" mnemonicParsing="false" onAction="#onCollect" prefWidth="105.0" styleClass="primary" text="Coletar XML" GridPane.columnIndex="1" GridPane.rowIndex="2" />
                </children>

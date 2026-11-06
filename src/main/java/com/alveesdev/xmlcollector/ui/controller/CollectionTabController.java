@@ -71,6 +71,7 @@ public class CollectionTabController {
 	private static final int STATUS_COLUMN = COLUMN_PROPERTIES.indexOf("status");
 	private static final String COLLECTION_DONE = "Coleta concluída";
 	private static final String READING_DONE = "Leitura concluída";
+	private static final String ARCHIVE_FOLDER = "Arquivos_XML do Coletor";
 	private static final String ARCHIVE_IS_NOT_COLLECTED = "Este diretório fica dentro de Arquivos_XML, onde o programa guarda os XML já coletados,"
 			+ " e não pode ser coletado de novo. Para ver esses arquivos, use Ler Diretório.\n\n";
 
@@ -317,7 +318,7 @@ public class CollectionTabController {
 		}
 
 		SourceMode sourceMode = selectedSourceMode();
-		Optional<CollectionRequest> request = chkNfce.isSelected() ? buildRequest(sourceMode) : Optional.empty();
+		Optional<CollectionRequest> request = chkNfce.isSelected() ? buildRequest(sourceMode, false) : Optional.empty();
 
 		if (chkNfce.isSelected() && request.isEmpty()) {
 			return;
@@ -381,9 +382,10 @@ public class CollectionTabController {
 	private void onRead() {
 
 		SourceMode sourceMode = selectedSourceMode();
-		Optional<CollectionRequest> request = buildRequest(sourceMode);
+		Optional<CollectionRequest> request = buildRequest(sourceMode, true);
 
-		if (request.isEmpty() || !Dialogs.confirmStart(StartText.READING_HEADER, StartText.reading(sourceMode, dpFrom.getValue(), dpTo.getValue()))) {
+		if (request.isEmpty() || !Dialogs.confirmStart(StartText.READING_HEADER,
+				StartText.reading(sourceMode, readsTheArchive(sourceMode) ? ARCHIVE_FOLDER : null, dpFrom.getValue(), dpTo.getValue()))) {
 			return;
 		}
 
@@ -489,7 +491,12 @@ public class CollectionTabController {
 		return dpFrom.getValue() != null && dpTo.getValue() != null && !dpFrom.getValue().isAfter(dpTo.getValue());
 	}
 
-	private Optional<CollectionRequest> buildRequest(SourceMode sourceMode) {
+	// A reading of an empty Diretório Único reads what the program already collected.
+	private boolean readsTheArchive(SourceMode sourceMode) {
+		return sourceMode == SourceMode.SINGLE_DIRECTORY && txtDirectory.getText().isBlank();
+	}
+
+	private Optional<CollectionRequest> buildRequest(SourceMode sourceMode, boolean reading) {
 
 		LocalDate from = dpFrom.getValue();
 		LocalDate to = dpTo.getValue();
@@ -499,7 +506,7 @@ public class CollectionTabController {
 			return Optional.empty();
 		}
 
-		if (sourceMode == SourceMode.SINGLE_DIRECTORY && txtDirectory.getText().isBlank()) {
+		if (!reading && readsTheArchive(sourceMode)) {
 			Dialogs.warning("Informe o diretório a ser verificado.");
 			return Optional.empty();
 		}
@@ -516,7 +523,8 @@ public class CollectionTabController {
 		List<String> directories = switch (sourceMode) {
 			case PDV_DIRECTORIES -> settings.pdvDirectories();
 			case SERVER_DIRECTORY -> List.of(settings.serverDirectory());
-			case SINGLE_DIRECTORY, NFE_DIRECTORIES -> List.of(txtDirectory.getText().trim());
+			case SINGLE_DIRECTORY -> List.of(readsTheArchive(sourceMode) ? paths.xmlArchiveDir().toString() : txtDirectory.getText().trim());
+			case NFE_DIRECTORIES -> List.of(txtDirectory.getText().trim());
 		};
 
 		// The server only goes into the folders of the year and month, when the model says how they are named.
