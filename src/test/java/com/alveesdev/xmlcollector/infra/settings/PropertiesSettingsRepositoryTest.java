@@ -166,6 +166,7 @@ class PropertiesSettingsRepositoryTest {
 		return new AppSettings(
 				List.of("\\\\PDV01\\c$\\XML Notas", "D:\\Pasta com acentuação\\ç", ""),
 				List.of("E:\\retaguarda", "F:\\retaguarda2"),
+				"\\\\SERVIDOR\\xml\\caixas",
 				PdvType.FOOD,
 				"modelo-pdv",
 				"modelo-nfe",

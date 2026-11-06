@@ -25,6 +25,11 @@ public final class SettingsChanges {
 		replaced(changes, "Modelo de busca NFe", nfeModelNames.apply(before.nfeModelId()), nfeModelNames.apply(after.nfeModelId()));
 		directories(changes, "PDV", before.pdvDirectories(), after.pdvDirectories());
 		directories(changes, "NFe", before.nfeDirectories(), after.nfeDirectories());
+
+		if (!before.serverDirectory().equals(after.serverDirectory())) {
+			changes.add("Diretório Servidor salvo: " + shown(after.serverDirectory()));
+		}
+
 		replaced(changes, "Organização dos arquivos", organizeLabel(before.organizeMode()), organizeLabel(after.organizeMode()));
 		replaced(changes, "Separação dos arquivos", before.separationMode().label(), after.separationMode().label());
 		email(changes, before.emailAccount(), after.emailAccount());

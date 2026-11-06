@@ -18,6 +18,7 @@ import com.alveesdev.xmlcollector.application.collection.CollectionResult;
 import com.alveesdev.xmlcollector.application.collection.CollectionSummary;
 import com.alveesdev.xmlcollector.application.collection.SourceFailure.Reason;
 import com.alveesdev.xmlcollector.application.collection.SourceFailure;
+import com.alveesdev.xmlcollector.domain.model.DocumentEntry;
 import com.alveesdev.xmlcollector.domain.model.XmlDocument;
 
 class CollectionSummaryTextTest {
@@ -136,6 +137,18 @@ class CollectionSummaryTextTest {
 
 	private static CollectionSummary summary(int errors, List<CollectionSummary.CopyFailure> copyFailures) {
 		return new CollectionSummary(0, 0, 0, 0, 0, 0, 0, errors, copyFailures);
+	}
+
+	@Test
+	void aReadingCountsTheNotesAndSaysNothingWasCopied() {
+		CollectionResult result = new CollectionResult(
+				List.of(new CollectionResult.SourceResult(0, List.of(
+						DocumentEntry.of(invoice(1, 1, DAY), false, "1.xml"),
+						DocumentEntry.of(invoice(1, 2, DAY), true, "2.xml"),
+						DocumentEntry.error("quebrado.xml")))),
+				new TreeMap<>(), new CollectionSummary(0, 0, 0, 0, 0, 4, 0, 1, List.of()), List.of(), null, Set.of());
+
+		assertEquals("Notas lidas: 2\nFora do período: 4\nCom erro de leitura: 1\n\nNenhum arquivo foi copiado.", CollectionSummaryText.reading(result, SourceMode.PDV_DIRECTORIES));
 	}
 
 	private static CollectionResult result(CollectionSummary summary, List<SourceFailure> failures, String historyFailure) {

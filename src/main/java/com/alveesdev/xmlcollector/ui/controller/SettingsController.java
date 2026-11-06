@@ -49,6 +49,7 @@ public class SettingsController {
 		AppSettings settings = settingsService.current();
 
 		pdvDirectoriesController.load("Diretório PDV", "PDV", modelsTabController::pdvTarget, settings.pdvDirectories());
+		pdvDirectoriesController.showServer(settings.serverDirectory());
 		nfeDirectoriesController.load("Diretório NFe", "NFe", modelsTabController::nfeTarget, settings.nfeDirectories());
 
 		modelsTabController.load(settings);
@@ -75,6 +76,7 @@ public class SettingsController {
 		AppSettings settings = new AppSettings(
 				pdvDirectoriesController.directories(),
 				nfeDirectoriesController.directories(),
+				pdvDirectoriesController.serverDirectory(),
 				modelsTabController.pdvType(),
 				modelsTabController.pdvModelId(),
 				modelsTabController.nfeModelId(),

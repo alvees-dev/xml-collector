@@ -27,6 +27,7 @@ public final class PropertiesSettingsRepository implements SettingsRepository {
 
 	private static final String PDV_DIRECTORIES_PREFIX = "directories.pdv.";
 	private static final String NFE_DIRECTORIES_PREFIX = "directories.nfe.";
+	private static final String SERVER_DIRECTORY_KEY = "directories.server";
 	private static final String PDV_TYPE_KEY = "search.pdvType";
 	private static final String PDV_MODEL_KEY = "search.pdvModel";
 	private static final String NFE_MODEL_KEY = "search.nfeModel";
@@ -65,6 +66,7 @@ public final class PropertiesSettingsRepository implements SettingsRepository {
 		return new AppSettings(
 				readDirectories(properties, PDV_DIRECTORIES_PREFIX, defaults.pdvDirectories()),
 				readDirectories(properties, NFE_DIRECTORIES_PREFIX, defaults.nfeDirectories()),
+				properties.getProperty(SERVER_DIRECTORY_KEY, defaults.serverDirectory()),
 				parseEnum(PdvType.class, properties.getProperty(PDV_TYPE_KEY), defaults.pdvType()),
 				properties.getProperty(PDV_MODEL_KEY, defaults.pdvModelId()),
 				properties.getProperty(NFE_MODEL_KEY, defaults.nfeModelId()),
@@ -86,6 +88,7 @@ public final class PropertiesSettingsRepository implements SettingsRepository {
 		Properties properties = new Properties();
 		writeDirectories(properties, PDV_DIRECTORIES_PREFIX, settings.pdvDirectories());
 		writeDirectories(properties, NFE_DIRECTORIES_PREFIX, settings.nfeDirectories());
+		properties.setProperty(SERVER_DIRECTORY_KEY, settings.serverDirectory());
 		properties.setProperty(PDV_TYPE_KEY, settings.pdvType().name());
 		properties.setProperty(PDV_MODEL_KEY, settings.pdvModelId());
 		properties.setProperty(NFE_MODEL_KEY, settings.nfeModelId());

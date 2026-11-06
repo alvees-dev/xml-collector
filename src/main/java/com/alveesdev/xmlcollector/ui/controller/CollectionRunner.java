@@ -25,16 +25,26 @@ final class CollectionRunner {
 
 	static void run(Node trigger, String title, CollectionService service, CollectionRequest request, SourceMode sourceMode,
 			Consumer<CollectionResult> onSuccess) {
+		start(trigger, title, service, request, sourceMode, false, onSuccess, "Coleta cancelada. Os arquivos já copiados foram mantidos.");
+	}
+
+	static void read(Node trigger, String title, CollectionService service, CollectionRequest request, SourceMode sourceMode,
+			Consumer<CollectionResult> onSuccess) {
+		start(trigger, title, service, request, sourceMode, true, onSuccess, "Leitura cancelada.");
+	}
+
+	private static void start(Node trigger, String title, CollectionService service, CollectionRequest request, SourceMode sourceMode,
+			boolean onlyReading, Consumer<CollectionResult> onSuccess, String cancelledMessage) {
 
 		CollectionActivity activity = new CollectionActivity(request, sourceMode);
 		activity.started(title);
 
 		TaskRunner.withProgress(trigger, "xml-collection",
 				() -> new ProgressWindow(trigger.getScene().getWindow(), title, sourceLabels(request, sourceMode), SOURCE_LABEL_WIDTH),
-				window -> new CollectionTask(service, request, window::update, activity::record),
+				window -> new CollectionTask(service, request, onlyReading, window::update, activity::record),
 				new TaskRunner.Handlers<>(onSuccess,
 						error -> Dialogs.error("Erro ao processar o diretório: " + FailureText.of(error)),
-						() -> Dialogs.warning("Coleta cancelada. Os arquivos já copiados foram mantidos.")));
+						() -> Dialogs.warning(cancelledMessage)));
 	}
 
 	private static Map<Integer, String> sourceLabels(CollectionRequest request, SourceMode sourceMode) {

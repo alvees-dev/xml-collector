@@ -277,6 +277,12 @@ public final class Dialogs {
 		summary(allApproved ? Alert.AlertType.INFORMATION : Alert.AlertType.WARNING, "Solicitação concluída", VoidingText.summary(outcomes, environment)).showAndWait();
 	}
 
+	public static void readingSummary(CollectionResult result, SourceMode sourceMode) {
+		boolean problems = !result.failures().isEmpty() || result.summary().errors() > 0;
+
+		summary(problems ? Alert.AlertType.WARNING : Alert.AlertType.INFORMATION, "Leitura concluída", CollectionSummaryText.reading(result, sourceMode)).showAndWait();
+	}
+
 	public static void missingSearchSummary(CollectionResult result, List<XmlDocument.Invoice> found, Path archiveRoot) {
 
 		summary(

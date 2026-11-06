@@ -74,6 +74,7 @@ class SourceProcessor {
 	}
 
 	private final CollectionRequest request;
+	private final boolean storing;
 	private final SourceFiles sourceFiles;
 	private final DocumentReader reader;
 	private final DocumentArchive archive;
@@ -83,8 +84,9 @@ class SourceProcessor {
 	private final Counters counters = new Counters();
 
 	SourceProcessor(CollectionRequest request, SourceFiles sourceFiles, DocumentReader reader, DocumentArchive archive,
-			ExecutorService executor) {
+			ExecutorService executor, boolean storing) {
 		this.request = request;
+		this.storing = storing;
 		this.sourceFiles = sourceFiles;
 		this.reader = reader;
 		this.archive = archive;
@@ -191,6 +193,11 @@ class SourceProcessor {
 
 			switch (decision) {
 				case CollectionRules.Store store -> {
+					// Only reading: the document is listed by the rules and nothing goes to the archive.
+					if (!storing) {
+						continue;
+					}
+
 					// A gap voided after its collection stays in the collected month, even with a date of the next one.
 					if (heldInAnotherMonth(store)) {
 						counters.alreadyExisting++;

@@ -22,7 +22,7 @@
       <ToggleGroup fx:id="sourceGroup" />
    </fx:define>
    <children>
-      <HBox minHeight="100.0" prefHeight="100.0">
+      <HBox minHeight="150.0" prefHeight="150.0">
          <children>
             <VBox alignment="CENTER_LEFT" spacing="6.0">
                <padding>
@@ -35,21 +35,20 @@
                </children>
             </VBox>
             <Separator orientation="VERTICAL" />
-            <VBox alignment="CENTER_LEFT" spacing="6.0">
+            <!-- Coletar XML stands on the row of Diretório Único and Ler Diretório on the row of the field. -->
+            <GridPane alignment="CENTER_LEFT" hgap="20.0" vgap="6.0">
                <padding>
                   <Insets left="20.0" right="25.0" />
                </padding>
                <children>
-                  <RadioButton fx:id="radioPdvDirectories" mnemonicParsing="false" text="Diretório PDV" toggleGroup="$sourceGroup" />
-                  <RadioButton fx:id="radioSingleDirectory" mnemonicParsing="false" text="Diretório Único" toggleGroup="$sourceGroup" />
-                  <HBox alignment="CENTER_LEFT" spacing="20.0">
-                     <children>
-                        <TextField fx:id="txtDirectory" prefWidth="170.0" />
-                        <Button fx:id="btnCollect" mnemonicParsing="false" onAction="#onCollect" prefWidth="81.0" text="Coletar XML" />
-                     </children>
-                  </HBox>
+                  <RadioButton fx:id="radioServerDirectory" mnemonicParsing="false" text="Diretório Servidor" toggleGroup="$sourceGroup" />
+                  <RadioButton fx:id="radioPdvDirectories" mnemonicParsing="false" text="Diretório PDV" toggleGroup="$sourceGroup" GridPane.rowIndex="1" />
+                  <RadioButton fx:id="radioSingleDirectory" mnemonicParsing="false" text="Diretório Único" toggleGroup="$sourceGroup" GridPane.rowIndex="2" />
+                  <TextField fx:id="txtDirectory" prefWidth="170.0" GridPane.rowIndex="3" />
+                  <Button fx:id="btnCollect" mnemonicParsing="false" onAction="#onCollect" prefWidth="90.0" text="Coletar XML" GridPane.columnIndex="1" GridPane.rowIndex="2" />
+                  <Button fx:id="btnRead" mnemonicParsing="false" onAction="#onRead" prefWidth="90.0" text="Ler Diretório" GridPane.columnIndex="1" GridPane.rowIndex="3" />
                </children>
-            </VBox>
+            </GridPane>
             <Separator orientation="VERTICAL" />
             <VBox alignment="CENTER_LEFT" spacing="15.0">
                <padding>

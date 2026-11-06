@@ -73,13 +73,24 @@ public class CollectionTabController {
 	private DatePicker dpTo;
 
 	@FXML
+	private RadioButton radioServerDirectory;
+
+	@FXML
 	private RadioButton radioPdvDirectories;
+
+	@FXML
+	private RadioButton radioSingleDirectory;
+
+	private String typedDirectory = "";
 
 	@FXML
 	private TextField txtDirectory;
 
 	@FXML
 	private Button btnCollect;
+
+	@FXML
+	private Button btnRead;
 
 	@FXML
 	private CheckBox chkNfeSales;
@@ -128,7 +139,14 @@ public class CollectionTabController {
 
 		radioPdvDirectories.setSelected(true);
 
-		txtDirectory.disableProperty().bind(radioPdvDirectories.selectedProperty());
+		txtDirectory.disableProperty().bind(radioSingleDirectory.selectedProperty().not());
+		txtDirectory.textProperty().addListener((observable, oldText, newText) -> {
+			if (radioSingleDirectory.isSelected()) {
+				typedDirectory = newText;
+			}
+		});
+
+		radioServerDirectory.selectedProperty().addListener((observable, wasSelected, selected) -> showDirectoryOfTheSource());
 
 		YearMonth previousMonth = YearMonth.now().minusMonths(1);
 		dpFrom.setValue(previousMonth.atDay(1));
@@ -235,6 +253,29 @@ public class CollectionTabController {
 		});
 	}
 
+	// Like a collection of the chosen source, missing numbers included, but nothing is copied.
+	@FXML
+	private void onRead() {
+
+		SourceMode sourceMode = selectedSourceMode();
+		Optional<CollectionRequest> request = buildRequest(sourceMode);
+
+		if (request.isPresent()) {
+			CollectionRunner.read(btnRead, "Lendo XML", collectionService, request.get(), sourceMode, result -> showRead(request.get(), result, sourceMode));
+		}
+	}
+
+	private void showRead(CollectionRequest request, CollectionResult result, SourceMode sourceMode) {
+
+		collected = CollectedDocuments.from(result);
+		nfeCollected.clear();
+		showCollected();
+
+		onCollected.accept(request, result);
+
+		Dialogs.readingSummary(result, sourceMode);
+	}
+
 	// Checked before anything runs, so a problem here does not appear only after the NFCe collection.
 	private Optional<List<CollectionRequest>> buildNfeRequests() {
 
@@ -287,7 +328,20 @@ public class CollectionTabController {
 	}
 
 	private SourceMode selectedSourceMode() {
+		if (radioServerDirectory.isSelected()) {
+			return SourceMode.SERVER_DIRECTORY;
+		}
+
 		return radioPdvDirectories.isSelected() ? SourceMode.PDV_DIRECTORIES : SourceMode.SINGLE_DIRECTORY;
+	}
+
+	// The server comes from the settings, so the field only shows it, and what was typed for the single directory comes back.
+	private void showDirectoryOfTheSource() {
+		txtDirectory.setText(radioServerDirectory.isSelected() ? settingsService.current().serverDirectory() : typedDirectory);
+	}
+
+	public void refreshServerDirectory() {
+		showDirectoryOfTheSource();
 	}
 
 	private Optional<CollectionRequest> buildRequest(SourceMode sourceMode) {
@@ -307,15 +361,25 @@ public class CollectionTabController {
 
 		AppSettings settings = settingsService.current();
 
+		if (sourceMode == SourceMode.SERVER_DIRECTORY && settings.serverDirectory().isBlank()) {
+			Dialogs.warning("Informe o diretório do Servidor em Configurações > Diretórios.");
+			return Optional.empty();
+		}
+
 		boolean usesModel = sourceMode == SourceMode.PDV_DIRECTORIES;
 
-		List<String> directories = usesModel
-				? settings.pdvDirectories()
-				: List.of(txtDirectory.getText().trim());
+		List<String> directories = switch (sourceMode) {
+			case PDV_DIRECTORIES -> settings.pdvDirectories();
+			case SERVER_DIRECTORY -> List.of(settings.serverDirectory());
+			case SINGLE_DIRECTORY, NFE_DIRECTORIES -> List.of(txtDirectory.getText().trim());
+		};
 
-		List<String> folderPatterns = usesModel
-				? searchModels.pdvModel(settings.pdvModelId()).collectionFolders()
-				: List.of();
+		// The server only goes into the folders of the year and month, when the model says how they are named.
+		List<String> folderPatterns = switch (sourceMode) {
+			case PDV_DIRECTORIES -> searchModels.pdvModel(settings.pdvModelId()).collectionFolders();
+			case SERVER_DIRECTORY -> searchModels.pdvModel(settings.pdvModelId()).serverFolders();
+			case SINGLE_DIRECTORY, NFE_DIRECTORIES -> List.of();
+		};
 
 		if (usesModel && folderPatterns.isEmpty()) {
 			Dialogs.warning("Selecione o Modelo de Busca PDV em Configurações antes de coletar.");

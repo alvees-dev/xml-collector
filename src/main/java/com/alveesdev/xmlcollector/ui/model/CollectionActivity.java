@@ -46,6 +46,7 @@ public final class CollectionActivity {
 			case PDV_DIRECTORIES -> "Diretório PDV";
 			case NFE_DIRECTORIES -> "Diretório NFe";
 			case SINGLE_DIRECTORY -> "Diretório Único";
+			case SERVER_DIRECTORY -> "Diretório Servidor";
 		};
 	}
 }

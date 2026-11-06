@@ -68,6 +68,15 @@ public class CollectionService {
 	}
 
 	public CollectionResult collect(CollectionRequest request, ProgressListener listener, BooleanSupplier cancelled) {
+		return run(request, listener, cancelled, true);
+	}
+
+	// Works like a collection without copying anything. The numbers seen still go to the history, which keeps them from being voided.
+	public CollectionResult read(CollectionRequest request, ProgressListener listener, BooleanSupplier cancelled) {
+		return run(request, listener, cancelled, false);
+	}
+
+	private CollectionResult run(CollectionRequest request, ProgressListener listener, BooleanSupplier cancelled, boolean storing) {
 
 		List<SourceFailure> failures = new ArrayList<>();
 		int sources = request.directories().size();
@@ -75,7 +84,7 @@ public class CollectionService {
 		ExecutorService executor = Executors.newFixedThreadPool(threads, new WorkerThreadFactory());
 
 		try {
-			SourceProcessor processor = new SourceProcessor(request, sourceFiles, reader, archive, executor);
+			SourceProcessor processor = new SourceProcessor(request, sourceFiles, reader, archive, executor, storing);
 
 			for (int index = 0; index < sources; index++) {
 				SourceProcessor.throwIfCancelled(cancelled);

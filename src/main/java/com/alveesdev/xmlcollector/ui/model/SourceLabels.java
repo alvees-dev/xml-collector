@@ -10,6 +10,7 @@ public final class SourceLabels {
 			case PDV_DIRECTORIES -> String.format("PDV %02d", sourceIndex + 1);
 			case NFE_DIRECTORIES -> String.format("NFe %02d", sourceIndex + 1);
 			case SINGLE_DIRECTORY -> "Diretório";
+			case SERVER_DIRECTORY -> "Servidor";
 		};
 	}
 

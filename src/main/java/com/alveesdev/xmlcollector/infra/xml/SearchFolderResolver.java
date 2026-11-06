@@ -150,14 +150,16 @@ final class SearchFolderResolver {
 	private static boolean hasDate(List<String> segments) {
 		return segments.contains(SearchFolderPattern.YEAR_MONTH)
 				|| segments.contains(SearchFolderPattern.YEAR)
-				|| segments.contains(SearchFolderPattern.MONTH_NAME_YEAR);
+				|| segments.contains(SearchFolderPattern.MONTH_NAME_YEAR)
+				|| segments.contains(SearchFolderPattern.MONTH);
 	}
 
 	private static Map<String, String> dateNamesOf(YearMonth month) {
 		return Map.of(
 				SearchFolderPattern.YEAR_MONTH, YEAR_MONTH_FORMAT.format(month),
 				SearchFolderPattern.YEAR, String.valueOf(month.getYear()),
-				SearchFolderPattern.MONTH_NAME_YEAR, ArchiveLayout.monthYearName(month.atDay(1)));
+				SearchFolderPattern.MONTH_NAME_YEAR, ArchiveLayout.monthYearName(month.atDay(1)),
+				SearchFolderPattern.MONTH, String.format("%02d", month.getMonthValue()));
 	}
 
 	// A folder can be written with or without the accent of its month.

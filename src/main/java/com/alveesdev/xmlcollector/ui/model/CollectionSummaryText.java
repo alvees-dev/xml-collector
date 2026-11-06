@@ -42,6 +42,21 @@ public final class CollectionSummaryText {
 		return message.toString();
 	}
 
+	public static String reading(CollectionResult result, SourceMode sourceMode) {
+
+		long notes = result.entries().stream().filter(entry -> entry.invoice() != null).count();
+
+		StringBuilder message = new StringBuilder();
+		message.append("Notas lidas: ").append(notes);
+		message.append("\nFora do período: ").append(result.summary().outOfPeriod());
+		message.append("\nCom erro de leitura: ").append(result.summary().errors());
+		message.append("\n\nNenhum arquivo foi copiado.");
+
+		appendFailures(message, failures(result, sourceMode));
+
+		return message.toString();
+	}
+
 	public static boolean collectionHasProblems(CollectionResult result, SourceMode sourceMode) {
 		return !failures(result, sourceMode).isEmpty() || result.summary().errors() > 0;
 	}
