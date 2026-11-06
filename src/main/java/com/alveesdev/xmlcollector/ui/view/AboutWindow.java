@@ -3,6 +3,7 @@ package com.alveesdev.xmlcollector.ui.view;
 import java.awt.Desktop;
 import java.net.URI;
 
+import com.alveesdev.xmlcollector.application.settings.AppVersion;
 import com.alveesdev.xmlcollector.ui.model.ActivityLog;
 
 import javafx.geometry.Insets;
@@ -46,7 +47,10 @@ public final class AboutWindow {
 		Label title = new Label("Coletor XML");
 		title.getStyleClass().add("progress-title");
 
-		HBox heading = new HBox(12, icon, title);
+		Label version = new Label("Versão " + AppVersion.current());
+		version.setOpacity(0.75);
+
+		HBox heading = new HBox(12, icon, new VBox(2, title, version));
 		heading.setAlignment(Pos.CENTER_LEFT);
 
 		Label summary = new Label(SUMMARY);
