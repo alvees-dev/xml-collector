@@ -16,6 +16,7 @@ import org.junit.jupiter.api.Test;
 import com.alveesdev.xmlcollector.application.collection.CollectionResult.SourceResult;
 import com.alveesdev.xmlcollector.domain.model.AccessKey;
 import com.alveesdev.xmlcollector.domain.model.DocumentEntry;
+import com.alveesdev.xmlcollector.domain.model.NumberRange;
 import com.alveesdev.xmlcollector.domain.model.SeriesOwner;
 import com.alveesdev.xmlcollector.domain.model.XmlDocument;
 
@@ -50,6 +51,14 @@ class CollectionResultTest {
 		CollectionResult result = resultOf(new SourceResult(0, List.of(DocumentEntry.error("quebrado.xml"))));
 
 		assertEquals(Map.of(), result.ownersBySeries());
+	}
+
+	@Test
+	void countsEveryNumberOfTheVoidedRanges() {
+		CollectionResult result = new CollectionResult(List.of(), new TreeMap<>(), new CollectionSummary(0, 0, 0, 0, 0, 0, 0, 0, List.of()),
+				List.of(), null, Set.of(), new TreeMap<>(Map.of(1, List.of(new NumberRange(5, 7), new NumberRange(9, 9)), 2, List.of(new NumberRange(3, 3)))));
+
+		assertEquals(5, result.voidedNumbers());
 	}
 
 	private static DocumentEntry authorized(XmlDocument.Invoice invoice) {

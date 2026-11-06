@@ -51,7 +51,7 @@ public final class CollectionRules {
 	private final Set<String> seenVoidingIds = new HashSet<>();
 	private final Map<Integer, List<NumberRange>> voidedBySeries = new HashMap<>();
 	private final Map<Integer, List<NumberRange>> outOfPeriodBySeries = new HashMap<>();
-	private int voidedInPeriod;
+	private final Map<Integer, List<NumberRange>> voidedInPeriod = new HashMap<>();
 	private final Map<Integer, List<Accepted>> acceptedBySource = new HashMap<>();
 
 	public CollectionRules(DateRange period, Predicate<XmlDocument.Invoice> invoiceFilter) {
@@ -114,9 +114,11 @@ public final class CollectionRules {
 		return List.copyOf(first.values());
 	}
 
-	// How many numbers the voidings of the period close, for the totals on the screen.
-	public int voidedInPeriod() {
-		return voidedInPeriod;
+	// The ranges the voidings of the period close, by series, for the list and the totals on the screen.
+	public SortedMap<Integer, List<NumberRange>> voidedInPeriod() {
+		SortedMap<Integer, List<NumberRange>> copy = new TreeMap<>();
+		voidedInPeriod.forEach((series, ranges) -> copy.put(series, List.copyOf(ranges)));
+		return copy;
 	}
 
 	public Set<AccessKey> cancelledKeys() {
@@ -174,7 +176,7 @@ public final class CollectionRules {
 			return new Skip(SkipReason.OUT_OF_PERIOD);
 		}
 
-		voidedInPeriod += voiding.range().size();
+		voidedInPeriod.computeIfAbsent(voiding.series(), series -> new ArrayList<>()).add(voiding.range());
 
 		String name = ArchiveLayout.voidingFileName(voiding.id());
 		return new Store(voiding.date(), name, name, voiding.id(), true);

@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.SortedMap;
+import java.util.TreeMap;
 
 import com.alveesdev.xmlcollector.domain.model.AccessKey;
 import com.alveesdev.xmlcollector.domain.model.DocumentEntry;
@@ -19,13 +20,17 @@ public record CollectionResult(
 		List<SourceFailure> failures,
 		String historyFailure,
 		Set<AccessKey> cancelledKeys,
-		int voidedNumbers
+		SortedMap<Integer, List<NumberRange>> voidedInPeriod
 ) {
 
 	// Without voidings, as most results that do not come from a collection.
 	public CollectionResult(List<SourceResult> sources, SortedMap<Integer, List<NumberRange>> missingBySeries, CollectionSummary summary,
 			List<SourceFailure> failures, String historyFailure, Set<AccessKey> cancelledKeys) {
-		this(sources, missingBySeries, summary, failures, historyFailure, cancelledKeys, 0);
+		this(sources, missingBySeries, summary, failures, historyFailure, cancelledKeys, new TreeMap<>());
+	}
+
+	public int voidedNumbers() {
+		return voidedInPeriod.values().stream().flatMap(List::stream).mapToInt(NumberRange::size).sum();
 	}
 
 	public record SourceResult(int sourceIndex, List<DocumentEntry> entries) {
