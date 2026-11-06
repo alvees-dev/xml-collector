@@ -46,9 +46,9 @@
                         <Label text="Série" />
                         <TextField fx:id="txtVoidSeries" maxWidth="40.0" />
                         <Label text="NFCe" />
-                        <TextField fx:id="txtVoidStart" maxWidth="65.0" />
+                        <TextField fx:id="txtVoidStart" maxWidth="65.0" promptText="Inicial" />
                         <Label text="à" />
-                        <TextField fx:id="txtVoidEnd" maxWidth="65.0" />
+                        <TextField fx:id="txtVoidEnd" maxWidth="65.0" promptText="Final" />
                      </children>
                   </HBox>
                </children>
