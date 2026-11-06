@@ -46,10 +46,10 @@ import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
 import javafx.scene.control.CheckBox;
+import javafx.scene.control.ChoiceBox;
 import javafx.scene.control.ContextMenu;
 import javafx.scene.control.DatePicker;
 import javafx.scene.control.MenuItem;
-import javafx.scene.control.RadioButton;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableRow;
 import javafx.scene.control.TableView;
@@ -83,13 +83,7 @@ public class CollectionTabController {
 	private DatePicker dpTo;
 
 	@FXML
-	private RadioButton radioServerDirectory;
-
-	@FXML
-	private RadioButton radioPdvDirectories;
-
-	@FXML
-	private RadioButton radioSingleDirectory;
+	private ChoiceBox<SourceMode> choiceSource;
 
 	private String typedDirectory = "";
 
@@ -107,6 +101,9 @@ public class CollectionTabController {
 
 	private Runnable onOpenDirectories = () -> {
 	};
+
+	@FXML
+	private CheckBox chkNfce;
 
 	@FXML
 	private CheckBox chkNfeSales;
@@ -203,16 +200,18 @@ public class CollectionTabController {
 		addRowMenu(nfceTable);
 		addRowMenu(nfeTable);
 
-		radioPdvDirectories.setSelected(true);
+		choiceSource.setConverter(ChoiceLabels.of(CollectionTabController::sourceName));
+		choiceSource.getItems().setAll(SourceMode.SERVER_DIRECTORY, SourceMode.PDV_DIRECTORIES, SourceMode.SINGLE_DIRECTORY);
+		choiceSource.setValue(SourceMode.PDV_DIRECTORIES);
 
-		txtDirectory.disableProperty().bind(radioSingleDirectory.selectedProperty().not());
+		txtDirectory.disableProperty().bind(choiceSource.valueProperty().isNotEqualTo(SourceMode.SINGLE_DIRECTORY));
 		txtDirectory.textProperty().addListener((observable, oldText, newText) -> {
-			if (radioSingleDirectory.isSelected()) {
+			if (choiceSource.getValue() == SourceMode.SINGLE_DIRECTORY) {
 				typedDirectory = newText;
 			}
 		});
 
-		radioServerDirectory.selectedProperty().addListener((observable, wasSelected, selected) -> showDirectoryOfTheSource());
+		choiceSource.valueProperty().addListener((observable, oldSource, newSource) -> showDirectoryOfTheSource());
 
 		YearMonth previousMonth = YearMonth.now().minusMonths(1);
 		dpFrom.setValue(previousMonth.atDay(1));
@@ -281,16 +280,32 @@ public class CollectionTabController {
 	@FXML
 	private void onCollect() {
 
-		SourceMode sourceMode = selectedSourceMode();
-		Optional<CollectionRequest> request = buildRequest(sourceMode);
+		if (!chkNfce.isSelected() && !chkNfeSales.isSelected() && !chkNfePurchases.isSelected()) {
+			Dialogs.warning("Marque o que deseja coletar: NFCe, NFe Vendas ou NFe Compras.");
+			return;
+		}
 
-		if (request.isEmpty()) {
+		if (!periodIsValid()) {
+			Dialogs.warning("Informe um período válido (De / Até).");
+			return;
+		}
+
+		SourceMode sourceMode = selectedSourceMode();
+		Optional<CollectionRequest> request = chkNfce.isSelected() ? buildRequest(sourceMode) : Optional.empty();
+
+		if (chkNfce.isSelected() && request.isEmpty()) {
 			return;
 		}
 
 		Optional<List<CollectionRequest>> nfeRequests = buildNfeRequests();
 
 		if (nfeRequests.isEmpty()) {
+			return;
+		}
+
+		// Only the NFe: the NFCe already collected stay on the screen and in the missing numbers.
+		if (request.isEmpty()) {
+			collectNfe(nfeRequests.get());
 			return;
 		}
 
@@ -394,20 +409,29 @@ public class CollectionTabController {
 	}
 
 	private SourceMode selectedSourceMode() {
-		if (radioServerDirectory.isSelected()) {
-			return SourceMode.SERVER_DIRECTORY;
-		}
+		return choiceSource.getValue();
+	}
 
-		return radioPdvDirectories.isSelected() ? SourceMode.PDV_DIRECTORIES : SourceMode.SINGLE_DIRECTORY;
+	private static String sourceName(SourceMode sourceMode) {
+		return switch (sourceMode) {
+			case SERVER_DIRECTORY -> "Diretório Servidor";
+			case PDV_DIRECTORIES -> "Diretório PDV";
+			case SINGLE_DIRECTORY -> "Diretório Único";
+			case NFE_DIRECTORIES -> "Diretório NFe";
+		};
 	}
 
 	// The server comes from the settings, so the field only shows it, and what was typed for the single directory comes back.
 	private void showDirectoryOfTheSource() {
-		txtDirectory.setText(radioServerDirectory.isSelected() ? settingsService.current().serverDirectory() : typedDirectory);
+		txtDirectory.setText(choiceSource.getValue() == SourceMode.SERVER_DIRECTORY ? settingsService.current().serverDirectory() : typedDirectory);
 	}
 
 	public void refreshServerDirectory() {
 		showDirectoryOfTheSource();
+	}
+
+	private boolean periodIsValid() {
+		return dpFrom.getValue() != null && dpTo.getValue() != null && !dpFrom.getValue().isAfter(dpTo.getValue());
 	}
 
 	private Optional<CollectionRequest> buildRequest(SourceMode sourceMode) {
@@ -415,7 +439,7 @@ public class CollectionTabController {
 		LocalDate from = dpFrom.getValue();
 		LocalDate to = dpTo.getValue();
 
-		if (from == null || to == null || from.isAfter(to)) {
+		if (!periodIsValid()) {
 			Dialogs.warning("Informe um período válido (De / Até).");
 			return Optional.empty();
 		}
