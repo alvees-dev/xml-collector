@@ -55,13 +55,12 @@
                   <Insets top="30.0" />
                </VBox.margin>
             </Label>
-            <!-- Gerar PDF on the left of the reports it prints. -->
+            <!-- Gerar PDF on the right of the reports it prints. -->
             <HBox alignment="CENTER_LEFT" spacing="20.0">
                <VBox.margin>
                   <Insets top="5.0" />
                </VBox.margin>
                <children>
-                  <Button fx:id="btnGeneratePdf" mnemonicParsing="false" onAction="#onGeneratePdf" text="Gerar PDF" />
                   <VBox spacing="5.0">
                      <children>
                         <CheckBox fx:id="chkValuesNfce" mnemonicParsing="false" selected="true" text="Valores NFCe" />
@@ -69,6 +68,7 @@
                         <CheckBox fx:id="chkValuesNfePurchases" mnemonicParsing="false" text="Valores NFe Compras" />
                      </children>
                   </VBox>
+                  <Button fx:id="btnGeneratePdf" mnemonicParsing="false" onAction="#onGeneratePdf" text="Gerar PDF" />
                </children>
             </HBox>
             <Label text="Diretório de Envio">
