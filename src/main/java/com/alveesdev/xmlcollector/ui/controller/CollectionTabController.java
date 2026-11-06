@@ -40,6 +40,7 @@ import com.alveesdev.xmlcollector.ui.model.SourceMode;
 import com.alveesdev.xmlcollector.ui.model.StartText;
 import com.alveesdev.xmlcollector.ui.view.Dialogs;
 import com.alveesdev.xmlcollector.ui.view.FileExplorer;
+import com.alveesdev.xmlcollector.ui.view.StatusCell;
 
 import javafx.beans.binding.Bindings;
 import javafx.collections.FXCollections;
@@ -64,6 +65,7 @@ public class CollectionTabController {
 	private static final String TEST_PATHS = "Testar Caminhos";
 
 	private static final List<String> COLUMN_PROPERTIES = List.of("number", "series", "totalValue", "emissionDate", "accessKey", "status");
+	private static final int STATUS_COLUMN = COLUMN_PROPERTIES.indexOf("status");
 
 	private final CollectionService collectionService;
 	private final SettingsService settingsService;
@@ -225,6 +227,10 @@ public class CollectionTabController {
 			TableColumn<DocumentRow, String> column = (TableColumn<DocumentRow, String>) table.getColumns().get(index);
 
 			column.setCellValueFactory(new PropertyValueFactory<>(COLUMN_PROPERTIES.get(index)));
+
+			if (index == STATUS_COLUMN) {
+				column.setCellFactory(view -> new StatusCell());
+			}
 		}
 	}
 

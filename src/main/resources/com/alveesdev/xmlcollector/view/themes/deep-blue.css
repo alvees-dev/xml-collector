@@ -37,4 +37,7 @@
 	-cx-ok: #1b8a4b;
 	-cx-warning: #a85a00;
 	-cx-danger: #c62828;
+	-cx-ok-bg: #dff4e7;
+	-cx-warning-bg: #fdefd9;
+	-cx-danger-bg: #fbe3e3;
 }

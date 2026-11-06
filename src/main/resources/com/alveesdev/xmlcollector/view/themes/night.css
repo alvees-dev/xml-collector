@@ -40,6 +40,9 @@
 	-cx-ok: #3fdc8c;
 	-cx-warning: #ffb547;
 	-cx-danger: #ff6b6b;
+	-cx-ok-bg: #0f3a2a;
+	-cx-warning-bg: #3a2a10;
+	-cx-danger-bg: #3d1620;
 }
 
 .button.primary {
